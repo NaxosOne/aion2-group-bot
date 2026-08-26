@@ -62,6 +62,40 @@ class SignupView(discord.ui.View):
         await self._annoncer_promus(interaction, event, groupe_avant)
 
     @discord.ui.button(
+        label="Sortie faite", emoji="✅", style=discord.ButtonStyle.success,
+        custom_id="aion2:done", row=1,
+    )
+    async def bouton_terminee(self, interaction: discord.Interaction, _):
+        db = interaction.client.db
+        event = await self._event_ouvert(interaction)
+        if event is None:
+            return
+
+        est_createur = interaction.user.id == event["creator_id"]
+        est_modo = interaction.user.guild_permissions.manage_messages
+        if not (est_createur or est_modo):
+            await interaction.response.send_message(
+                "Seul le créateur de la sortie (ou un modérateur) peut la clore.",
+                ephemeral=True,
+            )
+            return
+
+        await db.set_status(event["message_id"], "done")
+        event = await db.get_event(event["message_id"])
+        signups = await db.get_signups(event["message_id"])
+        classes = await db.get_main_classes(
+            event["guild_id"], [s["user_id"] for s in signups]
+        )
+        embed = build_event_embed(event, signups, classes)
+        await interaction.response.edit_message(embed=embed, view=None)
+
+        groupe, _ = assign(event["compo"], event["size"], signups)
+        mentions = " ".join(f"<@{s['user_id']}>" for s in groupe)
+        await interaction.followup.send(
+            f"🎉 **{event['title']}** terminée !" + (f" GG {mentions}" if mentions else "")
+        )
+
+    @discord.ui.button(
         label="Annuler la sortie", emoji="🗑️", style=discord.ButtonStyle.secondary,
         custom_id="aion2:cancel", row=1,
     )
@@ -150,9 +184,12 @@ class SignupView(discord.ui.View):
             )
             return None
         if event["status"] != "open":
-            await interaction.response.send_message(
-                "Cette sortie a été annulée.", ephemeral=True
+            message = (
+                "Cette sortie est déjà terminée. ✅"
+                if event["status"] == "done"
+                else "Cette sortie a été annulée."
             )
+            await interaction.response.send_message(message, ephemeral=True)
             return None
         return event
 

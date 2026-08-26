@@ -4,27 +4,33 @@ import discord
 from discord.ext import commands
 
 from . import config
+from .cogs.polls import DispoView, VoteView
 from .db import Database
 from .views import SignupView
 
 
 class GroupBot(commands.Bot):
     def __init__(self):
-        # Les intents par défaut suffisent : le bot n'utilise que des commandes
-        # slash et des boutons, pas de lecture des messages des utilisateurs.
-        super().__init__(command_prefix="!", intents=discord.Intents.default())
+        # L'intent "members" (à activer sur le portail développeur) permet
+        # d'accueillir les nouveaux ; le reste passe par commandes et boutons.
+        intents = discord.Intents.default()
+        intents.members = True
+        super().__init__(command_prefix="!", intents=intents)
         self.db = Database(config.DB_PATH)
 
     async def setup_hook(self):
         await self.db.connect()
 
-        # Ré-enregistre la vue persistante pour que les boutons des sorties
-        # déjà publiées fonctionnent encore après un redémarrage.
+        # Ré-enregistre les vues persistantes pour que les boutons des messages
+        # déjà publiés fonctionnent encore après un redémarrage.
         self.add_view(SignupView())
+        self.add_view(VoteView())
+        self.add_view(DispoView())
 
         await self.load_extension("bot.cogs.groups")
         await self.load_extension("bot.cogs.profiles")
         await self.load_extension("bot.cogs.legion")
+        await self.load_extension("bot.cogs.polls")
 
         if config.GUILD_ID:
             # Sync sur un seul serveur : les commandes apparaissent tout de suite.
@@ -48,7 +54,14 @@ def main():
             "DISCORD_TOKEN manquant : copie .env.example vers .env et "
             "renseigne le token du bot (voir README.md)."
         )
-    GroupBot().run(config.TOKEN)
+    try:
+        GroupBot().run(config.TOKEN)
+    except discord.PrivilegedIntentsRequired:
+        raise SystemExit(
+            "Il manque un réglage sur le portail développeur Discord :\n"
+            "ton application -> onglet Bot -> active « SERVER MEMBERS INTENT »\n"
+            "(nécessaire pour accueillir les nouveaux membres), puis relance le bot."
+        ) from None
 
 
 if __name__ == "__main__":

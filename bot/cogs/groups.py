@@ -1,13 +1,14 @@
 """Commandes slash (/sortie, /sorties) et boucle des rappels automatiques."""
 
 import time
+from datetime import datetime
 
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config
-from ..embeds import build_event_embed
+from ..embeds import ACTIVITY_EMOJI, build_event_embed
 from ..logic import COMPO_LIBRE, COMPO_STANDARD, assign
 from ..utils.time_parse import FORMAT_AIDE, ParseError, parse_when
 from ..views import SignupView
@@ -22,9 +23,11 @@ class Groups(commands.Cog):
 
     async def cog_load(self):
         self.rappels.start()
+        self.statut.start()
 
     async def cog_unload(self):
         self.rappels.cancel()
+        self.statut.cancel()
 
     # ----- /sortie -----
 
@@ -159,6 +162,39 @@ class Groups(commands.Cog):
 
     @rappels.before_loop
     async def _attendre_pret(self):
+        await self.bot.wait_until_ready()
+
+    # ----- Statut du bot : la prochaine sortie -----
+
+    JOURS_COURTS = ("lun", "mar", "mer", "jeu", "ven", "sam", "dim")
+
+    def _quand_court(self, ts: int) -> str:
+        """Ex. "aujourd'hui 21:00", "demain 20:30", "sam 30/08 21:00"."""
+        dt = datetime.fromtimestamp(ts, config.TIMEZONE)
+        aujourd_hui = datetime.now(config.TIMEZONE).date()
+        heure = dt.strftime("%H:%M")
+        ecart = (dt.date() - aujourd_hui).days
+        if ecart == 0:
+            return f"aujourd'hui {heure}"
+        if ecart == 1:
+            return f"demain {heure}"
+        return f"{self.JOURS_COURTS[dt.weekday()]} {dt.strftime('%d/%m')} {heure}"
+
+    @tasks.loop(minutes=5)
+    async def statut(self):
+        ev = await self.bot.db.next_upcoming_event(int(time.time()))
+        if ev:
+            emoji = ACTIVITY_EMOJI.get(ev["activity"], "📣")
+            texte = f"{emoji} {ev['title']} — {self._quand_court(ev['starts_at'])}"
+        else:
+            texte = "/sortie pour lancer un groupe"
+        try:
+            await self.bot.change_presence(activity=discord.Game(name=texte[:100]))
+        except discord.HTTPException:
+            pass
+
+    @statut.before_loop
+    async def _attendre_pret_statut(self):
         await self.bot.wait_until_ready()
 
     async def _envoyer_rappel(self, ev):

@@ -141,6 +141,70 @@ class Legion(commands.Cog):
                 "Tu n'avais pas d'absence en cours ou à venir.", ephemeral=True
             )
 
+    # ----- Accueil des nouveaux -----
+
+    @app_commands.command(
+        name="bienvenue",
+        description="Accueillir automatiquement les nouveaux dans ce salon (modérateurs)",
+    )
+    @app_commands.describe(action="Activer dans ce salon, ou désactiver")
+    @app_commands.choices(
+        action=[
+            app_commands.Choice(name="Activer dans ce salon", value="on"),
+            app_commands.Choice(name="Désactiver", value="off"),
+        ]
+    )
+    @app_commands.default_permissions(manage_guild=True)
+    async def bienvenue(
+        self, interaction: discord.Interaction, action: app_commands.Choice[str]
+    ):
+        if action.value == "on":
+            await self.bot.db.set_setting(
+                interaction.guild_id, "welcome_channel_id", interaction.channel_id
+            )
+            await interaction.response.send_message(
+                "👋 C'est noté : j'accueillerai les nouveaux membres ici avec le "
+                "mode d'emploi du bot.",
+                ephemeral=True,
+            )
+        else:
+            await self.bot.db.set_setting(
+                interaction.guild_id, "welcome_channel_id", None
+            )
+            await interaction.response.send_message(
+                "Message de bienvenue désactivé.", ephemeral=True
+            )
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        if member.bot:
+            return
+        reglages = await self.bot.db.get_settings(member.guild.id)
+        if reglages is None or not reglages["welcome_channel_id"]:
+            return
+        channel = member.guild.get_channel(reglages["welcome_channel_id"])
+        if channel is None:
+            return
+
+        embed = discord.Embed(
+            title="Bienvenue dans la légion ! 👋",
+            description=(
+                "Voici comment ça marche ici :\n"
+                "• `/profil definir` — enregistre ton perso (classe, rôle), "
+                "il s'affichera dans les groupes\n"
+                "• `/sorties` — les sorties prévues ; inscris-toi en un clic "
+                "(🛡️ Tank / 💚 Heal / 🗡️ DPS)\n"
+                "• `/sortie` — lance ta propre sortie : donjon, PvP, abysses...\n"
+                "• `/dispo poster` — dis quels soirs tu peux jouer cette semaine\n\n"
+                "Bon jeu ! ⚔️"
+            ),
+            colour=discord.Colour.blurple(),
+        )
+        try:
+            await channel.send(content=member.mention, embed=embed)
+        except discord.HTTPException:
+            pass  # permissions retirées sur le salon
+
     # ----- Annonces -----
 
     @app_commands.command(name="annonce", description="Publier une annonce de la légion (modérateurs)")

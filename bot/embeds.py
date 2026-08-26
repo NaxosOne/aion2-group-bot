@@ -52,6 +52,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     classes = classes or {}
     groupe, attente = assign(event["compo"], event["size"], signups)
     annulee = event["status"] == "cancelled"
+    terminee = event["status"] == "done"
     taille = event["size"]
     complete = len(groupe) >= taille
 
@@ -59,6 +60,8 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     titre = f"{emoji} {event['title']}"
     if annulee:
         titre = f"❌ [ANNULÉE] {event['title']}"
+    elif terminee:
+        titre = f"✅ {event['title']}"
 
     lignes = []
     if event["description"]:
@@ -75,6 +78,8 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
 
     if annulee:
         couleur = COULEUR_ANNULEE
+    elif terminee:
+        couleur = discord.Colour.gold()
     elif complete:
         couleur = COULEUR_COMPLETE
     else:
@@ -116,8 +121,13 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             inline=False,
         )
 
+    if terminee:
+        suffixe = " • Terminée 🎉"
+    elif complete and not annulee:
+        suffixe = " • COMPLET"
+    else:
+        suffixe = ""
     embed.set_footer(
-        text=f"{event['activity']} • Créée par {event['creator_name']}"
-        + (" • COMPLET" if complete and not annulee else "")
+        text=f"{event['activity']} • Créée par {event['creator_name']}{suffixe}"
     )
     return embed

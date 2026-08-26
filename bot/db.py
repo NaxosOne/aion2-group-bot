@@ -52,6 +52,44 @@ CREATE TABLE IF NOT EXISTS absences (
     ends_on   INTEGER NOT NULL,                   -- timestamp du dernier jour à 23h59
     reason    TEXT
 );
+
+CREATE TABLE IF NOT EXISTS guild_settings (
+    guild_id           INTEGER PRIMARY KEY,
+    welcome_channel_id INTEGER,                   -- salon d'accueil des nouveaux
+    dispo_channel_id   INTEGER,                   -- salon des dispos hebdo auto
+    dispo_last_posted  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS polls (
+    message_id INTEGER PRIMARY KEY,
+    guild_id   INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    creator_id INTEGER NOT NULL,
+    question   TEXT    NOT NULL,
+    options    TEXT    NOT NULL,                  -- liste JSON des choix
+    status     TEXT    NOT NULL DEFAULT 'open'
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+    message_id INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    choice     INTEGER NOT NULL,
+    PRIMARY KEY (message_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS dispos (
+    message_id INTEGER PRIMARY KEY,
+    guild_id   INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    week_label TEXT    NOT NULL                   -- ex. "semaine du 31/08"
+);
+
+CREATE TABLE IF NOT EXISTS dispo_marks (
+    message_id INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    day        INTEGER NOT NULL,                  -- 0 = lundi ... 6 = dimanche
+    PRIMARY KEY (message_id, user_id, day)
+);
 """
 
 
@@ -106,6 +144,16 @@ class Database:
             (guild_id, now_ts),
         ) as cur:
             return await cur.fetchall()
+
+    async def next_upcoming_event(self, now_ts: int):
+        """La prochaine sortie datée, tous serveurs confondus (pour le statut)."""
+        async with self.conn.execute(
+            """SELECT * FROM events
+               WHERE status = 'open' AND starts_at IS NOT NULL AND starts_at >= ?
+               ORDER BY starts_at LIMIT 1""",
+            (now_ts,),
+        ) as cur:
+            return await cur.fetchone()
 
     async def events_to_remind(self, now_ts: int, window_s: int):
         """Sorties ouvertes dont le rappel doit partir (début dans <= window_s)."""
@@ -229,5 +277,111 @@ class Database:
             """SELECT * FROM absences WHERE guild_id = ? AND ends_on >= ?
                ORDER BY starts_on""",
             (guild_id, now_ts),
+        ) as cur:
+            return await cur.fetchall()
+
+    # ----- Réglages par serveur -----
+
+    async def get_settings(self, guild_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM guild_settings WHERE guild_id = ?", (guild_id,)
+        ) as cur:
+            return await cur.fetchone()
+
+    async def set_setting(self, guild_id: int, colonne: str, valeur) -> None:
+        # `colonne` vient toujours du code (jamais d'une saisie utilisateur).
+        await self.conn.execute(
+            f"""INSERT INTO guild_settings (guild_id, {colonne}) VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET {colonne} = excluded.{colonne}""",
+            (guild_id, valeur),
+        )
+        await self.conn.commit()
+
+    async def guilds_with_dispo(self):
+        """Les serveurs où la publication hebdo des dispos est activée."""
+        async with self.conn.execute(
+            "SELECT * FROM guild_settings WHERE dispo_channel_id IS NOT NULL"
+        ) as cur:
+            return await cur.fetchall()
+
+    # ----- Sondages (/vote) -----
+
+    async def create_poll(
+        self, message_id: int, guild_id: int, channel_id: int,
+        creator_id: int, question: str, options_json: str,
+    ) -> None:
+        await self.conn.execute(
+            """INSERT INTO polls
+               (message_id, guild_id, channel_id, creator_id, question, options)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (message_id, guild_id, channel_id, creator_id, question, options_json),
+        )
+        await self.conn.commit()
+
+    async def get_poll(self, message_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM polls WHERE message_id = ?", (message_id,)
+        ) as cur:
+            return await cur.fetchone()
+
+    async def set_poll_status(self, message_id: int, status: str) -> None:
+        await self.conn.execute(
+            "UPDATE polls SET status = ? WHERE message_id = ?", (status, message_id)
+        )
+        await self.conn.commit()
+
+    async def set_vote(self, message_id: int, user_id: int, choice: int) -> None:
+        await self.conn.execute(
+            """INSERT OR REPLACE INTO poll_votes (message_id, user_id, choice)
+               VALUES (?, ?, ?)""",
+            (message_id, user_id, choice),
+        )
+        await self.conn.commit()
+
+    async def get_votes(self, message_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM poll_votes WHERE message_id = ? ORDER BY rowid",
+            (message_id,),
+        ) as cur:
+            return await cur.fetchall()
+
+    # ----- Dispos de la semaine (/dispo) -----
+
+    async def create_dispo(
+        self, message_id: int, guild_id: int, channel_id: int, week_label: str
+    ) -> None:
+        await self.conn.execute(
+            """INSERT INTO dispos (message_id, guild_id, channel_id, week_label)
+               VALUES (?, ?, ?, ?)""",
+            (message_id, guild_id, channel_id, week_label),
+        )
+        await self.conn.commit()
+
+    async def get_dispo(self, message_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM dispos WHERE message_id = ?", (message_id,)
+        ) as cur:
+            return await cur.fetchone()
+
+    async def toggle_dispo_mark(self, message_id: int, user_id: int, day: int) -> bool:
+        """Coche/décoche un jour. Retourne True si le jour vient d'être coché."""
+        cur = await self.conn.execute(
+            "DELETE FROM dispo_marks WHERE message_id = ? AND user_id = ? AND day = ?",
+            (message_id, user_id, day),
+        )
+        if cur.rowcount:
+            await self.conn.commit()
+            return False
+        await self.conn.execute(
+            "INSERT INTO dispo_marks (message_id, user_id, day) VALUES (?, ?, ?)",
+            (message_id, user_id, day),
+        )
+        await self.conn.commit()
+        return True
+
+    async def get_dispo_marks(self, message_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM dispo_marks WHERE message_id = ? ORDER BY rowid",
+            (message_id,),
         ) as cur:
             return await cur.fetchall()

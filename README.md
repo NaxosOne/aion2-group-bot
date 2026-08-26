@@ -32,6 +32,17 @@ en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ DPS).
   `/absents` liste qui manque, `/retour` pour un retour anticipé.
 - **Annonces** : `/annonce` (modérateurs) ouvre un formulaire et publie une
   annonce mise en forme, avec ping d'un rôle en option.
+- **Sondages** : `/vote question: choix1: choix2: ...` (jusqu'à 5 choix) avec
+  boutons et résultats en direct ; l'auteur ou un modérateur peut clore.
+- **Dispos de la semaine** : `/dispo poster` publie un tableau Lundi→Dimanche
+  où chacun coche ses soirs de jeu ; `/dispo hebdo` le republie automatiquement
+  chaque semaine dans le salon choisi.
+- **Bouton « Sortie faite ✅ »** : clôt une sortie avec un GG aux participants
+  et archive l'annonce.
+- **Accueil des nouveaux** : `/bienvenue` (modérateurs) — le bot souhaite la
+  bienvenue aux arrivants avec le mode d'emploi.
+- **Statut du bot** : la prochaine sortie s'affiche dans son statut Discord
+  (« Joue à 🏰 Donjon du Feu — demain 21:00 »).
 - **Persistance** : tout est stocké en SQLite — les boutons continuent de
   fonctionner même si le bot redémarre.
 
@@ -54,7 +65,9 @@ en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ DPS).
 2. Onglet **Bot** → **Reset Token** → copie le token quelque part de sûr.
    ⚠️ **Ne partage jamais ce token** (quiconque l'a contrôle ton bot). S'il
    fuite, reviens ici et fais « Reset Token ».
-3. Aucun *privileged intent* n'est nécessaire : tu peux tout laisser désactivé.
+3. Toujours dans l'onglet **Bot**, active **SERVER MEMBERS INTENT** (nécessaire
+   pour accueillir les nouveaux membres). Les deux autres *privileged intents*
+   restent désactivés.
 4. Onglet **Installation** (ou OAuth2 → URL Generator) : coche les *scopes*
    `bot` et `applications.commands`, et les permissions **Send Messages**,
    **Embed Links** et **Read Message History**. Ouvre l'URL générée dans ton
@@ -104,6 +117,11 @@ gratuites (Oracle Cloud, Railway...), avec les étapes détaillées.
 /retour                   → retour anticipé
 
 /annonce [ping: @rôle]    → annonce mise en forme (modérateurs)
+
+/vote question: On fait quoi ce soir ? choix1: Donjon choix2: PvP choix3: Rien
+/dispo poster             → tableau des dispos de la semaine (boutons Lun→Dim)
+/dispo hebdo              → le republier chaque semaine ici (modérateurs)
+/bienvenue                → accueillir les nouveaux dans ce salon (modérateurs)
 ```
 
 Les classes proposées par `/profil` sont des suggestions (champ libre) : la
@@ -125,9 +143,10 @@ bot/
   logic.py             Répartition groupe / liste d'attente (pur, testé)
   embeds.py            Construction du message d'annonce
   views.py             Les boutons et leurs actions
-  cogs/groups.py       /sortie, /sorties et la boucle de rappels
+  cogs/groups.py       /sortie, /sorties, rappels et statut du bot
   cogs/profiles.py     /profil (main + alt, annuaire)
-  cogs/legion.py       /absent, /absents, /retour, /annonce
+  cogs/legion.py       /absent, /absents, /retour, /annonce, /bienvenue
+  cogs/polls.py        /vote et /dispo (publication hebdo auto)
   utils/time_parse.py  "demain 21h" -> vraie date (pur, testé)
 tests/                 python -m tests.test_logic ; python -m tests.test_time_parse
 ```
@@ -147,25 +166,9 @@ Des pistes pour enrichir le bot, de la plus simple à la plus ambitieuse :
 - **Modèles de sorties** enregistrés (`/sortie modele: DonjonHebdo`) ;
 - **Export calendrier** (.ics) pour retrouver les sorties dans son agenda.
 
-## Idées pour la légion (esprit chill, pas de tryhard)
+## Idées en réserve
 
-Les profils, absences et annonces sont maintenant intégrés. D'autres pistes
-dans le même esprit détendu :
-
-- **`/roll`** : tirage au sort parmi les inscrits d'une sortie pour départager
-  un loot ou désigner « qui paye sa tournée » ;
-- **Sondages rapides** : `/vote question: On fait quoi ce soir ?` avec boutons
-  (Donjon / PvP / Abysses / Rien) et résultats en direct ;
-- **`/dispo`** : sondage hebdo « qui joue quel soir ? » pour caler les sorties
-  sans prise de tête ;
-- **Message de bienvenue** aux nouveaux du serveur avec le mode d'emploi du
-  bot et l'invitation à remplir son `/profil` ;
-- **Bouton « Sortie faite ✅ »** qui clôt l'annonce avec un petit GG et
-  l'archive ;
-- **Anniversaires** : chacun enregistre le sien, le bot souhaite un joyeux
-  anniversaire dans le salon général ;
-- **Hall of fame screenshots** : le screen le plus liké de la semaine épinglé
-  automatiquement ;
-- **Statut du bot** : afficher la prochaine sortie dans son statut Discord
-  (« Joue à Donjon du Feu — 21h ») ;
-- **Salon vocal temporaire** créé au lancement d'une sortie, supprimé après.
+Écartées pour l'instant (esprit chill oblige), notées ici au cas où :
+tirage au sort de loot (`/roll`), anniversaires, hall of fame des screenshots,
+salon vocal temporaire par sortie, choix de la classe au moment de
+l'inscription, événements récurrents, DKP et stats de présence.
