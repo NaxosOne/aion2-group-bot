@@ -1,4 +1,4 @@
-"""Commandes /profil : l'annuaire des persos de la légion (main + reroll)."""
+"""/profile commands and /roster: the legion's character directory (main + alt)."""
 
 import discord
 from discord import app_commands
@@ -6,53 +6,54 @@ from discord.ext import commands
 
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
 
-# Suggestions de classes (héritées d'Aion — champ libre : tape ce que tu veux
-# si les classes d'Aion 2 diffèrent, la liste est facile à mettre à jour ici).
-CLASSES_AION = [
-    "Gladiateur",
-    "Templier",
+# Class suggestions (inherited from Aion — free text is accepted: update this
+# list in one place once the final Aion 2 class names are known).
+AION_CLASSES = [
+    "Gladiator",
+    "Templar",
     "Assassin",
-    "Rôdeur",
-    "Sorcier",
-    "Spiritualiste",
-    "Clerc",
-    "Aède",
+    "Ranger",
+    "Sorcerer",
+    "Spiritmaster",
+    "Cleric",
+    "Chanter",
 ]
 
-SLOT_LABEL = {"main": "Main", "alt": "Alt (reroll)"}
+SLOT_LABEL = {"main": "Main", "alt": "Alt"}
 
 
-async def classe_autocomplete(_: discord.Interaction, current: str):
+async def class_autocomplete(_: discord.Interaction, current: str):
     cur = current.lower()
     return [
-        app_commands.Choice(name=c, value=c) for c in CLASSES_AION if cur in c.lower()
+        app_commands.Choice(name=c, value=c) for c in AION_CLASSES if cur in c.lower()
     ][:25]
 
 
-def _ligne_perso(p) -> str:
-    """Ex. "🛡️ **Kratos** (Templier)"."""
+def _character_line(p) -> str:
+    """E.g. "🛡️ **Kratos** (Templar)"."""
     return f"{ROLE_EMOJI[p['role']]} **{p['char_name']}** ({p['char_class']})"
 
 
 @app_commands.guild_only()
-class Profil(commands.GroupCog, name="profil"):
-    """Enregistrer et consulter les persos des membres."""
+class Profile(commands.GroupCog, name="profile"):
+    """Register and browse the members' characters."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         super().__init__()
 
-    @app_commands.command(name="definir", description="Enregistrer ton perso principal ou ton reroll")
+    @app_commands.command(name="set", description="Register your main character or your alt")
+    @app_commands.rename(char_class="class")
     @app_commands.describe(
-        perso="Main ou alt (reroll) ?",
-        nom="Le nom du personnage en jeu",
-        classe="Sa classe (suggestions proposées, texte libre accepté)",
-        role="Son rôle en groupe",
+        character="Main or alt?",
+        name="The character's in-game name",
+        char_class="Its class (suggestions offered, free text accepted)",
+        role="Its party role",
     )
     @app_commands.choices(
-        perso=[
+        character=[
             app_commands.Choice(name="Main", value="main"),
-            app_commands.Choice(name="Alt (reroll)", value="alt"),
+            app_commands.Choice(name="Alt", value="alt"),
         ],
         role=[
             app_commands.Choice(name="🛡️ Tank", value="tank"),
@@ -60,87 +61,102 @@ class Profil(commands.GroupCog, name="profil"):
             app_commands.Choice(name="🗡️ DPS", value="dps"),
         ],
     )
-    @app_commands.autocomplete(classe=classe_autocomplete)
-    async def definir(
+    @app_commands.autocomplete(char_class=class_autocomplete)
+    async def set(
         self,
         interaction: discord.Interaction,
-        perso: app_commands.Choice[str],
-        nom: app_commands.Range[str, 1, 32],
-        classe: app_commands.Range[str, 1, 32],
+        character: app_commands.Choice[str],
+        name: app_commands.Range[str, 1, 32],
+        char_class: app_commands.Range[str, 1, 32],
         role: app_commands.Choice[str],
     ):
         await self.bot.db.set_profile(
             interaction.guild_id,
             interaction.user.id,
-            perso.value,
-            nom.strip(),
-            classe.strip(),
+            character.value,
+            name.strip(),
+            char_class.strip(),
             role.value,
         )
         await interaction.response.send_message(
-            f"{SLOT_LABEL[perso.value]} enregistré : {ROLE_EMOJI[role.value]} "
-            f"**{nom.strip()}** ({classe.strip()}, {ROLE_LABEL[role.value]}). "
-            f"Ta classe s'affichera dans les groupes ! ✅",
+            f"{SLOT_LABEL[character.value]} saved: {ROLE_EMOJI[role.value]} "
+            f"**{name.strip()}** ({char_class.strip()}, {ROLE_LABEL[role.value]}). "
+            f"Your class will now show up in parties! ✅",
             ephemeral=True,
         )
 
-    @app_commands.command(name="voir", description="Voir le profil d'un membre")
-    @app_commands.describe(membre="Le membre à consulter (vide = toi)")
-    async def voir(
-        self, interaction: discord.Interaction, membre: discord.Member | None = None
+    @app_commands.command(name="show", description="See a member's profile")
+    @app_commands.describe(member="The member to look up (empty = you)")
+    async def show(
+        self, interaction: discord.Interaction, member: discord.Member | None = None
     ):
-        cible = membre or interaction.user
-        persos = await self.bot.db.get_profiles(interaction.guild_id, cible.id)
-        if not persos:
-            qui = "Tu n'as" if cible == interaction.user else f"{cible.display_name} n'a"
+        target = member or interaction.user
+        characters = await self.bot.db.get_profiles(interaction.guild_id, target.id)
+        if not characters:
+            who = (
+                "You don't have"
+                if target == interaction.user
+                else f"{target.display_name} doesn't have"
+            )
             await interaction.response.send_message(
-                f"{qui} pas encore de profil. Ça se crée avec `/profil definir` !",
+                f"{who} a profile yet. Create one with `/profile set`!",
                 ephemeral=True,
             )
             return
 
         embed = discord.Embed(
-            title=f"👤 Profil de {cible.display_name}",
+            title=f"👤 {target.display_name}'s profile",
             colour=discord.Colour.blurple(),
         )
-        for p in persos:  # main d'abord, puis alt
-            embed.add_field(name=SLOT_LABEL[p["slot"]], value=_ligne_perso(p), inline=True)
+        for p in characters:  # main first, then alt
+            embed.add_field(
+                name=SLOT_LABEL[p["slot"]], value=_character_line(p), inline=True
+            )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="annuaire", description="L'annuaire des persos de la légion")
-    async def annuaire(self, interaction: discord.Interaction):
-        persos = await self.bot.db.all_profiles(interaction.guild_id)
-        if not persos:
+
+@app_commands.guild_only()
+class Roster(commands.Cog):
+    """The /roster command, kept top-level for quick access."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @app_commands.command(name="roster", description="The legion's character roster")
+    async def roster(self, interaction: discord.Interaction):
+        characters = await self.bot.db.all_profiles(interaction.guild_id)
+        if not characters:
             await interaction.response.send_message(
-                "L'annuaire est vide : chacun peut s'ajouter avec `/profil definir`.",
+                "The roster is empty: add yourself with `/profile set`.",
                 ephemeral=True,
             )
             return
 
-        # Regroupe main + alt par membre (les rows arrivent triées main d'abord).
-        par_membre: dict[int, list] = {}
-        for p in persos:
-            par_membre.setdefault(p["user_id"], []).append(p)
+        # Group main + alt per member (rows arrive sorted main first).
+        by_member: dict[int, list] = {}
+        for p in characters:
+            by_member.setdefault(p["user_id"], []).append(p)
 
-        lignes = []
-        for user_id, liste in par_membre.items():
-            ligne = f"• <@{user_id}> : {_ligne_perso(liste[0])}"
-            if len(liste) > 1:
-                ligne += f" — alt : {_ligne_perso(liste[1])}"
-            lignes.append(ligne)
+        lines = []
+        for user_id, chars in by_member.items():
+            line = f"• <@{user_id}>: {_character_line(chars[0])}"
+            if len(chars) > 1:
+                line += f" — alt: {_character_line(chars[1])}"
+            lines.append(line)
 
-        # Marge de sécurité sous la limite Discord de 4096 caractères.
-        texte = "\n".join(lignes)
-        if len(texte) > 3900:
-            texte = texte[:3900] + "\n…"
+        # Safety margin under Discord's 4096-character description limit.
+        text = "\n".join(lines)
+        if len(text) > 3900:
+            text = text[:3900] + "\n…"
 
         embed = discord.Embed(
-            title=f"📖 Annuaire de la légion ({len(par_membre)} membres)",
-            description=texte,
+            title=f"📖 Legion roster ({len(by_member)} members)",
+            description=text,
             colour=discord.Colour.blurple(),
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Profil(bot))
+    await bot.add_cog(Profile(bot))
+    await bot.add_cog(Roster(bot))

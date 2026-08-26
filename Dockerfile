@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# La base SQLite vit dans /app/data : monte un volume dessus pour que les
-# sorties survivent aux redéploiements (ex. `-v botdata:/app/data`).
+# The SQLite database lives in /app/data: mount a volume there so events
+# survive redeployments (e.g. `-v botdata:/app/data`).
 CMD ["python", "-m", "bot.main"]

@@ -1,4 +1,4 @@
-"""Commandes slash (/sortie, /sorties) et boucle des rappels automatiques."""
+"""Slash commands (/event, /events), the reminder loop and the bot status."""
 
 import time
 from datetime import datetime
@@ -9,210 +9,209 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..embeds import ACTIVITY_EMOJI, build_event_embed
-from ..logic import COMPO_LIBRE, COMPO_STANDARD, assign
-from ..utils.time_parse import FORMAT_AIDE, ParseError, parse_when
+from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
+from ..utils.time_parse import ParseError, parse_when
 from ..views import SignupView
 
 
 @app_commands.guild_only()
 class Groups(commands.Cog):
-    """Création et listing des sorties, plus l'envoi des rappels."""
+    """Creating and listing events, plus reminders and the bot status."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     async def cog_load(self):
-        self.rappels.start()
-        self.statut.start()
+        self.reminders.start()
+        self.status.start()
 
     async def cog_unload(self):
-        self.rappels.cancel()
-        self.statut.cancel()
+        self.reminders.cancel()
+        self.status.cancel()
 
-    # ----- /sortie -----
+    # ----- /event -----
 
-    @app_commands.command(name="sortie", description="Créer un appel de groupe (donjon, PvP...)")
-    @app_commands.rename(activite="type")
+    @app_commands.command(name="event", description="Create a group call (dungeon, PvP...)")
+    @app_commands.rename(activity="type")
     @app_commands.describe(
-        titre="Nom de la sortie (ex. « Donjon du Feu HM »)",
-        activite="Type de sortie",
-        compo="Groupe de 5, groupe de 10 (raid/battleground), ou libre.",
-        quand="Ex. « 21h », « demain 20h30 », « 30/08 21h ». Vide = dès maintenant.",
-        taille="Nombre de places en compo libre (défaut : 5). Ignoré en compo standard.",
-        description="Infos en plus : niveau requis, salon vocal, etc.",
+        title="Name of the event (e.g. “Fire Temple HM”)",
+        activity="Type of event",
+        comp="Party of 5, party of 10 (raid/battleground), or open.",
+        when="E.g. “21:00”, “9pm”, “tomorrow 20:30”, “30/08 21:00”. Empty = right now.",
+        size="Number of slots in open mode (default: 5). Ignored for standard parties.",
+        description="Extra info: required level, voice channel, etc.",
     )
     @app_commands.choices(
-        activite=[
-            app_commands.Choice(name="🏰 Donjon", value="Donjon"),
+        activity=[
+            app_commands.Choice(name="🏰 Dungeon", value="Dungeon"),
             app_commands.Choice(name="🐉 Raid", value="Raid"),
             app_commands.Choice(name="🚩 Battleground", value="Battleground"),
             app_commands.Choice(name="⚔️ PvP", value="PvP"),
             app_commands.Choice(name="🌀 Rift", value="Rift"),
-            app_commands.Choice(name="🌌 Abysses", value="Abysses"),
-            app_commands.Choice(name="🎲 Autre", value="Autre"),
+            app_commands.Choice(name="🌌 Abyss", value="Abyss"),
+            app_commands.Choice(name="🎲 Other", value="Other"),
         ],
-        compo=[
+        comp=[
             app_commands.Choice(
-                name="Groupe de 5 — 1 tank / 1 heal / 3 DPS", value="standard5"
+                name="Party of 5 — 1 tank / 1 heal / 3 DPS", value="standard5"
             ),
             app_commands.Choice(
-                name="Groupe de 10 (raid/BG) — 2 tanks / 2 heals / 6 DPS",
+                name="Party of 10 (raid/BG) — 2 tanks / 2 heals / 6 DPS",
                 value="standard10",
             ),
-            app_commands.Choice(name="Libre — rôles sans limite", value=COMPO_LIBRE),
+            app_commands.Choice(name="Open — no role limits", value=COMPO_OPEN),
         ],
     )
-    async def sortie(
+    async def event(
         self,
         interaction: discord.Interaction,
-        titre: app_commands.Range[str, 1, 100],
-        activite: app_commands.Choice[str],
-        compo: app_commands.Choice[str],
-        quand: str | None = None,
-        taille: app_commands.Range[int, 2, 25] | None = None,
+        title: app_commands.Range[str, 1, 100],
+        activity: app_commands.Choice[str],
+        comp: app_commands.Choice[str],
+        when: str | None = None,
+        size: app_commands.Range[int, 2, 25] | None = None,
         description: app_commands.Range[str, 1, 500] | None = None,
     ):
         starts_at = None
-        if quand:
+        if when:
             try:
-                starts_at = int(parse_when(quand, config.TIMEZONE).timestamp())
+                starts_at = int(parse_when(when, config.TIMEZONE).timestamp())
             except ParseError as err:
                 await interaction.response.send_message(str(err), ephemeral=True)
                 return
 
-        # "standard5"/"standard10" sont un même mode standard, seule la taille change.
-        if compo.value == COMPO_LIBRE:
-            compo_mode, size = COMPO_LIBRE, taille or 5
+        # "standard5"/"standard10" are the same standard mode, only size differs.
+        if comp.value == COMPO_OPEN:
+            comp_mode, party_size = COMPO_OPEN, size or 5
         else:
-            compo_mode, size = COMPO_STANDARD, 10 if compo.value == "standard10" else 5
+            comp_mode, party_size = COMPO_STANDARD, 10 if comp.value == "standard10" else 5
 
         event = {
             "channel_id": interaction.channel_id,
             "guild_id": interaction.guild_id,
             "creator_id": interaction.user.id,
             "creator_name": interaction.user.display_name,
-            "title": titre,
-            "activity": activite.value,
+            "title": title,
+            "activity": activity.value,
             "description": description,
-            "compo": compo_mode,
-            "size": size,
+            "compo": comp_mode,
+            "size": party_size,
             "starts_at": starts_at,
             "status": "open",
         }
 
-        # On envoie d'abord le message pour connaître son ID, qui sert de clé.
+        # Send the message first so we know its ID, which is our key.
         embed = build_event_embed(event, [])
         await interaction.response.send_message(embed=embed, view=SignupView())
         message = await interaction.original_response()
         await self.bot.db.create_event(message_id=message.id, **event)
 
-    # ----- /sorties -----
+    # ----- /events -----
 
-    @app_commands.command(name="sorties", description="Voir les sorties à venir sur ce serveur")
-    async def sorties(self, interaction: discord.Interaction):
+    @app_commands.command(name="events", description="See the upcoming events on this server")
+    async def events(self, interaction: discord.Interaction):
         events = await self.bot.db.upcoming_events(interaction.guild_id, int(time.time()))
         if not events:
             await interaction.response.send_message(
-                "Aucune sortie prévue pour l'instant. Lance la tienne avec `/sortie` !",
+                "No events scheduled yet. Start your own with `/event`!",
                 ephemeral=True,
             )
             return
 
-        lignes = []
+        lines = []
         for ev in events:
             signups = await self.bot.db.get_signups(ev["message_id"])
-            groupe, attente = assign(ev["compo"], ev["size"], signups)
-            taille = ev["size"]
-            horaire = f"<t:{ev['starts_at']}:R>" if ev["starts_at"] else "pas d'horaire"
-            lien = (
+            party, waitlist = assign(ev["compo"], ev["size"], signups)
+            when = f"<t:{ev['starts_at']}:R>" if ev["starts_at"] else "no time set"
+            link = (
                 f"https://discord.com/channels/{ev['guild_id']}"
                 f"/{ev['channel_id']}/{ev['message_id']}"
             )
-            lignes.append(
-                f"• [**{ev['title']}**]({lien}) — {ev['activity']}, {horaire} — "
-                f"{len(groupe)}/{taille} inscrits"
-                + (f" (+{len(attente)} en attente)" if attente else "")
+            lines.append(
+                f"• [**{ev['title']}**]({link}) — {ev['activity']}, {when} — "
+                f"{len(party)}/{ev['size']} signed up"
+                + (f" (+{len(waitlist)} waitlisted)" if waitlist else "")
             )
 
         embed = discord.Embed(
-            title="📅 Sorties à venir",
-            description="\n".join(lignes),
+            title="📅 Upcoming events",
+            description="\n".join(lines),
             colour=discord.Colour.blurple(),
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    # ----- Rappels automatiques -----
+    # ----- Automatic reminders -----
 
     @tasks.loop(seconds=60)
-    async def rappels(self):
-        maintenant = int(time.time())
+    async def reminders(self):
+        now = int(time.time())
         events = await self.bot.db.events_to_remind(
-            maintenant, config.REMINDER_MINUTES * 60
+            now, config.REMINDER_MINUTES * 60
         )
         for ev in events:
             await self.bot.db.mark_reminded(ev["message_id"])
-            if ev["starts_at"] < maintenant - 600:
-                # Le bot était éteint et la sortie est passée depuis longtemps :
-                # inutile d'envoyer un rappel en retard.
+            if ev["starts_at"] < now - 600:
+                # The bot was offline and the event is long past: no point in
+                # sending a late reminder.
                 continue
             try:
-                await self._envoyer_rappel(ev)
+                await self._send_reminder(ev)
             except discord.HTTPException:
-                pass  # salon supprimé ou permissions retirées : on ignore
+                pass  # channel deleted or permissions revoked: skip
 
-    @rappels.before_loop
-    async def _attendre_pret(self):
+    @reminders.before_loop
+    async def _wait_ready(self):
         await self.bot.wait_until_ready()
 
-    # ----- Statut du bot : la prochaine sortie -----
-
-    JOURS_COURTS = ("lun", "mar", "mer", "jeu", "ven", "sam", "dim")
-
-    def _quand_court(self, ts: int) -> str:
-        """Ex. "aujourd'hui 21:00", "demain 20:30", "sam 30/08 21:00"."""
-        dt = datetime.fromtimestamp(ts, config.TIMEZONE)
-        aujourd_hui = datetime.now(config.TIMEZONE).date()
-        heure = dt.strftime("%H:%M")
-        ecart = (dt.date() - aujourd_hui).days
-        if ecart == 0:
-            return f"aujourd'hui {heure}"
-        if ecart == 1:
-            return f"demain {heure}"
-        return f"{self.JOURS_COURTS[dt.weekday()]} {dt.strftime('%d/%m')} {heure}"
-
-    @tasks.loop(minutes=5)
-    async def statut(self):
-        ev = await self.bot.db.next_upcoming_event(int(time.time()))
-        if ev:
-            emoji = ACTIVITY_EMOJI.get(ev["activity"], "📣")
-            texte = f"{emoji} {ev['title']} — {self._quand_court(ev['starts_at'])}"
-        else:
-            texte = "/sortie pour lancer un groupe"
-        try:
-            await self.bot.change_presence(activity=discord.Game(name=texte[:100]))
-        except discord.HTTPException:
-            pass
-
-    @statut.before_loop
-    async def _attendre_pret_statut(self):
-        await self.bot.wait_until_ready()
-
-    async def _envoyer_rappel(self, ev):
+    async def _send_reminder(self, ev):
         channel = self.bot.get_channel(ev["channel_id"])
         if channel is None:
             channel = await self.bot.fetch_channel(ev["channel_id"])
         signups = await self.bot.db.get_signups(ev["message_id"])
-        groupe, _ = assign(ev["compo"], ev["size"], signups)
-        mentions = " ".join(f"<@{s['user_id']}>" for s in groupe)
-        lien = (
+        party, _ = assign(ev["compo"], ev["size"], signups)
+        mentions = " ".join(f"<@{s['user_id']}>" for s in party)
+        link = (
             f"https://discord.com/channels/{ev['guild_id']}"
             f"/{ev['channel_id']}/{ev['message_id']}"
         )
         await channel.send(
-            f"⏰ Rappel : [**{ev['title']}**](<{lien}>) commence "
-            f"<t:{ev['starts_at']}:R> !"
-            + (f"\n{mentions}" if mentions else " (personne d'inscrit 😢)")
+            f"⏰ Reminder: [**{ev['title']}**](<{link}>) starts "
+            f"<t:{ev['starts_at']}:R>!"
+            + (f"\n{mentions}" if mentions else " (nobody signed up 😢)")
         )
+
+    # ----- Bot status: the next event -----
+
+    DAYS_SHORT = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    def _short_when(self, ts: int) -> str:
+        """E.g. "today 21:00", "tomorrow 20:30", "Sat 30/08 21:00"."""
+        dt = datetime.fromtimestamp(ts, config.TIMEZONE)
+        today = datetime.now(config.TIMEZONE).date()
+        hm = dt.strftime("%H:%M")
+        days_away = (dt.date() - today).days
+        if days_away == 0:
+            return f"today {hm}"
+        if days_away == 1:
+            return f"tomorrow {hm}"
+        return f"{self.DAYS_SHORT[dt.weekday()]} {dt.strftime('%d/%m')} {hm}"
+
+    @tasks.loop(minutes=5)
+    async def status(self):
+        ev = await self.bot.db.next_upcoming_event(int(time.time()))
+        if ev:
+            emoji = ACTIVITY_EMOJI.get(ev["activity"], "📣")
+            text = f"{emoji} {ev['title']} — {self._short_when(ev['starts_at'])}"
+        else:
+            text = "/event to start a group"
+        try:
+            await self.bot.change_presence(activity=discord.Game(name=text[:100]))
+        except discord.HTTPException:
+            pass
+
+    @status.before_loop
+    async def _wait_ready_status(self):
+        await self.bot.wait_until_ready()
 
 
 async def setup(bot: commands.Bot):

@@ -1,7 +1,11 @@
-"""Accès à la base SQLite : sorties (events) et inscriptions (signups).
+"""SQLite storage: events, sign-ups, profiles, absences, polls, availability.
 
-Chaque sortie est identifiée par l'ID du message Discord qui l'affiche,
-ce qui permet aux boutons de retrouver la sortie même après un redémarrage.
+Each event is keyed by the ID of the Discord message that displays it, so
+the buttons can find their event again even after a restart.
+
+Note: a few table/column names are in French (dispos, dispo_marks,
+dispo_channel_id...) — they are kept as-is for compatibility with databases
+created by earlier versions.
 """
 
 import os
@@ -16,12 +20,12 @@ CREATE TABLE IF NOT EXISTS events (
     creator_id    INTEGER NOT NULL,
     creator_name  TEXT    NOT NULL,
     title         TEXT    NOT NULL,
-    activity      TEXT    NOT NULL,               -- Donjon / PvP / Autre
+    activity      TEXT    NOT NULL,               -- Dungeon / PvP / ...
     description   TEXT,
-    compo         TEXT    NOT NULL,               -- 'standard' ou 'libre'
+    compo         TEXT    NOT NULL,               -- 'standard' or 'open'
     size          INTEGER NOT NULL,
-    starts_at     INTEGER,                        -- timestamp UTC, NULL = pas d'horaire
-    status        TEXT    NOT NULL DEFAULT 'open',-- 'open' ou 'cancelled'
+    starts_at     INTEGER,                        -- UTC timestamp, NULL = no schedule
+    status        TEXT    NOT NULL DEFAULT 'open',-- 'open', 'cancelled' or 'done'
     reminder_sent INTEGER NOT NULL DEFAULT 0
 );
 
@@ -29,7 +33,7 @@ CREATE TABLE IF NOT EXISTS signups (
     message_id   INTEGER NOT NULL,
     user_id      INTEGER NOT NULL,
     display_name TEXT    NOT NULL,
-    role         TEXT    NOT NULL,                -- 'tank', 'heal' ou 'dps'
+    role         TEXT    NOT NULL,                -- 'tank', 'heal' or 'dps'
     joined_at    REAL    NOT NULL,
     PRIMARY KEY (message_id, user_id)
 );
@@ -37,10 +41,10 @@ CREATE TABLE IF NOT EXISTS signups (
 CREATE TABLE IF NOT EXISTS profiles (
     guild_id   INTEGER NOT NULL,
     user_id    INTEGER NOT NULL,
-    slot       TEXT    NOT NULL,                  -- 'main' ou 'alt'
+    slot       TEXT    NOT NULL,                  -- 'main' or 'alt'
     char_name  TEXT    NOT NULL,
     char_class TEXT    NOT NULL,
-    role       TEXT    NOT NULL,                  -- 'tank', 'heal' ou 'dps'
+    role       TEXT    NOT NULL,                  -- 'tank', 'heal' or 'dps'
     PRIMARY KEY (guild_id, user_id, slot)
 );
 
@@ -48,15 +52,15 @@ CREATE TABLE IF NOT EXISTS absences (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id  INTEGER NOT NULL,
     user_id   INTEGER NOT NULL,
-    starts_on INTEGER NOT NULL,                   -- timestamp du 1er jour à minuit
-    ends_on   INTEGER NOT NULL,                   -- timestamp du dernier jour à 23h59
+    starts_on INTEGER NOT NULL,                   -- timestamp of first day at 00:00
+    ends_on   INTEGER NOT NULL,                   -- timestamp of last day at 23:59
     reason    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS guild_settings (
     guild_id           INTEGER PRIMARY KEY,
-    welcome_channel_id INTEGER,                   -- salon d'accueil des nouveaux
-    dispo_channel_id   INTEGER,                   -- salon des dispos hebdo auto
+    welcome_channel_id INTEGER,                   -- channel greeting newcomers
+    dispo_channel_id   INTEGER,                   -- weekly availability channel
     dispo_last_posted  INTEGER NOT NULL DEFAULT 0
 );
 
@@ -66,7 +70,7 @@ CREATE TABLE IF NOT EXISTS polls (
     channel_id INTEGER NOT NULL,
     creator_id INTEGER NOT NULL,
     question   TEXT    NOT NULL,
-    options    TEXT    NOT NULL,                  -- liste JSON des choix
+    options    TEXT    NOT NULL,                  -- JSON list of choices
     status     TEXT    NOT NULL DEFAULT 'open'
 );
 
@@ -81,13 +85,13 @@ CREATE TABLE IF NOT EXISTS dispos (
     message_id INTEGER PRIMARY KEY,
     guild_id   INTEGER NOT NULL,
     channel_id INTEGER NOT NULL,
-    week_label TEXT    NOT NULL                   -- ex. "semaine du 31/08"
+    week_label TEXT    NOT NULL                   -- e.g. "week of 31/08"
 );
 
 CREATE TABLE IF NOT EXISTS dispo_marks (
     message_id INTEGER NOT NULL,
     user_id    INTEGER NOT NULL,
-    day        INTEGER NOT NULL,                  -- 0 = lundi ... 6 = dimanche
+    day        INTEGER NOT NULL,                  -- 0 = Monday ... 6 = Sunday
     PRIMARY KEY (message_id, user_id, day)
 );
 """
@@ -99,9 +103,9 @@ class Database:
         self.conn: aiosqlite.Connection | None = None
 
     async def connect(self) -> None:
-        dossier = os.path.dirname(self.path)
-        if dossier:
-            os.makedirs(dossier, exist_ok=True)
+        directory = os.path.dirname(self.path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         self.conn = await aiosqlite.connect(self.path)
         self.conn.row_factory = aiosqlite.Row
         await self.conn.executescript(SCHEMA)
@@ -111,14 +115,14 @@ class Database:
         if self.conn:
             await self.conn.close()
 
-    # ----- Sorties -----
+    # ----- Events -----
 
-    async def create_event(self, **champs) -> None:
-        colonnes = ", ".join(champs)
-        marqueurs = ", ".join("?" for _ in champs)
+    async def create_event(self, **fields) -> None:
+        columns = ", ".join(fields)
+        placeholders = ", ".join("?" for _ in fields)
         await self.conn.execute(
-            f"INSERT INTO events ({colonnes}) VALUES ({marqueurs})",
-            tuple(champs.values()),
+            f"INSERT INTO events ({columns}) VALUES ({placeholders})",
+            tuple(fields.values()),
         )
         await self.conn.commit()
 
@@ -135,7 +139,7 @@ class Database:
         await self.conn.commit()
 
     async def upcoming_events(self, guild_id: int, now_ts: int):
-        """Sorties ouvertes du serveur : sans horaire, ou pas encore commencées."""
+        """Open events of the guild: unscheduled, or not started yet."""
         async with self.conn.execute(
             """SELECT * FROM events
                WHERE guild_id = ? AND status = 'open'
@@ -146,7 +150,7 @@ class Database:
             return await cur.fetchall()
 
     async def next_upcoming_event(self, now_ts: int):
-        """La prochaine sortie datée, tous serveurs confondus (pour le statut)."""
+        """The next scheduled event across all guilds (for the bot status)."""
         async with self.conn.execute(
             """SELECT * FROM events
                WHERE status = 'open' AND starts_at IS NOT NULL AND starts_at >= ?
@@ -156,7 +160,7 @@ class Database:
             return await cur.fetchone()
 
     async def events_to_remind(self, now_ts: int, window_s: int):
-        """Sorties ouvertes dont le rappel doit partir (début dans <= window_s)."""
+        """Open events whose reminder is due (start within window_s seconds)."""
         async with self.conn.execute(
             """SELECT * FROM events
                WHERE status = 'open' AND reminder_sent = 0
@@ -171,7 +175,7 @@ class Database:
         )
         await self.conn.commit()
 
-    # ----- Inscriptions -----
+    # ----- Sign-ups -----
 
     async def get_signups(self, message_id: int):
         async with self.conn.execute(
@@ -190,8 +194,8 @@ class Database:
     async def upsert_signup(
         self, message_id: int, user_id: int, display_name: str, role: str, joined_at: float
     ) -> None:
-        # REPLACE écrase aussi joined_at : changer de rôle remet en fin de file,
-        # ce qui garantit qu'on ne peut jamais éjecter un titulaire du groupe.
+        # REPLACE also overwrites joined_at: switching roles sends you to the
+        # back of the queue, so you can never bump someone out of the party.
         await self.conn.execute(
             """INSERT OR REPLACE INTO signups
                (message_id, user_id, display_name, role, joined_at)
@@ -208,7 +212,7 @@ class Database:
         await self.conn.commit()
         return cur.rowcount > 0
 
-    # ----- Profils (main / alt) -----
+    # ----- Profiles (main / alt) -----
 
     async def set_profile(
         self, guild_id: int, user_id: int, slot: str,
@@ -223,7 +227,7 @@ class Database:
         await self.conn.commit()
 
     async def get_profiles(self, guild_id: int, user_id: int):
-        """Les persos d'un membre, main en premier ('main' > 'alt' en tri DESC)."""
+        """A member's characters, main first ('main' > 'alt' in DESC order)."""
         async with self.conn.execute(
             """SELECT * FROM profiles WHERE guild_id = ? AND user_id = ?
                ORDER BY slot DESC""",
@@ -239,13 +243,13 @@ class Database:
             return await cur.fetchall()
 
     async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
-        """{user_id: classe du main} pour afficher la classe dans les groupes."""
+        """{user_id: main character's class} to display classes in parties."""
         if not user_ids:
             return {}
-        marqueurs = ",".join("?" for _ in user_ids)
+        placeholders = ",".join("?" for _ in user_ids)
         async with self.conn.execute(
             f"""SELECT user_id, char_class FROM profiles
-                WHERE guild_id = ? AND slot = 'main' AND user_id IN ({marqueurs})""",
+                WHERE guild_id = ? AND slot = 'main' AND user_id IN ({placeholders})""",
             (guild_id, *user_ids),
         ) as cur:
             return {row["user_id"]: row["char_class"] for row in await cur.fetchall()}
@@ -263,7 +267,7 @@ class Database:
         await self.conn.commit()
 
     async def clear_absences(self, guild_id: int, user_id: int, now_ts: int) -> int:
-        """Annule les absences en cours ou à venir d'un membre. Retourne le nombre."""
+        """Cancels a member's current or upcoming absences. Returns the count."""
         cur = await self.conn.execute(
             "DELETE FROM absences WHERE guild_id = ? AND user_id = ? AND ends_on >= ?",
             (guild_id, user_id, now_ts),
@@ -272,7 +276,7 @@ class Database:
         return cur.rowcount
 
     async def list_absences(self, guild_id: int, now_ts: int):
-        """Absences en cours ou à venir du serveur, triées par date de début."""
+        """Current or upcoming absences of the guild, sorted by start date."""
         async with self.conn.execute(
             """SELECT * FROM absences WHERE guild_id = ? AND ends_on >= ?
                ORDER BY starts_on""",
@@ -280,7 +284,7 @@ class Database:
         ) as cur:
             return await cur.fetchall()
 
-    # ----- Réglages par serveur -----
+    # ----- Per-guild settings -----
 
     async def get_settings(self, guild_id: int):
         async with self.conn.execute(
@@ -288,23 +292,23 @@ class Database:
         ) as cur:
             return await cur.fetchone()
 
-    async def set_setting(self, guild_id: int, colonne: str, valeur) -> None:
-        # `colonne` vient toujours du code (jamais d'une saisie utilisateur).
+    async def set_setting(self, guild_id: int, column: str, value) -> None:
+        # `column` always comes from the code (never from user input).
         await self.conn.execute(
-            f"""INSERT INTO guild_settings (guild_id, {colonne}) VALUES (?, ?)
-                ON CONFLICT(guild_id) DO UPDATE SET {colonne} = excluded.{colonne}""",
-            (guild_id, valeur),
+            f"""INSERT INTO guild_settings (guild_id, {column}) VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET {column} = excluded.{column}""",
+            (guild_id, value),
         )
         await self.conn.commit()
 
-    async def guilds_with_dispo(self):
-        """Les serveurs où la publication hebdo des dispos est activée."""
+    async def guilds_with_availability(self):
+        """Guilds where the weekly availability board is enabled."""
         async with self.conn.execute(
             "SELECT * FROM guild_settings WHERE dispo_channel_id IS NOT NULL"
         ) as cur:
             return await cur.fetchall()
 
-    # ----- Sondages (/vote) -----
+    # ----- Polls (/vote) -----
 
     async def create_poll(
         self, message_id: int, guild_id: int, channel_id: int,
@@ -345,9 +349,9 @@ class Database:
         ) as cur:
             return await cur.fetchall()
 
-    # ----- Dispos de la semaine (/dispo) -----
+    # ----- Weekly availability (/availability) -----
 
-    async def create_dispo(
+    async def create_availability(
         self, message_id: int, guild_id: int, channel_id: int, week_label: str
     ) -> None:
         await self.conn.execute(
@@ -357,14 +361,14 @@ class Database:
         )
         await self.conn.commit()
 
-    async def get_dispo(self, message_id: int):
+    async def get_availability(self, message_id: int):
         async with self.conn.execute(
             "SELECT * FROM dispos WHERE message_id = ?", (message_id,)
         ) as cur:
             return await cur.fetchone()
 
-    async def toggle_dispo_mark(self, message_id: int, user_id: int, day: int) -> bool:
-        """Coche/décoche un jour. Retourne True si le jour vient d'être coché."""
+    async def toggle_availability(self, message_id: int, user_id: int, day: int) -> bool:
+        """Ticks/unticks a day. Returns True if the day was just ticked."""
         cur = await self.conn.execute(
             "DELETE FROM dispo_marks WHERE message_id = ? AND user_id = ? AND day = ?",
             (message_id, user_id, day),
@@ -379,7 +383,7 @@ class Database:
         await self.conn.commit()
         return True
 
-    async def get_dispo_marks(self, message_id: int):
+    async def get_availability_marks(self, message_id: int):
         async with self.conn.execute(
             "SELECT * FROM dispo_marks WHERE message_id = ? ORDER BY rowid",
             (message_id,),

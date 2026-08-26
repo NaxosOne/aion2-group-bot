@@ -1,5 +1,7 @@
 # Héberger le bot 24h/24
 
+🇬🇧 [English version](DEPLOYMENT.md)
+
 Un bot Discord doit rester connecté en permanence : il lui faut une machine qui
 ne s'éteint jamais. État des lieux honnête en 2026 : le « gratuit illimité sans
 carte bancaire » a quasiment disparu. Voici les options, de la plus simple à la

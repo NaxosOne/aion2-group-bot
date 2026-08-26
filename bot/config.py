@@ -1,4 +1,4 @@
-"""Configuration du bot, lue depuis les variables d'environnement (ou .env)."""
+"""Bot configuration, read from environment variables (or .env)."""
 
 import os
 from zoneinfo import ZoneInfo
@@ -12,19 +12,19 @@ except ImportError:
 
 TOKEN = os.getenv("DISCORD_TOKEN", "")
 
-# Si renseigné, les commandes slash sont synchronisées uniquement sur ce
-# serveur (visible immédiatement). Sinon, sync global (jusqu'à 1 h de délai).
+# If set, slash commands are synced to this guild only (visible immediately).
+# Otherwise the sync is global (can take up to 1 hour to propagate).
 GUILD_ID = int(os.getenv("GUILD_ID") or 0)
 
-# Fuseau horaire dans lequel les joueurs tapent leurs horaires.
+# Timezone in which players type their schedules.
 TIMEZONE = ZoneInfo(os.getenv("TIMEZONE", "Europe/Paris"))
 
-# Minutes avant le début de la sortie où le rappel est envoyé.
+# How many minutes before an event's start the reminder is sent.
 REMINDER_MINUTES = int(os.getenv("REMINDER_MINUTES") or 15)
 
-# Publication automatique des dispos de la semaine (si activée avec
-# /dispo hebdo) : jour (0 = lundi ... 6 = dimanche) et heure.
-DISPO_JOUR = int(os.getenv("DISPO_JOUR") or 0)
-DISPO_HEURE = int(os.getenv("DISPO_HEURE") or 9)
+# Automatic weekly availability board (enabled with /availability weekly):
+# day (0 = Monday ... 6 = Sunday) and hour of posting.
+AVAILABILITY_DAY = int(os.getenv("AVAILABILITY_DAY") or 0)
+AVAILABILITY_HOUR = int(os.getenv("AVAILABILITY_HOUR") or 9)
 
 DB_PATH = os.getenv("DB_PATH", "data/bot.db")

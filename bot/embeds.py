@@ -1,41 +1,46 @@
-"""Construction de l'embed (le message riche) qui affiche une sortie."""
+"""Building the embed (the rich message) that displays an event."""
 
 import discord
 
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 
 ACTIVITY_EMOJI = {
-    "Donjon": "🏰",
+    "Dungeon": "🏰",
     "Raid": "🐉",
     "Battleground": "🚩",
     "PvP": "⚔️",
     "Rift": "🌀",
+    "Abyss": "🌌",
+    "Other": "🎲",
+    # Legacy French labels, kept so events created by earlier versions
+    # still show their emoji.
+    "Donjon": "🏰",
     "Abysses": "🌌",
     "Autre": "🎲",
 }
 ROLE_EMOJI = {"tank": "🛡️", "heal": "💚", "dps": "🗡️"}
 ROLE_LABEL = {"tank": "Tank", "heal": "Heal", "dps": "DPS"}
 
-COULEUR_OUVERTE = discord.Colour.blurple()
-COULEUR_COMPLETE = discord.Colour.green()
-COULEUR_ANNULEE = discord.Colour.red()
+COLOUR_OPEN = discord.Colour.blurple()
+COLOUR_FULL = discord.Colour.green()
+COLOUR_CANCELLED = discord.Colour.red()
 
 
-def _classe(classes: dict, user_id: int) -> str:
-    """Suffixe " — Classe" si le membre a rempli son /profil."""
+def _class_suffix(classes: dict, user_id: int) -> str:
+    """Suffix " — Class" when the member has filled in their /profile."""
     return f" — *{classes[user_id]}*" if user_id in classes else ""
 
 
-def _noms(inscrits: list, classes: dict) -> str:
-    if not inscrits:
+def _names(members: list, classes: dict) -> str:
+    if not members:
         return "*—*"
     return "\n".join(
-        f"• <@{s['user_id']}>{_classe(classes, s['user_id'])}" for s in inscrits
+        f"• <@{s['user_id']}>{_class_suffix(classes, s['user_id'])}" for s in members
     )
 
 
-def compo_standard_texte(slots: dict) -> str:
-    """Ex. "1 tank / 1 heal / 3 DPS" ou "2 tanks / 2 heals / 6 DPS"."""
+def standard_setup_text(slots: dict) -> str:
+    """E.g. "1 tank / 1 heal / 3 DPS" or "2 tanks / 2 heals / 6 DPS"."""
     t, h, d = slots["tank"], slots["heal"], slots["dps"]
     return (
         f"{t} tank{'s' if t > 1 else ''} / "
@@ -44,90 +49,88 @@ def compo_standard_texte(slots: dict) -> str:
 
 
 def build_event_embed(event, signups: list, classes: dict | None = None) -> discord.Embed:
-    """Construit l'embed d'une sortie à partir de ses données en base.
+    """Builds an event's embed from its database row.
 
-    `classes` : {user_id: classe du main} pour afficher la classe des inscrits
-    qui ont rempli leur /profil.
+    `classes`: {user_id: main character's class} to display the class of
+    members who filled in their /profile.
     """
     classes = classes or {}
-    groupe, attente = assign(event["compo"], event["size"], signups)
-    annulee = event["status"] == "cancelled"
-    terminee = event["status"] == "done"
-    taille = event["size"]
-    complete = len(groupe) >= taille
+    party, waitlist = assign(event["compo"], event["size"], signups)
+    cancelled = event["status"] == "cancelled"
+    completed = event["status"] == "done"
+    size = event["size"]
+    full = len(party) >= size
 
     emoji = ACTIVITY_EMOJI.get(event["activity"], "📣")
-    titre = f"{emoji} {event['title']}"
-    if annulee:
-        titre = f"❌ [ANNULÉE] {event['title']}"
-    elif terminee:
-        titre = f"✅ {event['title']}"
+    title = f"{emoji} {event['title']}"
+    if cancelled:
+        title = f"❌ [CANCELLED] {event['title']}"
+    elif completed:
+        title = f"✅ {event['title']}"
 
-    lignes = []
+    lines = []
     if event["description"]:
-        lignes.append(event["description"])
+        lines.append(event["description"])
     if event["starts_at"]:
-        lignes.append(f"🕘 <t:{event['starts_at']}:F> (<t:{event['starts_at']}:R>)")
+        lines.append(f"🕘 <t:{event['starts_at']}:F> (<t:{event['starts_at']}:R>)")
     if event["compo"] == COMPO_STANDARD:
         slots = standard_slots(event["size"])
-        lignes.append(
-            f"Composition : **standard** ({compo_standard_texte(slots)})"
-        )
+        lines.append(f"Setup: **standard** ({standard_setup_text(slots)})")
     else:
-        lignes.append(f"Composition : **libre** ({event['size']} places)")
+        lines.append(f"Setup: **open** ({event['size']} slots)")
 
-    if annulee:
-        couleur = COULEUR_ANNULEE
-    elif terminee:
-        couleur = discord.Colour.gold()
-    elif complete:
-        couleur = COULEUR_COMPLETE
+    if cancelled:
+        colour = COLOUR_CANCELLED
+    elif completed:
+        colour = discord.Colour.gold()
+    elif full:
+        colour = COLOUR_FULL
     else:
-        couleur = COULEUR_OUVERTE
+        colour = COLOUR_OPEN
 
-    embed = discord.Embed(title=titre, description="\n".join(lignes), colour=couleur)
+    embed = discord.Embed(title=title, description="\n".join(lines), colour=colour)
 
     if event["compo"] == COMPO_STANDARD:
         slots = standard_slots(event["size"])
-        par_role = {role: [s for s in groupe if s["role"] == role] for role in ROLES}
+        by_role = {role: [s for s in party if s["role"] == role] for role in ROLES}
         for role in ROLES:
             embed.add_field(
                 name=(
                     f"{ROLE_EMOJI[role]} {ROLE_LABEL[role]} "
-                    f"({len(par_role[role])}/{slots[role]})"
+                    f"({len(by_role[role])}/{slots[role]})"
                 ),
-                value=_noms(par_role[role], classes),
+                value=_names(by_role[role], classes),
                 inline=True,
             )
     else:
         embed.add_field(
-            name=f"👥 Groupe ({len(groupe)}/{event['size']})",
+            name=f"👥 Party ({len(party)}/{event['size']})",
             value="\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_classe(classes, s['user_id'])}"
-                for s in groupe
+                f"{_class_suffix(classes, s['user_id'])}"
+                for s in party
             )
             or "*—*",
             inline=False,
         )
 
-    if attente:
+    if waitlist:
         embed.add_field(
-            name=f"⏳ Liste d'attente ({len(attente)})",
+            name=f"⏳ Waitlist ({len(waitlist)})",
             value="\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                for i, s in enumerate(attente, start=1)
+                for i, s in enumerate(waitlist, start=1)
             ),
             inline=False,
         )
 
-    if terminee:
-        suffixe = " • Terminée 🎉"
-    elif complete and not annulee:
-        suffixe = " • COMPLET"
+    if completed:
+        suffix = " • Completed 🎉"
+    elif full and not cancelled:
+        suffix = " • FULL"
     else:
-        suffixe = ""
+        suffix = ""
     embed.set_footer(
-        text=f"{event['activity']} • Créée par {event['creator_name']}{suffixe}"
+        text=f"{event['activity']} • Created by {event['creator_name']}{suffix}"
     )
     return embed

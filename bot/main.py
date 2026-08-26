@@ -1,18 +1,18 @@
-"""Point d'entrée du bot : `python -m bot.main`."""
+"""Bot entry point: `python -m bot.main`."""
 
 import discord
 from discord.ext import commands
 
 from . import config
-from .cogs.polls import DispoView, VoteView
+from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
 from .views import SignupView
 
 
 class GroupBot(commands.Bot):
     def __init__(self):
-        # L'intent "members" (à activer sur le portail développeur) permet
-        # d'accueillir les nouveaux ; le reste passe par commandes et boutons.
+        # The "members" intent (enabled on the developer portal) lets the bot
+        # greet newcomers; everything else works through commands and buttons.
         intents = discord.Intents.default()
         intents.members = True
         super().__init__(command_prefix="!", intents=intents)
@@ -21,11 +21,11 @@ class GroupBot(commands.Bot):
     async def setup_hook(self):
         await self.db.connect()
 
-        # Ré-enregistre les vues persistantes pour que les boutons des messages
-        # déjà publiés fonctionnent encore après un redémarrage.
+        # Re-register the persistent views so the buttons of already
+        # published messages keep working after a restart.
         self.add_view(SignupView())
         self.add_view(VoteView())
-        self.add_view(DispoView())
+        self.add_view(AvailabilityView())
 
         await self.load_extension("bot.cogs.groups")
         await self.load_extension("bot.cogs.profiles")
@@ -33,7 +33,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.polls")
 
         if config.GUILD_ID:
-            # Sync sur un seul serveur : les commandes apparaissent tout de suite.
+            # Single-guild sync: the commands show up right away.
             guild = discord.Object(id=config.GUILD_ID)
             self.tree.copy_global_to(guild=guild)
             await self.tree.sync(guild=guild)
@@ -41,7 +41,7 @@ class GroupBot(commands.Bot):
             await self.tree.sync()
 
     async def on_ready(self):
-        print(f"Connecté en tant que {self.user} (id {self.user.id})")
+        print(f"Logged in as {self.user} (id {self.user.id})")
 
     async def close(self):
         await self.db.close()
@@ -51,16 +51,16 @@ class GroupBot(commands.Bot):
 def main():
     if not config.TOKEN:
         raise SystemExit(
-            "DISCORD_TOKEN manquant : copie .env.example vers .env et "
-            "renseigne le token du bot (voir README.md)."
+            "DISCORD_TOKEN is missing: copy .env.example to .env and fill in "
+            "the bot token (see README.md)."
         )
     try:
         GroupBot().run(config.TOKEN)
     except discord.PrivilegedIntentsRequired:
         raise SystemExit(
-            "Il manque un réglage sur le portail développeur Discord :\n"
-            "ton application -> onglet Bot -> active « SERVER MEMBERS INTENT »\n"
-            "(nécessaire pour accueillir les nouveaux membres), puis relance le bot."
+            "A setting is missing on the Discord developer portal:\n"
+            "your application -> Bot tab -> enable “SERVER MEMBERS INTENT”\n"
+            "(needed to greet new members), then restart the bot."
         ) from None
 
 

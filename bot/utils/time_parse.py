@@ -1,124 +1,145 @@
-"""Interprétation des horaires tapés en français dans /sortie.
+"""Parsing of the schedule text typed in /event.
 
-Formats acceptés (l'heure est obligatoire, la date est optionnelle) :
-    "21h"  "21h30"  "21:30"          -> aujourd'hui, ou demain si déjà passé
-    "demain 21h"  "aujourd'hui 20h30"
-    "30/08 21h"  "30/08/2026 21:00"  -> l'année est déduite si absente
+Accepted formats (time is required, the date is optional):
+    "21:00"  "21h30"  "9pm"  "9:30pm"   -> today, or tomorrow if already past
+    "tomorrow 21:00"  "today 8:30pm"
+    "30/08 21:00"  "30/08/2026 9pm"     -> day/month; year inferred if absent
+
+French keywords (aujourd'hui, demain) and the "21h30" style also work.
 """
 
 import re
 from datetime import date, datetime, timedelta
 
-FORMAT_AIDE = (
-    "Formats acceptés : `21h`, `21h30`, `demain 21h`, `30/08 21h`, "
-    "`30/08/2026 21:00` (l'heure est obligatoire)."
+HELP_FORMATS = (
+    "Accepted formats: `21:00`, `21h30`, `9pm`, `tomorrow 21:00`, "
+    "`30/08 21:00` (day/month — the time is required)."
 )
 
-FORMAT_AIDE_DATE = "Formats acceptés : `30/08`, `30/08/2026`, `aujourd'hui`, `demain`."
+HELP_FORMATS_DATE = (
+    "Accepted formats: `30/08` (day/month), `30/08/2026`, `today`, `tomorrow`."
+)
+
+# English first, French kept as aliases.
+DAY_KEYWORDS = {
+    "today": 0,
+    "tomorrow": 1,
+    "aujourd'hui": 0,
+    "aujourdhui": 0,
+    "auj": 0,
+    "demain": 1,
+}
 
 
 class ParseError(ValueError):
-    """Erreur d'interprétation, avec un message affichable à l'utilisateur."""
+    """Parsing error, with a message that can be shown to the user."""
 
 
 _DATE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?(?:\s+|$)")
-_TIME_RE = re.compile(r"^(\d{1,2})\s*[h:]\s*(\d{2})?$")
+_TIME_RE = re.compile(r"^(\d{1,2})(?:\s*[h:]\s*(\d{2})?)?\s*(am|pm)?$")
+
+
+def _parse_time(s: str) -> tuple[int, int]:
+    """Converts "21:00", "21h30", "9pm" or "9:30pm" into (hour, minute)."""
+    m = _TIME_RE.match(s)
+    # A bare number like "21" is ambiguous: require a separator or am/pm.
+    if not m or (m.group(3) is None and not re.search(r"[h:]", s)):
+        raise ParseError(f"I couldn't understand that time. {HELP_FORMATS}")
+    hour, minute, ampm = int(m.group(1)), int(m.group(2) or 0), m.group(3)
+    if ampm:
+        if not 1 <= hour <= 12:
+            raise ParseError(f"Invalid time: `{hour}{ampm}`.")
+        if ampm == "pm" and hour != 12:
+            hour += 12
+        elif ampm == "am" and hour == 12:
+            hour = 0
+    if hour > 23 or minute > 59:
+        raise ParseError(f"Invalid time: `{hour:02d}:{minute:02d}`.")
+    return hour, minute
 
 
 def parse_when(text: str, tz, now: datetime | None = None) -> datetime:
-    """Convertit un texte comme "demain 21h" en datetime avec fuseau horaire."""
+    """Converts text like "tomorrow 9pm" into a timezone-aware datetime."""
     now = (now or datetime.now(tz)).astimezone(tz)
     s = " ".join(text.strip().lower().split())
     if not s:
-        raise ParseError(f"Horaire vide. {FORMAT_AIDE}")
+        raise ParseError(f"Empty schedule. {HELP_FORMATS}")
 
-    # 1) La partie date : mot-clé, date chiffrée, ou rien (= aujourd'hui).
-    offset = None  # décalage en jours pour "aujourd'hui"/"demain"
-    date_part = None  # (jour, mois, année ou None)
-    for mot, decalage in (
-        ("aujourd'hui", 0),
-        ("aujourdhui", 0),
-        ("auj", 0),
-        ("demain", 1),
-    ):
-        if s == mot or s.startswith(mot + " "):
-            offset = decalage
-            s = s[len(mot):].strip()
+    # 1) The date part: keyword, numeric date, or nothing (= today).
+    offset = None  # day offset for "today"/"tomorrow"
+    date_part = None  # (day, month, year or None)
+    for keyword, days in DAY_KEYWORDS.items():
+        if s == keyword or s.startswith(keyword + " "):
+            offset = days
+            s = s[len(keyword):].strip()
             break
     if offset is None:
         m = _DATE_RE.match(s)
         if m:
-            jour, mois = int(m.group(1)), int(m.group(2))
-            annee = m.group(3)
-            if annee is not None:
-                annee = int(annee)
-                if annee < 100:
-                    annee += 2000
-            date_part = (jour, mois, annee)
+            day, month = int(m.group(1)), int(m.group(2))
+            year = m.group(3)
+            if year is not None:
+                year = int(year)
+                if year < 100:
+                    year += 2000
+            date_part = (day, month, year)
             s = s[m.end():].strip()
 
-    # 2) La partie heure, obligatoire.
-    m = _TIME_RE.match(s)
-    if not m:
-        raise ParseError(f"Je n'ai pas compris cet horaire. {FORMAT_AIDE}")
-    heure, minute = int(m.group(1)), int(m.group(2) or 0)
-    if heure > 23 or minute > 59:
-        raise ParseError(f"Heure invalide : `{heure:02d}:{minute:02d}`.")
+    # 2) The time part, required.
+    hour, minute = _parse_time(s)
 
-    # 3) Assemblage.
+    # 3) Assembly.
     if date_part is not None:
-        jour, mois, annee = date_part
+        day, month, year = date_part
         try:
-            dt = datetime(annee or now.year, mois, jour, heure, minute, tzinfo=tz)
+            dt = datetime(year or now.year, month, day, hour, minute, tzinfo=tz)
         except ValueError:
-            raise ParseError(f"Date invalide : `{jour:02d}/{mois:02d}`.") from None
+            raise ParseError(f"Invalid date: `{day:02d}/{month:02d}`.") from None
         if dt <= now:
-            if annee is None:
-                # "30/08 21h" alors qu'on est en septembre -> année suivante.
+            if year is None:
+                # "30/08 21:00" typed in September -> next year.
                 dt = dt.replace(year=now.year + 1)
             else:
-                raise ParseError("Cette date est déjà passée.")
+                raise ParseError("That date is already in the past.")
         return dt
 
     base = now.date() + timedelta(days=offset or 0)
-    dt = datetime(base.year, base.month, base.day, heure, minute, tzinfo=tz)
+    dt = datetime(base.year, base.month, base.day, hour, minute, tzinfo=tz)
     if dt <= now:
         if offset is None:
-            # "21h" alors qu'il est 22h -> demain 21h.
+            # "21:00" when it's 22:00 -> tomorrow at 21:00.
             dt += timedelta(days=1)
         else:
-            raise ParseError("Cet horaire est déjà passé.")
+            raise ParseError("That time is already in the past.")
     return dt
 
 
-_DATE_SEULE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?$")
+_DATE_ONLY_RE = re.compile(r"^(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?$")
 
 
 def parse_date(text: str, tz, now: datetime | None = None) -> date:
-    """Convertit "30/08", "30/08/2026", "aujourd'hui" ou "demain" en date."""
+    """Converts "30/08", "30/08/2026", "today" or "tomorrow" into a date."""
     now = (now or datetime.now(tz)).astimezone(tz)
     s = " ".join(text.strip().lower().split())
-    if s in ("aujourd'hui", "aujourdhui", "auj"):
-        return now.date()
-    if s == "demain":
-        return now.date() + timedelta(days=1)
+    if s in DAY_KEYWORDS:
+        return now.date() + timedelta(days=DAY_KEYWORDS[s])
 
-    m = _DATE_SEULE_RE.match(s)
+    m = _DATE_ONLY_RE.match(s)
     if not m:
-        raise ParseError(f"Je n'ai pas compris cette date. {FORMAT_AIDE_DATE}")
-    jour, mois = int(m.group(1)), int(m.group(2))
-    annee = m.group(3)
-    if annee is not None:
-        annee = int(annee)
-        if annee < 100:
-            annee += 2000
+        raise ParseError(f"I couldn't understand that date. {HELP_FORMATS_DATE}")
+    day, month = int(m.group(1)), int(m.group(2))
+    year = m.group(3)
+    if year is not None:
+        year = int(year)
+        if year < 100:
+            year += 2000
     try:
-        d = date(annee or now.year, mois, jour)
-        if d < now.date() and annee is None:
-            # "01/01" alors qu'on est en août -> l'année prochaine.
-            d = date(now.year + 1, mois, jour)
+        d = date(year or now.year, month, day)
+        if d < now.date() and year is None:
+            # "01/01" typed in August -> next year.
+            d = date(now.year + 1, month, day)
     except ValueError:
-        raise ParseError(f"Date invalide : `{jour:02d}/{mois:02d}`.") from None
+        raise ParseError(f"Invalid date: `{day:02d}/{month:02d}`.") from None
     if d < now.date():
-        raise ParseError("Cette date est déjà passée.")
+        raise ParseError("That date is already in the past.")
     return d
