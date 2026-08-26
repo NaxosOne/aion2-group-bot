@@ -25,6 +25,13 @@ en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ DPS).
 - **`/sorties`** : liste des sorties à venir avec liens cliquables.
 - **Annulation** : le créateur (ou un modérateur) peut annuler, les inscrits
   sont prévenus.
+- **Profils** : `/profil definir` enregistre ton main et ton alt (nom, classe,
+  rôle) ; la classe s'affiche à côté de ton pseudo dans les groupes.
+  `/profil voir` et `/profil annuaire` pour consulter.
+- **Absences** : `/absent du: 30/08 au: 05/09` prévient la légion,
+  `/absents` liste qui manque, `/retour` pour un retour anticipé.
+- **Annonces** : `/annonce` (modérateurs) ouvre un formulaire et publie une
+  annonce mise en forme, avec ping d'un rôle en option.
 - **Persistance** : tout est stocké en SQLite — les boutons continuent de
   fonctionner même si le bot redémarre.
 
@@ -87,7 +94,21 @@ gratuites (Oracle Cloud, Railway...), avec les étapes détaillées.
 /sortie titre: BG du soir        type: Battleground  compo: Groupe de 10  quand: 21h
 /sortie titre: Farm abysses      type: Abysses       compo: Libre         taille: 8
 /sorties        → liste des sorties à venir
+
+/profil definir perso: Main  nom: Kratos  classe: Templier  role: Tank
+/profil voir [membre]     → le profil d'un membre
+/profil annuaire          → tous les persos de la légion
+
+/absent du: 30/08 au: 05/09 raison: vacances
+/absents                  → qui est absent ou bientôt absent
+/retour                   → retour anticipé
+
+/annonce [ping: @rôle]    → annonce mise en forme (modérateurs)
 ```
+
+Les classes proposées par `/profil` sont des suggestions (champ libre) : la
+liste se modifie dans `bot/cogs/profiles.py` (`CLASSES_AION`) quand les noms
+définitifs des classes d'Aion 2 seront connus.
 
 Sous chaque annonce : boutons **Tank / Heal / DPS** pour s'inscrire (recliquer
 sur un autre rôle pour changer), **Quitter**, et **Annuler la sortie**
@@ -100,11 +121,13 @@ tu ne peux donc jamais voler la place d'un titulaire.
 bot/
   main.py              Point d'entrée : connexion, sync des commandes
   config.py            Lecture du .env (token, fuseau, rappels...)
-  db.py                Stockage SQLite (sorties + inscriptions)
+  db.py                Stockage SQLite (sorties, inscriptions, profils, absences)
   logic.py             Répartition groupe / liste d'attente (pur, testé)
   embeds.py            Construction du message d'annonce
   views.py             Les boutons et leurs actions
   cogs/groups.py       /sortie, /sorties et la boucle de rappels
+  cogs/profiles.py     /profil (main + alt, annuaire)
+  cogs/legion.py       /absent, /absents, /retour, /annonce
   utils/time_parse.py  "demain 21h" -> vraie date (pur, testé)
 tests/                 python -m tests.test_logic ; python -m tests.test_time_parse
 ```
@@ -124,25 +147,25 @@ Des pistes pour enrichir le bot, de la plus simple à la plus ambitieuse :
 - **Modèles de sorties** enregistrés (`/sortie modele: DonjonHebdo`) ;
 - **Export calendrier** (.ics) pour retrouver les sorties dans son agenda.
 
-## Idées pour gérer la légion
+## Idées pour la légion (esprit chill, pas de tryhard)
 
-Le bot peut devenir le QG Discord de la légion, au-delà des groupes :
+Les profils, absences et annonces sont maintenant intégrés. D'autres pistes
+dans le même esprit détendu :
 
-- **Annuaire des membres** : `/profil` où chacun enregistre sa classe Aion 2,
-  ses rôles possibles (beaucoup jouent tank ET dps) et son niveau — le bot
-  peut alors pré-remplir le bon rôle et afficher la classe dans les groupes ;
-- **Hiérarchie** : synchroniser les rôles Discord (Légat, Centurion, Légionnaire)
-  avec les permissions du bot — ex. seuls les Centurions créent des raids ;
-- **Planning de légion** : les événements fixes (sièges, raids hebdo) recréés
-  automatiquement chaque semaine, avec un salon `#planning` tenu à jour ;
-- **Présence et fiabilité** : compter inscriptions, présences confirmées et
-  no-shows par membre — utile pour prioriser les places en raid ;
-- **DKP / points de légion** : attribuer des points par participation, les
-  dépenser lors des partages de loot (`/dkp classement`, `/dkp donner`) ;
-- **Recrutement** : `/candidature` ouvre un formulaire (classe, niveau, dispo),
-  posté dans un salon privé des officiers avec boutons Accepter/Refuser, puis
-  message de bienvenue automatique ;
-- **Gestion des absences** : `/absent du: 30/08 au: 05/09` pour que les leads
-  sachent sur qui compter avant de planifier un siège ;
-- **Annonces** : `/annonce` mise en forme par le bot avec ping du bon rôle ;
-- **Trésorerie** : suivi simple des dons de kinah/objets à la banque de légion.
+- **`/roll`** : tirage au sort parmi les inscrits d'une sortie pour départager
+  un loot ou désigner « qui paye sa tournée » ;
+- **Sondages rapides** : `/vote question: On fait quoi ce soir ?` avec boutons
+  (Donjon / PvP / Abysses / Rien) et résultats en direct ;
+- **`/dispo`** : sondage hebdo « qui joue quel soir ? » pour caler les sorties
+  sans prise de tête ;
+- **Message de bienvenue** aux nouveaux du serveur avec le mode d'emploi du
+  bot et l'invitation à remplir son `/profil` ;
+- **Bouton « Sortie faite ✅ »** qui clôt l'annonce avec un petit GG et
+  l'archive ;
+- **Anniversaires** : chacun enregistre le sien, le bot souhaite un joyeux
+  anniversaire dans le salon général ;
+- **Hall of fame screenshots** : le screen le plus liké de la semaine épinglé
+  automatiquement ;
+- **Statut du bot** : afficher la prochaine sortie dans son statut Discord
+  (« Joue à Donjon du Feu — 21h ») ;
+- **Salon vocal temporaire** créé au lancement d'une sortie, supprimé après.

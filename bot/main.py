@@ -23,6 +23,8 @@ class GroupBot(commands.Bot):
         self.add_view(SignupView())
 
         await self.load_extension("bot.cogs.groups")
+        await self.load_extension("bot.cogs.profiles")
+        await self.load_extension("bot.cogs.legion")
 
         if config.GUILD_ID:
             # Sync sur un seul serveur : les commandes apparaissent tout de suite.

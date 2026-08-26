@@ -21,8 +21,17 @@ COULEUR_COMPLETE = discord.Colour.green()
 COULEUR_ANNULEE = discord.Colour.red()
 
 
-def _noms(inscrits: list) -> str:
-    return "\n".join(f"• <@{s['user_id']}>" for s in inscrits) if inscrits else "*—*"
+def _classe(classes: dict, user_id: int) -> str:
+    """Suffixe " — Classe" si le membre a rempli son /profil."""
+    return f" — *{classes[user_id]}*" if user_id in classes else ""
+
+
+def _noms(inscrits: list, classes: dict) -> str:
+    if not inscrits:
+        return "*—*"
+    return "\n".join(
+        f"• <@{s['user_id']}>{_classe(classes, s['user_id'])}" for s in inscrits
+    )
 
 
 def compo_standard_texte(slots: dict) -> str:
@@ -34,8 +43,13 @@ def compo_standard_texte(slots: dict) -> str:
     )
 
 
-def build_event_embed(event, signups: list) -> discord.Embed:
-    """Construit l'embed d'une sortie à partir de ses données en base."""
+def build_event_embed(event, signups: list, classes: dict | None = None) -> discord.Embed:
+    """Construit l'embed d'une sortie à partir de ses données en base.
+
+    `classes` : {user_id: classe du main} pour afficher la classe des inscrits
+    qui ont rempli leur /profil.
+    """
+    classes = classes or {}
     groupe, attente = assign(event["compo"], event["size"], signups)
     annulee = event["status"] == "cancelled"
     taille = event["size"]
@@ -77,14 +91,16 @@ def build_event_embed(event, signups: list) -> discord.Embed:
                     f"{ROLE_EMOJI[role]} {ROLE_LABEL[role]} "
                     f"({len(par_role[role])}/{slots[role]})"
                 ),
-                value=_noms(par_role[role]),
+                value=_noms(par_role[role], classes),
                 inline=True,
             )
     else:
         embed.add_field(
             name=f"👥 Groupe ({len(groupe)}/{event['size']})",
             value="\n".join(
-                f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>" for s in groupe
+                f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                f"{_classe(classes, s['user_id'])}"
+                for s in groupe
             )
             or "*—*",
             inline=False,

@@ -1,9 +1,9 @@
 """Tests du parseur d'horaires. Lancer : python -m tests.test_time_parse"""
 
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from bot.utils.time_parse import ParseError, parse_when
+from bot.utils.time_parse import ParseError, parse_date, parse_when
 
 TZ = ZoneInfo("Europe/Paris")
 # On fige "maintenant" pour des tests reproductibles : mercredi 26/08/2026, 18h00.
@@ -33,6 +33,23 @@ def test_dates():
     assert p("30/08/2026 21:00") == datetime(2026, 8, 30, 21, 0, tzinfo=TZ)
     # 01/01 est passé cette année -> année suivante.
     assert p("01/01 20h") == datetime(2027, 1, 1, 20, 0, tzinfo=TZ)
+
+
+def test_parse_date():
+    pd = lambda t: parse_date(t, TZ, now=NOW)
+    assert pd("30/08") == date(2026, 8, 30)
+    assert pd("30/08/2026") == date(2026, 8, 30)
+    assert pd("aujourd'hui") == date(2026, 8, 26)
+    assert pd("demain") == date(2026, 8, 27)
+    # Date sans année déjà passée cette année -> l'année prochaine.
+    assert pd("01/01") == date(2027, 1, 1)
+    for mauvais in ("", "hier", "32/01", "31/02", "01/01/2020"):
+        try:
+            pd(mauvais)
+        except ParseError:
+            pass
+        else:
+            raise AssertionError(f"{mauvais!r} aurait dû être rejeté")
 
 
 def test_erreurs():

@@ -7,12 +7,14 @@ Formats acceptés (l'heure est obligatoire, la date est optionnelle) :
 """
 
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 FORMAT_AIDE = (
     "Formats acceptés : `21h`, `21h30`, `demain 21h`, `30/08 21h`, "
     "`30/08/2026 21:00` (l'heure est obligatoire)."
 )
+
+FORMAT_AIDE_DATE = "Formats acceptés : `30/08`, `30/08/2026`, `aujourd'hui`, `demain`."
 
 
 class ParseError(ValueError):
@@ -87,3 +89,36 @@ def parse_when(text: str, tz, now: datetime | None = None) -> datetime:
         else:
             raise ParseError("Cet horaire est déjà passé.")
     return dt
+
+
+_DATE_SEULE_RE = re.compile(r"^(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?$")
+
+
+def parse_date(text: str, tz, now: datetime | None = None) -> date:
+    """Convertit "30/08", "30/08/2026", "aujourd'hui" ou "demain" en date."""
+    now = (now or datetime.now(tz)).astimezone(tz)
+    s = " ".join(text.strip().lower().split())
+    if s in ("aujourd'hui", "aujourdhui", "auj"):
+        return now.date()
+    if s == "demain":
+        return now.date() + timedelta(days=1)
+
+    m = _DATE_SEULE_RE.match(s)
+    if not m:
+        raise ParseError(f"Je n'ai pas compris cette date. {FORMAT_AIDE_DATE}")
+    jour, mois = int(m.group(1)), int(m.group(2))
+    annee = m.group(3)
+    if annee is not None:
+        annee = int(annee)
+        if annee < 100:
+            annee += 2000
+    try:
+        d = date(annee or now.year, mois, jour)
+        if d < now.date() and annee is None:
+            # "01/01" alors qu'on est en août -> l'année prochaine.
+            d = date(now.year + 1, mois, jour)
+    except ValueError:
+        raise ParseError(f"Date invalide : `{jour:02d}/{mois:02d}`.") from None
+    if d < now.date():
+        raise ParseError("Cette date est déjà passée.")
+    return d

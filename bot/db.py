@@ -33,6 +33,25 @@ CREATE TABLE IF NOT EXISTS signups (
     joined_at    REAL    NOT NULL,
     PRIMARY KEY (message_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS profiles (
+    guild_id   INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    slot       TEXT    NOT NULL,                  -- 'main' ou 'alt'
+    char_name  TEXT    NOT NULL,
+    char_class TEXT    NOT NULL,
+    role       TEXT    NOT NULL,                  -- 'tank', 'heal' ou 'dps'
+    PRIMARY KEY (guild_id, user_id, slot)
+);
+
+CREATE TABLE IF NOT EXISTS absences (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id  INTEGER NOT NULL,
+    user_id   INTEGER NOT NULL,
+    starts_on INTEGER NOT NULL,                   -- timestamp du 1er jour à minuit
+    ends_on   INTEGER NOT NULL,                   -- timestamp du dernier jour à 23h59
+    reason    TEXT
+);
 """
 
 
@@ -140,3 +159,75 @@ class Database:
         )
         await self.conn.commit()
         return cur.rowcount > 0
+
+    # ----- Profils (main / alt) -----
+
+    async def set_profile(
+        self, guild_id: int, user_id: int, slot: str,
+        char_name: str, char_class: str, role: str,
+    ) -> None:
+        await self.conn.execute(
+            """INSERT OR REPLACE INTO profiles
+               (guild_id, user_id, slot, char_name, char_class, role)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (guild_id, user_id, slot, char_name, char_class, role),
+        )
+        await self.conn.commit()
+
+    async def get_profiles(self, guild_id: int, user_id: int):
+        """Les persos d'un membre, main en premier ('main' > 'alt' en tri DESC)."""
+        async with self.conn.execute(
+            """SELECT * FROM profiles WHERE guild_id = ? AND user_id = ?
+               ORDER BY slot DESC""",
+            (guild_id, user_id),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def all_profiles(self, guild_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM profiles WHERE guild_id = ? ORDER BY user_id, slot DESC",
+            (guild_id,),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
+        """{user_id: classe du main} pour afficher la classe dans les groupes."""
+        if not user_ids:
+            return {}
+        marqueurs = ",".join("?" for _ in user_ids)
+        async with self.conn.execute(
+            f"""SELECT user_id, char_class FROM profiles
+                WHERE guild_id = ? AND slot = 'main' AND user_id IN ({marqueurs})""",
+            (guild_id, *user_ids),
+        ) as cur:
+            return {row["user_id"]: row["char_class"] for row in await cur.fetchall()}
+
+    # ----- Absences -----
+
+    async def add_absence(
+        self, guild_id: int, user_id: int, starts_on: int, ends_on: int, reason: str | None
+    ) -> None:
+        await self.conn.execute(
+            """INSERT INTO absences (guild_id, user_id, starts_on, ends_on, reason)
+               VALUES (?, ?, ?, ?, ?)""",
+            (guild_id, user_id, starts_on, ends_on, reason),
+        )
+        await self.conn.commit()
+
+    async def clear_absences(self, guild_id: int, user_id: int, now_ts: int) -> int:
+        """Annule les absences en cours ou à venir d'un membre. Retourne le nombre."""
+        cur = await self.conn.execute(
+            "DELETE FROM absences WHERE guild_id = ? AND user_id = ? AND ends_on >= ?",
+            (guild_id, user_id, now_ts),
+        )
+        await self.conn.commit()
+        return cur.rowcount
+
+    async def list_absences(self, guild_id: int, now_ts: int):
+        """Absences en cours ou à venir du serveur, triées par date de début."""
+        async with self.conn.execute(
+            """SELECT * FROM absences WHERE guild_id = ? AND ends_on >= ?
+               ORDER BY starts_on""",
+            (guild_id, now_ts),
+        ) as cur:
+            return await cur.fetchall()

@@ -83,7 +83,10 @@ class SignupView(discord.ui.View):
         await db.set_status(event["message_id"], "cancelled")
         event = await db.get_event(event["message_id"])
         signups = await db.get_signups(event["message_id"])
-        embed = build_event_embed(event, signups)
+        classes = await db.get_main_classes(
+            event["guild_id"], [s["user_id"] for s in signups]
+        )
+        embed = build_event_embed(event, signups, classes)
         await interaction.response.edit_message(embed=embed, view=None)
 
         groupe, attente = assign(event["compo"], event["size"], signups)
@@ -155,8 +158,12 @@ class SignupView(discord.ui.View):
 
     async def _rafraichir(self, interaction: discord.Interaction, event) -> list:
         """Met à jour l'embed du message et retourne les inscriptions à jour."""
-        signups = await interaction.client.db.get_signups(event["message_id"])
-        embed = build_event_embed(event, signups)
+        db = interaction.client.db
+        signups = await db.get_signups(event["message_id"])
+        classes = await db.get_main_classes(
+            event["guild_id"], [s["user_id"] for s in signups]
+        )
+        embed = build_event_embed(event, signups, classes)
         await interaction.response.edit_message(embed=embed, view=self)
         return signups
 
