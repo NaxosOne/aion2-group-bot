@@ -1,6 +1,6 @@
 """Tests de la répartition groupe / liste d'attente. Lancer : python -m tests.test_logic"""
 
-from bot.logic import COMPO_LIBRE, COMPO_STANDARD, assign
+from bot.logic import COMPO_LIBRE, COMPO_STANDARD, assign, standard_slots
 
 
 def s(user_id, role):
@@ -31,6 +31,23 @@ def test_standard_promotion():
     groupe, attente = assign(COMPO_STANDARD, 5, signups)
     assert ids(groupe) == [2, 3]
     assert attente == []
+
+
+def test_standard_slots():
+    assert standard_slots(5) == {"tank": 1, "heal": 1, "dps": 3}
+    assert standard_slots(10) == {"tank": 2, "heal": 2, "dps": 6}
+
+
+def test_standard_10():
+    # Groupe de 10 (raid/battleground) : 2 tanks / 2 heals / 6 DPS.
+    signups = (
+        [s(i, "tank") for i in (1, 2, 3)]        # 3e tank en attente
+        + [s(i, "heal") for i in (4, 5)]
+        + [s(i, "dps") for i in range(6, 13)]    # 7e DPS en attente
+    )
+    groupe, attente = assign(COMPO_STANDARD, 10, signups)
+    assert ids(groupe) == [1, 2, 4, 5, 6, 7, 8, 9, 10, 11]
+    assert ids(attente) == [3, 12]
 
 
 def test_libre():

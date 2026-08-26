@@ -6,10 +6,11 @@ en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ DPS).
 
 ## Fonctionnalités
 
-- **`/sortie`** : crée un appel de groupe avec titre, type (Donjon / PvP / Autre),
-  horaire et description.
-- **Deux modes de composition** :
-  - **Standard** : 1 tank / 1 heal / 3 DPS (le classique donjon) ;
+- **`/sortie`** : crée un appel de groupe avec titre, type (🏰 Donjon, 🐉 Raid,
+  🚩 Battleground, ⚔️ PvP, 🌀 Rift, 🌌 Abysses, 🎲 Autre), horaire et description.
+- **Trois modes de composition** :
+  - **Groupe de 5** : 1 tank / 1 heal / 3 DPS (le classique donjon) ;
+  - **Groupe de 10** : 2 tanks / 2 heals / 6 DPS (raids, battlegrounds) ;
   - **Libre** : premier arrivé premier servi, peu importe les rôles (parfait
     pour le farm en abysses), avec une taille réglable (2 à 25 places).
 - **Inscription par boutons** : on clique sur son rôle, l'affichage se met à
@@ -82,8 +83,9 @@ gratuites (Oracle Cloud, Railway...), avec les étapes détaillées.
 ## Utilisation
 
 ```
-/sortie titre: Donjon du Feu HM  type: Donjon  compo: Standard  quand: demain 21h
-/sortie titre: Farm abysses      type: PvP     compo: Libre     taille: 5
+/sortie titre: Donjon du Feu HM  type: Donjon        compo: Groupe de 5   quand: demain 21h
+/sortie titre: BG du soir        type: Battleground  compo: Groupe de 10  quand: 21h
+/sortie titre: Farm abysses      type: Abysses       compo: Libre         taille: 8
 /sorties        → liste des sorties à venir
 ```
 
@@ -116,10 +118,31 @@ Des pistes pour enrichir le bot, de la plus simple à la plus ambitieuse :
 - **Choix de la classe Aion 2** en plus du rôle (via un menu déroulant) ;
 - **Confirmation de présence** : bouton « Je confirme » à J-1 pour repérer les absents ;
 - **Événements récurrents** (« tous les mardis 21h ») ;
-- **Multi-groupes** pour les raids/sièges : un call qui remplit plusieurs groupes de 5 ;
+- **Multi-groupes** pour les sièges : un call qui remplit plusieurs groupes à la fois ;
 - **Salon vocal temporaire** créé au début de la sortie et supprimé après ;
 - **`/planning`** publié chaque semaine avec le calendrier des sorties ;
-- **Statistiques de participation** (fiabilité, no-shows) ;
 - **Modèles de sorties** enregistrés (`/sortie modele: DonjonHebdo`) ;
-- **Permissions** : réserver la création de calls à un rôle « officier » ;
 - **Export calendrier** (.ics) pour retrouver les sorties dans son agenda.
+
+## Idées pour gérer la légion
+
+Le bot peut devenir le QG Discord de la légion, au-delà des groupes :
+
+- **Annuaire des membres** : `/profil` où chacun enregistre sa classe Aion 2,
+  ses rôles possibles (beaucoup jouent tank ET dps) et son niveau — le bot
+  peut alors pré-remplir le bon rôle et afficher la classe dans les groupes ;
+- **Hiérarchie** : synchroniser les rôles Discord (Légat, Centurion, Légionnaire)
+  avec les permissions du bot — ex. seuls les Centurions créent des raids ;
+- **Planning de légion** : les événements fixes (sièges, raids hebdo) recréés
+  automatiquement chaque semaine, avec un salon `#planning` tenu à jour ;
+- **Présence et fiabilité** : compter inscriptions, présences confirmées et
+  no-shows par membre — utile pour prioriser les places en raid ;
+- **DKP / points de légion** : attribuer des points par participation, les
+  dépenser lors des partages de loot (`/dkp classement`, `/dkp donner`) ;
+- **Recrutement** : `/candidature` ouvre un formulaire (classe, niveau, dispo),
+  posté dans un salon privé des officiers avec boutons Accepter/Refuser, puis
+  message de bienvenue automatique ;
+- **Gestion des absences** : `/absent du: 30/08 au: 05/09` pour que les leads
+  sachent sur qui compter avant de planifier un siège ;
+- **Annonces** : `/annonce` mise en forme par le bot avec ping du bon rôle ;
+- **Trésorerie** : suivi simple des dons de kinah/objets à la banque de légion.

@@ -2,9 +2,17 @@
 
 import discord
 
-from .logic import COMPO_STANDARD, ROLES, STANDARD_SLOTS, assign
+from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 
-ACTIVITY_EMOJI = {"Donjon": "🏰", "PvP": "⚔️", "Autre": "🎲"}
+ACTIVITY_EMOJI = {
+    "Donjon": "🏰",
+    "Raid": "🐉",
+    "Battleground": "🚩",
+    "PvP": "⚔️",
+    "Rift": "🌀",
+    "Abysses": "🌌",
+    "Autre": "🎲",
+}
 ROLE_EMOJI = {"tank": "🛡️", "heal": "💚", "dps": "🗡️"}
 ROLE_LABEL = {"tank": "Tank", "heal": "Heal", "dps": "DPS"}
 
@@ -17,11 +25,20 @@ def _noms(inscrits: list) -> str:
     return "\n".join(f"• <@{s['user_id']}>" for s in inscrits) if inscrits else "*—*"
 
 
+def compo_standard_texte(slots: dict) -> str:
+    """Ex. "1 tank / 1 heal / 3 DPS" ou "2 tanks / 2 heals / 6 DPS"."""
+    t, h, d = slots["tank"], slots["heal"], slots["dps"]
+    return (
+        f"{t} tank{'s' if t > 1 else ''} / "
+        f"{h} heal{'s' if h > 1 else ''} / {d} DPS"
+    )
+
+
 def build_event_embed(event, signups: list) -> discord.Embed:
     """Construit l'embed d'une sortie à partir de ses données en base."""
     groupe, attente = assign(event["compo"], event["size"], signups)
     annulee = event["status"] == "cancelled"
-    taille = 5 if event["compo"] == COMPO_STANDARD else event["size"]
+    taille = event["size"]
     complete = len(groupe) >= taille
 
     emoji = ACTIVITY_EMOJI.get(event["activity"], "📣")
@@ -35,7 +52,10 @@ def build_event_embed(event, signups: list) -> discord.Embed:
     if event["starts_at"]:
         lignes.append(f"🕘 <t:{event['starts_at']}:F> (<t:{event['starts_at']}:R>)")
     if event["compo"] == COMPO_STANDARD:
-        lignes.append("Composition : **standard** (1 tank / 1 heal / 3 DPS)")
+        slots = standard_slots(event["size"])
+        lignes.append(
+            f"Composition : **standard** ({compo_standard_texte(slots)})"
+        )
     else:
         lignes.append(f"Composition : **libre** ({event['size']} places)")
 
@@ -49,12 +69,13 @@ def build_event_embed(event, signups: list) -> discord.Embed:
     embed = discord.Embed(title=titre, description="\n".join(lignes), colour=couleur)
 
     if event["compo"] == COMPO_STANDARD:
+        slots = standard_slots(event["size"])
         par_role = {role: [s for s in groupe if s["role"] == role] for role in ROLES}
         for role in ROLES:
             embed.add_field(
                 name=(
                     f"{ROLE_EMOJI[role]} {ROLE_LABEL[role]} "
-                    f"({len(par_role[role])}/{STANDARD_SLOTS[role]})"
+                    f"({len(par_role[role])}/{slots[role]})"
                 ),
                 value=_noms(par_role[role]),
                 inline=True,

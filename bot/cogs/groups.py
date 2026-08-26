@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..embeds import build_event_embed
-from ..logic import COMPO_LIBRE, COMPO_STANDARD, STANDARD_SIZE, assign
+from ..logic import COMPO_LIBRE, COMPO_STANDARD, assign
 from ..utils.time_parse import FORMAT_AIDE, ParseError, parse_when
 from ..views import SignupView
 
@@ -33,7 +33,7 @@ class Groups(commands.Cog):
     @app_commands.describe(
         titre="Nom de la sortie (ex. « Donjon du Feu HM »)",
         activite="Type de sortie",
-        compo="Standard = 1 tank / 1 heal / 3 DPS. Libre = premier arrivé, premier servi.",
+        compo="Groupe de 5, groupe de 10 (raid/battleground), ou libre.",
         quand="Ex. « 21h », « demain 20h30 », « 30/08 21h ». Vide = dès maintenant.",
         taille="Nombre de places en compo libre (défaut : 5). Ignoré en compo standard.",
         description="Infos en plus : niveau requis, salon vocal, etc.",
@@ -41,12 +41,22 @@ class Groups(commands.Cog):
     @app_commands.choices(
         activite=[
             app_commands.Choice(name="🏰 Donjon", value="Donjon"),
+            app_commands.Choice(name="🐉 Raid", value="Raid"),
+            app_commands.Choice(name="🚩 Battleground", value="Battleground"),
             app_commands.Choice(name="⚔️ PvP", value="PvP"),
+            app_commands.Choice(name="🌀 Rift", value="Rift"),
+            app_commands.Choice(name="🌌 Abysses", value="Abysses"),
             app_commands.Choice(name="🎲 Autre", value="Autre"),
         ],
         compo=[
-            app_commands.Choice(name="Standard (1 tank / 1 heal / 3 DPS)", value=COMPO_STANDARD),
-            app_commands.Choice(name="Libre (rôles sans limite)", value=COMPO_LIBRE),
+            app_commands.Choice(
+                name="Groupe de 5 — 1 tank / 1 heal / 3 DPS", value="standard5"
+            ),
+            app_commands.Choice(
+                name="Groupe de 10 (raid/BG) — 2 tanks / 2 heals / 6 DPS",
+                value="standard10",
+            ),
+            app_commands.Choice(name="Libre — rôles sans limite", value=COMPO_LIBRE),
         ],
     )
     async def sortie(
@@ -67,7 +77,11 @@ class Groups(commands.Cog):
                 await interaction.response.send_message(str(err), ephemeral=True)
                 return
 
-        size = STANDARD_SIZE if compo.value == COMPO_STANDARD else (taille or 5)
+        # "standard5"/"standard10" sont un même mode standard, seule la taille change.
+        if compo.value == COMPO_LIBRE:
+            compo_mode, size = COMPO_LIBRE, taille or 5
+        else:
+            compo_mode, size = COMPO_STANDARD, 10 if compo.value == "standard10" else 5
 
         event = {
             "channel_id": interaction.channel_id,
@@ -77,7 +91,7 @@ class Groups(commands.Cog):
             "title": titre,
             "activity": activite.value,
             "description": description,
-            "compo": compo.value,
+            "compo": compo_mode,
             "size": size,
             "starts_at": starts_at,
             "status": "open",
@@ -105,7 +119,7 @@ class Groups(commands.Cog):
         for ev in events:
             signups = await self.bot.db.get_signups(ev["message_id"])
             groupe, attente = assign(ev["compo"], ev["size"], signups)
-            taille = STANDARD_SIZE if ev["compo"] == COMPO_STANDARD else ev["size"]
+            taille = ev["size"]
             horaire = f"<t:{ev['starts_at']}:R>" if ev["starts_at"] else "pas d'horaire"
             lien = (
                 f"https://discord.com/channels/{ev['guild_id']}"
