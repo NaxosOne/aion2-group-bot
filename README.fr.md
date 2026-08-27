@@ -177,7 +177,10 @@ Utilisez :
 /roster
 ```
 
-pour parcourir les informations des joueurs.
+pour parcourir les informations des joueurs. Un joueur peut supprimer son propre
+profil avec `/profile delete` (les modérateurs peuvent cibler un membre) ; Kisk
+fait aussi le **ménage automatiquement** quand quelqu'un quitte le serveur — son
+profil, ses inscriptions, absences et disponibilités sont supprimés.
 
 ### 🏖️ Absences
 
@@ -517,7 +520,7 @@ Le ping `@everyone` est réservé aux modérateurs.
 /profile set character: Main name: Kratos class: Templar role: Tank
 
 /profile show [member]
-
+/profile delete [character: Main|Alt|All] [member]   → les modérateurs peuvent cibler un membre
 /roster
 ```
 

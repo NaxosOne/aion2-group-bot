@@ -117,6 +117,62 @@ class Profile(commands.GroupCog, name="profile"):
             )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.command(
+        name="delete", description="Delete your profile (moderators can target a member)"
+    )
+    @app_commands.describe(
+        character="Which character to remove (default: all)",
+        member="Moderators only: whose profile to delete (default: yours)",
+    )
+    @app_commands.choices(
+        character=[
+            app_commands.Choice(name="Main", value="main"),
+            app_commands.Choice(name="Alt", value="alt"),
+            app_commands.Choice(name="All", value="all"),
+        ],
+    )
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        character: app_commands.Choice[str] | None = None,
+        member: discord.Member | None = None,
+    ):
+        target = member or interaction.user
+        if (
+            target != interaction.user
+            and not interaction.user.guild_permissions.manage_guild
+        ):
+            await interaction.response.send_message(
+                "Only moderators can delete another member's profile.", ephemeral=True
+            )
+            return
+
+        slot = None if character is None or character.value == "all" else character.value
+        count = await self.bot.db.delete_profile(interaction.guild_id, target.id, slot)
+        if count == 0:
+            whose = (
+                "You have"
+                if target == interaction.user
+                else f"{target.display_name} has"
+            )
+            await interaction.response.send_message(
+                f"{whose} nothing to delete there.", ephemeral=True
+            )
+            return
+
+        whose = "Your" if target == interaction.user else f"{target.display_name}'s"
+        what = "profile" if slot is None else f"{SLOT_LABEL[slot]} character"
+        await interaction.response.send_message(
+            f"🗑️ {whose} {what} was deleted.", ephemeral=True
+        )
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        """When a member leaves (or is kicked/banned), forget their data."""
+        if member.bot:
+            return
+        await self.bot.db.purge_member(member.guild.id, member.id)
+
 
 @app_commands.guild_only()
 class Roster(commands.Cog):
