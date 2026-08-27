@@ -257,6 +257,13 @@ When the run is finished, press:
 
 Kisk sends a GG to the party and archives the event announcement.
 
+### 🧵 Discussion threads
+
+Every event automatically gets its **own discussion thread** attached to its
+message, so the party can coordinate without flooding the channel. It works for
+both `/event` and the panel. If the bot lacks the **Create Public Threads**
+permission, Kisk simply skips it — the event is still created.
+
 ### 🎛️ No-command panel
 
 Moderators can use:
@@ -392,6 +399,7 @@ In the **Installation** tab (or OAuth2 → URL Generator), enable:
 * Send Messages
 * Embed Links
 * Read Message History
+* Create Public Threads *(for the per-event discussion thread; optional — Kisk works without it)*
 
 Open the generated installation URL and invite Kisk to your server.
 

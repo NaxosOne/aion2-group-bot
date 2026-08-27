@@ -257,6 +257,14 @@ Quand la sortie est terminée, appuyez sur :
 
 Kisk envoie un GG au groupe et archive l'annonce de l'événement.
 
+### 🧵 Fils de discussion
+
+Chaque événement obtient automatiquement son **propre fil de discussion**
+attaché à son message, pour que le groupe se coordonne sans polluer le salon.
+Ça marche pour `/event` comme pour le panneau. Si le bot n'a pas la permission
+**Create Public Threads**, Kisk saute simplement cette étape — l'événement est
+quand même créé.
+
 ### 🎛️ Panneau sans commande
 
 Les modérateurs peuvent utiliser :
@@ -392,6 +400,7 @@ Dans l'onglet **Installation** (ou OAuth2 → URL Generator), activez :
 * Send Messages
 * Embed Links
 * Read Message History
+* Create Public Threads *(pour le fil de discussion par événement ; optionnel — Kisk fonctionne sans)*
 
 Ouvrez l'URL d'installation générée et invitez Kisk sur votre serveur.
 
