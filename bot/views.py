@@ -6,7 +6,9 @@ The custom_ids themselves are kept from earlier versions so already
 published messages stay clickable.
 """
 
+import asyncio
 import time
+from collections import defaultdict
 
 import discord
 
@@ -17,6 +19,14 @@ from .logic import assign
 
 
 class SignupView(ViewErrorMixin, discord.ui.View):
+    # One lock per event message, shared across every SignupView instance (a
+    # message may be created by one instance and, after a restart, served by
+    # the one re-registered in main.py). Joining, leaving and switching roles
+    # each read the party, mutate the DB and diff the result across several
+    # awaits; serialising per message keeps that read-modify-diff atomic so
+    # concurrent clicks can't double-promote or emit phantom promotions.
+    _locks: dict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
+
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -53,19 +63,21 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         if event is None:
             return
 
-        party_before, _ = assign(
-            event["compo"], event["size"], await db.get_signups(event["message_id"])
-        )
-        removed = await db.remove_signup(event["message_id"], interaction.user.id)
-        if not removed:
-            await interaction.response.send_message(
-                "You're not signed up for this event.", ephemeral=True
+        async with self._locks[event["message_id"]]:
+            party_before, _ = assign(
+                event["compo"], event["size"],
+                await db.get_signups(event["message_id"]),
             )
-            return
+            removed = await db.remove_signup(event["message_id"], interaction.user.id)
+            if not removed:
+                await interaction.response.send_message(
+                    "You're not signed up for this event.", ephemeral=True
+                )
+                return
 
-        await self._refresh(interaction, event)
-        await interaction.followup.send("You've left the event. 👋", ephemeral=True)
-        await self._announce_promoted(interaction, event, party_before)
+            await self._refresh(interaction, event)
+            await interaction.followup.send("You've left the event. 👋", ephemeral=True)
+            await self._announce_promoted(interaction, event, party_before)
 
     @discord.ui.button(
         label="Done", emoji="✅", style=discord.ButtonStyle.success,
@@ -152,33 +164,35 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             )
             return
 
-        party_before, _ = assign(
-            event["compo"], event["size"], await db.get_signups(event["message_id"])
-        )
-        await db.upsert_signup(
-            event["message_id"],
-            interaction.user.id,
-            interaction.user.display_name,
-            role,
-            time.time(),
-        )
+        async with self._locks[event["message_id"]]:
+            party_before, _ = assign(
+                event["compo"], event["size"],
+                await db.get_signups(event["message_id"]),
+            )
+            await db.upsert_signup(
+                event["message_id"],
+                interaction.user.id,
+                interaction.user.display_name,
+                role,
+                time.time(),
+            )
 
-        signups = await self._refresh(interaction, event)
-        party, waitlist = assign(event["compo"], event["size"], signups)
-        if any(s["user_id"] == interaction.user.id for s in party):
-            message = f"You're in as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**! ✅"
-        else:
-            position = next(
-                i for i, s in enumerate(waitlist, start=1)
-                if s["user_id"] == interaction.user.id
-            )
-            message = (
-                f"It's full for now: you're on the **waitlist** "
-                f"(position {position}) as {ROLE_EMOJI[role]} {ROLE_LABEL[role]}. "
-                f"You'll be moved in automatically if a spot opens up. ⏳"
-            )
-        await interaction.followup.send(message, ephemeral=True)
-        await self._announce_promoted(interaction, event, party_before)
+            signups = await self._refresh(interaction, event)
+            party, waitlist = assign(event["compo"], event["size"], signups)
+            if any(s["user_id"] == interaction.user.id for s in party):
+                message = f"You're in as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**! ✅"
+            else:
+                position = next(
+                    i for i, s in enumerate(waitlist, start=1)
+                    if s["user_id"] == interaction.user.id
+                )
+                message = (
+                    f"It's full for now: you're on the **waitlist** "
+                    f"(position {position}) as {ROLE_EMOJI[role]} {ROLE_LABEL[role]}. "
+                    f"You'll be moved in automatically if a spot opens up. ⏳"
+                )
+            await interaction.followup.send(message, ephemeral=True)
+            await self._announce_promoted(interaction, event, party_before)
 
     async def _open_event(self, interaction: discord.Interaction):
         """Finds the event tied to the clicked message, if it's still open."""

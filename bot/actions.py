@@ -5,6 +5,7 @@ same way; both /away and the "Report an absence" button register an absence
 the same way. The logic lives here once.
 """
 
+import logging
 from datetime import datetime
 
 import discord
@@ -13,6 +14,8 @@ from . import config
 from .embeds import build_event_embed
 from .utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
 from .views import SignupView
+
+log = logging.getLogger(__name__)
 
 
 async def resolve_channel(interaction: discord.Interaction, setting: str):
@@ -63,7 +66,21 @@ async def publish_event(
             ephemeral=True,
         )
         return
-    await interaction.client.db.create_event(message_id=message.id, **event)
+    try:
+        await interaction.client.db.create_event(message_id=message.id, **event)
+    except Exception:
+        # The message (with live buttons) exists but has no backing row; delete
+        # it so players don't click a dead event, and tell the creator.
+        log.exception("Failed to persist event for message %s", message.id)
+        try:
+            await message.delete()
+        except discord.HTTPException:
+            pass
+        await interaction.followup.send(
+            "Something went wrong saving this event — please try again.",
+            ephemeral=True,
+        )
+        return
     await interaction.followup.send(
         f"Event created in {channel.mention} — {message.jump_url}", ephemeral=True
     )

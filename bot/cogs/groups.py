@@ -9,7 +9,7 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..actions import publish_event
-from ..embeds import ACTIVITY_EMOJI, build_event_embed
+from ..embeds import ACTIVITY_EMOJI
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.time_parse import ParseError, parse_when
 
