@@ -289,6 +289,21 @@ Les modérateurs peuvent utiliser :
 
 pour présenter les nouveaux membres et expliquer comment utiliser Kisk.
 
+### 🧭 Onboarding de profil
+
+Indiquez une fois à Kisk votre rôle « membre validé » :
+
+```text
+/onboard role: @Membre
+```
+
+Ensuite, dès qu'un membre reçoit ce rôle, Kisk lui envoie en MP un bouton qui
+ouvre un formulaire guidé à menus déroulants pour enregistrer son personnage
+principal — **classe** (avec les icônes de classes Aion 2), **rôle** et nom —
+puis pour ajouter un reroll, le tout sans taper la moindre commande. Si ses MP
+sont fermés, Kisk bascule sur le salon de bienvenue (ou le salon système du
+serveur). Tout le flux côté membre est bilingue **anglais / français**.
+
 ### 🤖 Statut du bot
 
 Kisk peut afficher le prochain événement à venir dans son statut Discord :
@@ -531,7 +546,8 @@ Consultez **[DEPLOYMENT.md](DEPLOYMENT.md)** pour les options d'hébergement en 
 ## Nouveaux membres
 
 ```text
-/welcome
+/welcome                      → accueillir les nouveaux dans ce salon (modérateurs)
+/onboard role: @Membre        → MP aux nouveaux de ce rôle pour configurer leur profil
 ```
 
 ## Panneau & salons
@@ -548,10 +564,12 @@ qui n'aiment pas taper des commandes cliquent simplement sur **Créer un
 événement** ou **Signaler une absence** et remplissent le formulaire ; l'événement
 apparaît dans le salon des événements et ils reçoivent un lien vers celui-ci.
 
-Les emojis de rôle et de type d'événement peuvent être remplacés par le pack
-d'icônes fourni dans [`assets/emoji/`](assets/emoji/README.md) — importez les
-PNG dans le portail développeur (onglet **Emojis**), puis définissez
-`EMOJI_TANK`, `EMOJI_DUNGEON`, … dans `.env`. Les emojis personnalisés
+Les emojis de rôle, de type d'événement et de **classe Aion 2** peuvent être
+remplacés par les vôtres — importez-les comme emojis personnalisés dans le
+portail développeur (onglet **Emojis**), puis définissez `EMOJI_TANK`,
+`EMOJI_DUNGEON`, `EMOJI_GLADIATOR`, … dans `.env`. Un pack d'icônes de rôle et
+de type est fourni dans [`assets/emoji/`](assets/emoji/README.md). Les emojis
+personnalisés
 apparaissent dans les embeds, les boutons et les messages ; Discord affiche les
 listes de choix des commandes slash en texte brut, où seuls les emojis Unicode
 fonctionnent.
@@ -583,13 +601,16 @@ bot/
     legion.py           /away, /absences, /back, /announce, /welcome
     polls.py            /vote and /availability
     panel.py            /panel: buttons opening fill-in forms
+    onboarding.py       /onboard: DM new members to set up their profile
 
   utils/
     time_parse.py       Natural-language time parsing
+    onboarding.py       Pure onboarding helpers (role/profile checks)
 
 tests/
   test_logic.py
   test_time_parse.py
+  test_onboarding.py
 ```
 
 ### Architecture

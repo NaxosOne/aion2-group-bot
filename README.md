@@ -289,6 +289,21 @@ Moderators can use:
 
 to introduce new members and explain how to use Kisk.
 
+### 🧭 Profile onboarding
+
+Point Kisk at your "validated member" role once:
+
+```text
+/onboard role: @Member
+```
+
+From then on, whenever a member receives that role, Kisk DMs them a button that
+opens a guided, dropdown-based form to register their main character — **class**
+(with Aion 2 class icons), **role** and name — and then to add an alt, all
+without typing a command. If their DMs are closed, Kisk falls back to the
+welcome channel (or the server's system channel). The whole member-facing flow
+is bilingual **English / French**.
+
 ### 🤖 Bot status
 
 Kisk can display the next upcoming event in its Discord status:
@@ -531,7 +546,8 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for production hosting options, including
 ## New members
 
 ```text
-/welcome
+/welcome                      → greet newcomers in this channel (moderators)
+/onboard role: @Member        → DM new members of that role to set up their profile
 ```
 
 ## Panel & channels
@@ -547,9 +563,10 @@ gets buried under its own results. Members who dislike typing commands just
 click **Create an event** or **Report an absence** and fill in the pop-up form;
 the event appears in the events channel and they get a link to it.
 
-Role and event-type emojis can be replaced with the icon pack shipped in
-[`assets/emoji/`](assets/emoji/README.md) — upload the PNGs in the developer
-portal (**Emojis** tab), then set `EMOJI_TANK`, `EMOJI_DUNGEON`, … in `.env`.
+Role, event-type and **Aion 2 class** emojis can be replaced with your own —
+upload them as custom emojis in the developer portal (**Emojis** tab), then set
+`EMOJI_TANK`, `EMOJI_DUNGEON`, `EMOJI_GLADIATOR`, … in `.env`. A ready-made role
+and event-type icon pack ships in [`assets/emoji/`](assets/emoji/README.md).
 Custom emojis show up in embeds, buttons and messages; Discord renders
 slash-command choice lists as plain text, where only Unicode emojis work.
 
@@ -580,13 +597,16 @@ bot/
     legion.py           /away, /absences, /back, /announce, /welcome
     polls.py            /vote and /availability
     panel.py            /panel: buttons opening fill-in forms
+    onboarding.py       /onboard: DM new members to set up their profile
 
   utils/
     time_parse.py       Natural-language time parsing
+    onboarding.py       Pure onboarding helpers (role/profile checks)
 
 tests/
   test_logic.py
   test_time_parse.py
+  test_onboarding.py
 ```
 
 ### Architecture
