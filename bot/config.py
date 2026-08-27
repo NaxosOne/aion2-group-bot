@@ -51,4 +51,22 @@ EMOJI_ACTIVITY = {
     }.items()
 }
 
+# Aion 2 class emojis, overridable the same way (EMOJI_GLADIATOR, EMOJI_TEMPLAR
+# ...). Defaults are Unicode; to use the real in-game icons, upload them as
+# custom emojis on your Discord (developer portal -> Emojis) and paste the codes
+# here, e.g. EMOJI_GLADIATOR=<:gladiator:123456789012345678>.
+CLASS_EMOJI = {
+    name: os.getenv(f"EMOJI_{name.upper()}") or default
+    for name, default in {
+        "Gladiator": "⚔️",
+        "Templar": "🛡️",
+        "Assassin": "🗡️",
+        "Ranger": "🏹",
+        "Sorcerer": "🔥",
+        "Spiritmaster": "👻",
+        "Cleric": "✨",
+        "Chanter": "🎵",
+    }.items()
+}
+
 DB_PATH = os.getenv("DB_PATH", "data/bot.db")

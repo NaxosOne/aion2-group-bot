@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from .. import config
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
 
 # Class suggestions (inherited from Aion — free text is accepted: update this
@@ -30,8 +31,10 @@ async def class_autocomplete(_: discord.Interaction, current: str):
 
 
 def _character_line(p) -> str:
-    """E.g. "🛡️ **Kratos** (Templar)"."""
-    return f"{ROLE_EMOJI[p['role']]} **{p['char_name']}** ({p['char_class']})"
+    """E.g. "🛡️ **Kratos** (⚔️ Templar)"."""
+    emoji = config.CLASS_EMOJI.get(p["char_class"])
+    char_class = f"{emoji} {p['char_class']}" if emoji else p["char_class"]
+    return f"{ROLE_EMOJI[p['role']]} **{p['char_name']}** ({char_class})"
 
 
 @app_commands.guild_only()
