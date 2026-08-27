@@ -20,12 +20,12 @@ The foundations are in place:
 * Custom role and event-type emoji pack
 * Automatic reminders, event completion and cancellation
 * Multi-guild — Kisk runs independently on any number of servers
+* Role ping when creating an event (`/event ping: @role`)
 
 ## 🟢 Phase 1 — Better group organisation
 
 Make creating and managing groups as frictionless as possible.
 
-* [ ] Discord role ping when creating an event
 * [ ] Automatic thread for each event
 * [ ] Aion 2 class picker during sign-up
 * [ ] Sign-up confirmation before an event (a quick "are you coming?" RSVP)

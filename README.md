@@ -478,6 +478,7 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for production hosting options, including
        type: Dungeon
        comp: Party of 5
        when: tomorrow 21:00
+       ping: @Aion2
 
 /event title: Evening BG
        type: Battleground
@@ -491,6 +492,9 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for production hosting options, including
 
 /events
 ```
+
+`ping` is optional: give it a role to notify the legion when the event is
+posted. Pinging `@everyone` is reserved to moderators.
 
 ## Profiles
 

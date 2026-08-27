@@ -478,6 +478,7 @@ Consultez **[DEPLOYMENT.md](DEPLOYMENT.md)** pour les options d'hébergement en 
        type: Dungeon
        comp: Party of 5
        when: tomorrow 21:00
+       ping: @Aion2
 
 /event title: Evening BG
        type: Battleground
@@ -491,6 +492,9 @@ Consultez **[DEPLOYMENT.md](DEPLOYMENT.md)** pour les options d'hébergement en 
 
 /events
 ```
+
+`ping` est optionnel : indique un rôle à notifier quand l'événement est publié.
+Le ping `@everyone` est réservé aux modérateurs.
 
 ## Profils
 
