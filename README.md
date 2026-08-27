@@ -133,17 +133,22 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)**: the free or nearly-free options
 /availability weekly      → re-post it here every week (moderators)
 /welcome                  → greet newcomers in this channel (moderators)
 /panel                    → post the click-only quick-actions panel (moderators)
+/channels events: #events absences: #absences   → where results are posted
 ```
 
-**Tip for a smooth server**: post `/panel` in your main channel and pin it.
-Members who don't like typing commands just click **Create an event** or
-**Report an absence** and fill in the pop-up form.
+**Tip for a smooth server**: post `/panel` in a channel of its own and pin
+it, then run `/channels events: #events absences: #absences` so the panel
+never gets buried under its own results. Members who don't like typing
+commands just click **Create an event** or **Report an absence** and fill in
+the pop-up form; the event appears in the events channel and they get a link
+to it.
 
-Role and event-type emojis can be replaced with your own: upload the PNGs
-from `assets/emoji/` in the developer portal (**Emojis** tab), then set
-`EMOJI_TANK`, `EMOJI_DUNGEON`, ... in `.env` (see `.env.example`). Custom
-emojis show up in embeds, buttons and messages; Discord renders
-slash-command choice lists as plain text, where only Unicode emojis work.
+Role and event-type emojis can be replaced with the icon pack shipped in
+[`assets/emoji/`](assets/emoji/README.md) — upload the PNGs in the developer
+portal (**Emojis** tab), then set `EMOJI_TANK`, `EMOJI_DUNGEON`, ... in
+`.env`. Custom emojis show up in embeds, buttons and messages; Discord
+renders slash-command choice lists as plain text, where only Unicode emojis
+work.
 
 The classes suggested by `/profile` are just suggestions (free text): the
 list lives in `bot/cogs/profiles.py` (`AION_CLASSES`) — update it there once
@@ -152,7 +157,7 @@ the final Aion 2 class names are known.
 ## Project layout
 
 ```
-assets/                Avatar and banner (PNG + SVG sources)
+assets/                Avatar and banner (+ emoji/ icon pack)
 bot/
   main.py              Entry point: connection, command sync
   config.py            Reads .env (token, timezone, reminders...)

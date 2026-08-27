@@ -46,6 +46,8 @@ chacun s'inscrit en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal,
 - **Panneau sans commande** : `/panel` (modérateurs) publie un message à
   épingler dont les boutons ouvrent un formulaire à remplir — créer une
   sortie ou signaler une absence sans taper la moindre commande.
+- **Salons dédiés** : `/channels` (modérateurs) choisit où sont publiées les
+  sorties et les absences, pour que le panneau épinglé reste visible.
 - **Accueil des nouveaux** : `/welcome` (modérateurs).
 - **Statut du bot** : la prochaine sortie s'affiche dans son statut Discord.
 - **Persistance SQLite** : les boutons survivent aux redémarrages.
@@ -116,16 +118,20 @@ options gratuites ou quasi gratuites, avec les étapes détaillées.
 /availability weekly      → le republier chaque semaine ici (modérateurs)
 /welcome                  → accueillir les nouveaux dans ce salon (modérateurs)
 /panel                    → publier le panneau tout-en-boutons (modérateurs)
+/channels events: #sorties absences: #absences   → où atterrissent les résultats
 ```
 
-**Astuce** : publie `/panel` dans ton salon principal et épingle-le. Ceux qui
-galèrent avec les commandes cliquent simplement sur **Create an event** ou
-**Report an absence** et remplissent la fenêtre qui s'ouvre.
+**Astuce** : publie `/panel` dans un salon dédié et épingle-le, puis lance
+`/channels events: #sorties absences: #absences` pour que le panneau ne soit
+jamais noyé sous ses propres résultats. Ceux qui galèrent avec les commandes
+cliquent simplement sur **Create an event** ou **Report an absence**,
+remplissent la fenêtre, et reçoivent un lien vers la sortie créée dans le
+salon dédié.
 
-Les emojis des rôles et des types de sortie sont remplaçables : uploade les
-PNG de `assets/emoji/` dans le portail développeur (onglet **Emojis**), puis
-renseigne `EMOJI_TANK`, `EMOJI_DUNGEON`... dans le `.env` (voir
-`.env.example`). Ils s'affichent dans les annonces, les boutons et les
+Les emojis des rôles et des types de sortie sont remplaçables par le pack
+d'icônes fourni dans [`assets/emoji/`](assets/emoji/README.md) : uploade les
+PNG dans le portail développeur (onglet **Emojis**), puis renseigne
+`EMOJI_TANK`, `EMOJI_DUNGEON`... dans le `.env`. Ils s'affichent dans les annonces, les boutons et les
 messages ; en revanche les listes de choix des commandes slash sont du texte
 brut où seuls les emojis Unicode fonctionnent.
 
