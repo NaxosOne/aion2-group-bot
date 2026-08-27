@@ -26,7 +26,6 @@ Les fondations sont en place :
 
 Rendre la création et la gestion des groupes aussi fluides que possible.
 
-* [ ] Ping de rôle Discord lors de la création d'un événement
 * [ ] Fil de discussion automatique pour chaque événement
 * [ ] Sélecteur de classe Aion 2 lors de l'inscription
 * [ ] Confirmation d'inscription avant l'événement (un rapide « tu viens ? »)

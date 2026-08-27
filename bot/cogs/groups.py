@@ -40,6 +40,7 @@ class Groups(commands.Cog):
         when="E.g. “21:00”, “9pm”, “tomorrow 20:30”, “30/08 21:00”. Empty = right now.",
         size="Number of slots in open mode (default: 5). Ignored for standard parties.",
         description="Extra info: required level, voice channel, etc.",
+        ping="Optional: a role to notify (e.g. @Aion2). @everyone is moderators only.",
     )
     @app_commands.choices(
         activity=[
@@ -71,6 +72,7 @@ class Groups(commands.Cog):
         when: str | None = None,
         size: app_commands.Range[int, 2, 25] | None = None,
         description: app_commands.Range[str, 1, 500] | None = None,
+        ping: discord.Role | None = None,
     ):
         starts_at = None
         if when:
@@ -94,6 +96,7 @@ class Groups(commands.Cog):
             size=party_size,
             starts_at=starts_at,
             description=description,
+            ping_role=ping,
         )
 
     # ----- /events -----

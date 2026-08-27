@@ -26,7 +26,6 @@ The foundations are in place:
 
 Make creating and managing groups as frictionless as possible.
 
-* [ ] Discord role ping when creating an event
 * [ ] Automatic thread for each event
 * [ ] Aion 2 class picker during sign-up
 * [ ] Sign-up confirmation before an event (a quick "are you coming?" RSVP)
