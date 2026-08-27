@@ -12,6 +12,7 @@ import discord
 
 from . import config
 from .embeds import build_event_embed
+from .utils.mentions import ping_permitted
 from .utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
 from .views import SignupView
 
@@ -37,8 +38,25 @@ async def publish_event(
     interaction: discord.Interaction, *,
     title: str, activity: str, comp_mode: str, size: int,
     starts_at: int | None, description: str | None,
+    ping_role: "discord.Role | None" = None,
 ) -> None:
-    """Posts the event message in the configured (or current) channel."""
+    """Posts the event message in the configured (or current) channel.
+
+    If `ping_role` is given, the message mentions that role so the legion is
+    notified. Pinging @everyone is reserved to moderators (mentioning through
+    the bot bypasses the member's own permissions).
+    """
+    if ping_role is not None:
+        is_moderator = interaction.user.guild_permissions.manage_messages
+        if not ping_permitted(
+            is_default_role=ping_role.is_default(), is_moderator=is_moderator
+        ):
+            await interaction.response.send_message(
+                "Only moderators can ping @everyone. Pick a specific role instead.",
+                ephemeral=True,
+            )
+            return
+
     channel = await resolve_channel(interaction, "event_channel_id")
     event = {
         "channel_id": channel.id,
@@ -55,9 +73,19 @@ async def publish_event(
     }
     # Send the message first so we know its ID, which is our key.
     embed = build_event_embed(event, [])
+    if ping_role is not None:
+        content = ping_role.mention
+        mentions = discord.AllowedMentions(
+            roles=[ping_role], everyone=ping_role.is_default()
+        )
+    else:
+        content = None
+        mentions = discord.AllowedMentions.none()
     await interaction.response.defer(ephemeral=True)
     try:
-        message = await channel.send(embed=embed, view=SignupView())
+        message = await channel.send(
+            content=content, embed=embed, view=SignupView(), allowed_mentions=mentions
+        )
     except discord.Forbidden:
         await interaction.followup.send(
             f"I'm not allowed to post in {channel.mention}. Give me the "
