@@ -1,9 +1,16 @@
-"""The quick-actions panel: buttons that open pop-up forms (modals), so
+"""The quick-actions panel: buttons that open menus and pop-up forms, so
 members can create an event or report an absence without typing a single
 slash command.
 
 A moderator posts the panel once with /panel (and pins it); its buttons are
 persistent, like every other button of the bot.
+
+Creating an event takes two steps, because Discord forms (modals) only
+accept text fields — dropdowns have to live in a message:
+  1. the button opens a private message with two dropdowns (type, party
+     setup) and a Continue button;
+  2. Continue opens the form for what genuinely needs typing (title, time,
+     description — plus a free-text name when the type is "Other").
 """
 
 import discord
@@ -16,81 +23,154 @@ from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import COMPO_OPEN, COMPO_STANDARD
 from ..utils.time_parse import ParseError, parse_when
 
-# Lenient input for the "Type" field of the form (French synonyms included).
-ACTIVITY_ALIASES = {
-    "dungeon": "Dungeon", "donjon": "Dungeon",
-    "raid": "Raid",
-    "battleground": "Battleground", "bg": "Battleground",
-    "pvp": "PvP",
-    "rift": "Rift", "faille": "Rift",
-    "abyss": "Abyss", "abysses": "Abyss", "aby": "Abyss",
-    "other": "Other", "autre": "Other",
+# The event types offered by the dropdown, in the order they appear.
+ACTIVITIES = ("Dungeon", "Raid", "Battleground", "PvP", "Rift", "Abyss", "Other")
+
+# Party setups: value -> (label, description, composition mode, size).
+SETUPS = {
+    "standard5": ("Party of 5", "1 tank / 1 heal / 3 DPS", COMPO_STANDARD, 5),
+    "standard10": ("Party of 10", "2 tanks / 2 heals / 6 DPS", COMPO_STANDARD, 10),
+    "open5": ("Open — 5 slots", "No role limits", COMPO_OPEN, 5),
+    "open10": ("Open — 10 slots", "No role limits", COMPO_OPEN, 10),
+    "open25": ("Open — 25 slots", "No role limits, for sieges", COMPO_OPEN, 25),
 }
-
-ACTIVITY_HELP = "Dungeon, Raid, Battleground (BG), PvP, Rift, Abyss or Other"
-
-
-def parse_activity(text: str) -> str | None:
-    return ACTIVITY_ALIASES.get(" ".join(text.strip().lower().split()))
+DEFAULT_SETUP = "standard5"
 
 
-def parse_comp(text: str) -> tuple[str, int] | None:
-    """ "5" -> standard party of 5, "10" -> standard party of 10,
-    "open"/"libre" -> open with 5 slots, another number -> open that size."""
-    s = text.strip().lower()
-    if s in ("", "5"):
-        return (COMPO_STANDARD, 5)
-    if s == "10":
-        return (COMPO_STANDARD, 10)
-    if s in ("open", "libre"):
-        return (COMPO_OPEN, 5)
-    if s.isdigit() and 2 <= int(s) <= 25:
-        return (COMPO_OPEN, int(s))
-    return None
+class ActivitySelect(discord.ui.Select):
+    """Dropdown of event types: no typing, no typos, no invented types."""
+
+    def __init__(self, chosen: str | None):
+        super().__init__(
+            placeholder="Event type…", row=0, options=self._options(chosen)
+        )
+
+    @staticmethod
+    def _options(chosen: str | None) -> list[discord.SelectOption]:
+        return [
+            discord.SelectOption(
+                label=name,
+                emoji=config.EMOJI_ACTIVITY[name],
+                default=(name == chosen),
+            )
+            for name in ACTIVITIES
+        ]
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.activity = self.values[0]
+        self.options = self._options(self.values[0])
+        await interaction.response.edit_message(
+            embed=self.view.summary(), view=self.view
+        )
 
 
-class EventModal(ModalErrorMixin, discord.ui.Modal, title="New event"):
-    event_title = discord.ui.TextInput(label="Title", max_length=100)
-    activity = discord.ui.TextInput(
-        label="Type", placeholder=ACTIVITY_HELP, max_length=20
+class SetupSelect(discord.ui.Select):
+    """Dropdown of party setups, so sizes stay ones the bot can fill."""
+
+    def __init__(self, chosen: str):
+        super().__init__(
+            placeholder="Party setup…", row=1, options=self._options(chosen)
+        )
+
+    @staticmethod
+    def _options(chosen: str) -> list[discord.SelectOption]:
+        return [
+            discord.SelectOption(
+                label=label, description=description, value=value,
+                default=(value == chosen),
+            )
+            for value, (label, description, _, _) in SETUPS.items()
+        ]
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.setup = self.values[0]
+        self.options = self._options(self.values[0])
+        await interaction.response.edit_message(
+            embed=self.view.summary(), view=self.view
+        )
+
+
+class EventSetupView(ViewErrorMixin, discord.ui.View):
+    """The private step-one message: pick the type and the setup.
+
+    Short-lived and only visible to the member who clicked, so its state
+    lives on the instance — nothing to persist across restarts.
+    """
+
+    def __init__(self):
+        super().__init__(timeout=600)
+        self.activity: str | None = None
+        self.setup: str = DEFAULT_SETUP
+        self.add_item(ActivitySelect(None))
+        self.add_item(SetupSelect(DEFAULT_SETUP))
+
+    def summary(self) -> discord.Embed:
+        label, description, _, _ = SETUPS[self.setup]
+        if self.activity:
+            type_line = f"{config.EMOJI_ACTIVITY[self.activity]} **{self.activity}**"
+        else:
+            type_line = "*not chosen yet*"
+        return discord.Embed(
+            title="📅 New event — step 1 of 2",
+            description=(
+                f"**Type:** {type_line}\n"
+                f"**Setup:** {label} *({description})*\n\n"
+                "Pick from the menus, then hit **Continue** to name it."
+            ),
+            colour=discord.Colour.blurple(),
+        )
+
+    @discord.ui.button(
+        label="Continue", emoji="➡️", style=discord.ButtonStyle.success, row=2
     )
-    comp = discord.ui.TextInput(
-        label="Party size",
-        placeholder="5 = 1 tank/1 heal/3 DPS · 10 = 2/2/6 · other number = open",
-        required=False, max_length=10,
-    )
-    when = discord.ui.TextInput(
-        label="When (optional)",
-        placeholder="21:00 · 9pm · tomorrow 20:30 · 30/08 21:00",
-        required=False, max_length=30,
-    )
-    description = discord.ui.TextInput(
-        label="Description (optional)",
-        style=discord.TextStyle.paragraph,
-        required=False, max_length=500,
-    )
+    async def proceed(self, interaction: discord.Interaction, _):
+        if self.activity is None:
+            await interaction.response.send_message(
+                "Pick an event type in the first menu, then hit Continue.",
+                ephemeral=True,
+            )
+            return
+        await interaction.response.send_modal(
+            EventDetailsModal(self.activity, self.setup)
+        )
+
+
+class EventDetailsModal(ModalErrorMixin, discord.ui.Modal):
+    """Step two: only what genuinely needs typing."""
+
+    def __init__(self, activity: str, setup: str):
+        super().__init__(title=f"New {activity} event"[:45])
+        self.activity = activity
+        self.setup = setup
+
+        self.event_title = discord.ui.TextInput(label="Title", max_length=100)
+        self.add_item(self.event_title)
+
+        # "Other" is the one type members can name themselves.
+        self.custom_type = None
+        if activity == "Other":
+            self.custom_type = discord.ui.TextInput(
+                label="Type name (optional)",
+                placeholder="Guild meeting, screenshot night...",
+                required=False, max_length=30,
+            )
+            self.add_item(self.custom_type)
+
+        self.when = discord.ui.TextInput(
+            label="When (optional)",
+            placeholder="21:00 · 9pm · tomorrow 20:30 · 30/08 21:00",
+            required=False, max_length=30,
+        )
+        self.add_item(self.when)
+
+        self.description = discord.ui.TextInput(
+            label="Description (optional)",
+            style=discord.TextStyle.paragraph,
+            required=False, max_length=500,
+        )
+        self.add_item(self.description)
 
     async def on_submit(self, interaction: discord.Interaction):
-        activity = parse_activity(self.activity.value)
-        if activity is None:
-            await interaction.response.send_message(
-                f"Unknown event type `{self.activity.value}`. "
-                f"Valid types: {ACTIVITY_HELP}.",
-                ephemeral=True,
-            )
-            return
-
-        parsed = parse_comp(self.comp.value)
-        if parsed is None:
-            await interaction.response.send_message(
-                f"I didn't understand the party size `{self.comp.value}`. "
-                "Use `5` (1 tank / 1 heal / 3 DPS), `10` (2/2/6), "
-                "or another number between 2 and 25 for an open party.",
-                ephemeral=True,
-            )
-            return
-        comp_mode, size = parsed
-
         starts_at = None
         if self.when.value:
             try:
@@ -99,6 +179,11 @@ class EventModal(ModalErrorMixin, discord.ui.Modal, title="New event"):
                 await interaction.response.send_message(str(err), ephemeral=True)
                 return
 
+        activity = self.activity
+        if self.custom_type is not None and self.custom_type.value.strip():
+            activity = self.custom_type.value.strip()
+
+        _, _, comp_mode, size = SETUPS[self.setup]
         await publish_event(
             interaction,
             title=self.event_title.value.strip(),
@@ -145,7 +230,10 @@ class PanelView(ViewErrorMixin, discord.ui.View):
         custom_id="panel:event",
     )
     async def create_event(self, interaction: discord.Interaction, _):
-        await interaction.response.send_modal(EventModal())
+        view = EventSetupView()
+        await interaction.response.send_message(
+            embed=view.summary(), view=view, ephemeral=True
+        )
 
     @discord.ui.button(
         label="Report an absence", emoji="🏖️", style=discord.ButtonStyle.secondary,
@@ -234,8 +322,8 @@ class Panel(commands.Cog):
         embed = discord.Embed(
             title="⚡ Kisk — quick actions",
             description=(
-                "No commands to remember — just click a button and fill in "
-                "the form:\n\n"
+                "No commands to remember — click a button, pick from the "
+                "menus, fill in the blanks:\n\n"
                 "📅 **Create an event** — dungeon, raid, battleground, PvP...\n"
                 "🏖️ **Report an absence** — let the legion know when you're away\n\n"
                 "Joining an event stays one click on its "

@@ -262,9 +262,15 @@ Les modérateurs peuvent utiliser :
 /panel
 ```
 
-pour publier un message épinglé dont les boutons ouvrent un formulaire à
-remplir — les membres créent un événement ou signalent une absence **sans taper
-la moindre commande**.
+pour publier un message épinglé dont les boutons guident les membres pour créer
+un événement ou signaler une absence **sans taper la moindre commande**.
+
+La création se fait en deux temps : le bouton ouvre un message privé avec deux
+menus déroulants — le **type** (Dungeon, Raid, Battleground, PvP, Rift, Abyss,
+Other) et la **composition** (groupe de 5, groupe de 10, ou groupe libre de 5,
+10 ou 25 places) — puis **Continue** ouvre un court formulaire pour le titre,
+l'horaire et la description. Rien à écrire, rien à inventer : le seul type en
+texte libre est le nom facultatif qu'on peut donner à un événement **Other**.
 
 Associez-le à `/channels` pour garder le panneau dans son propre salon pendant
 que ses résultats atterrissent ailleurs :

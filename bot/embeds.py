@@ -53,7 +53,8 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     size = event["size"]
     full = len(party) >= size
 
-    emoji = ACTIVITY_EMOJI.get(event["activity"], "📣")
+    # A member can name an "Other" event freely: fall back to its icon.
+    emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
     title = f"{emoji} {event['title']}"
     if cancelled:
         title = f"❌ [CANCELLED] {event['title']}"

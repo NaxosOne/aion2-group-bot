@@ -190,7 +190,9 @@ class Groups(commands.Cog):
     async def status(self):
         ev = await self.bot.db.next_upcoming_event(int(time.time()))
         if ev:
-            emoji = ACTIVITY_EMOJI.get(ev["activity"], "📣")
+            emoji = ACTIVITY_EMOJI.get(
+                ev["activity"], config.EMOJI_ACTIVITY["Other"]
+            )
             text = f"{emoji} {ev['title']} — {self._short_when(ev['starts_at'])}"
         else:
             text = "/event to start a group"

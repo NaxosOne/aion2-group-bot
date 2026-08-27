@@ -262,8 +262,15 @@ Moderators can use:
 /panel
 ```
 
-to post a pinned message whose buttons open a fill-in form — members create an
-event or report an absence **without typing a single command**.
+to post a pinned message whose buttons walk members through creating an event
+or reporting an absence **without typing a single command**.
+
+Creating an event takes two steps: the button opens a private message with two
+dropdowns — **event type** (Dungeon, Raid, Battleground, PvP, Rift, Abyss,
+Other) and **party setup** (party of 5, party of 10, or an open party of 5, 10
+or 25) — then **Continue** opens a short form for the title, the time and the
+description. Nothing to spell, nothing to invent: the only free-text type is
+the optional name you can give to an **Other** event.
 
 Pair it with `/channels` to keep the panel in its own channel while its results
 land elsewhere:
