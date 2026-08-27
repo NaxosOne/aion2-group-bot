@@ -8,10 +8,10 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config
+from ..actions import publish_event
 from ..embeds import ACTIVITY_EMOJI, build_event_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.time_parse import ParseError, parse_when
-from ..views import SignupView
 
 
 @app_commands.guild_only()
@@ -86,25 +86,15 @@ class Groups(commands.Cog):
         else:
             comp_mode, party_size = COMPO_STANDARD, 10 if comp.value == "standard10" else 5
 
-        event = {
-            "channel_id": interaction.channel_id,
-            "guild_id": interaction.guild_id,
-            "creator_id": interaction.user.id,
-            "creator_name": interaction.user.display_name,
-            "title": title,
-            "activity": activity.value,
-            "description": description,
-            "compo": comp_mode,
-            "size": party_size,
-            "starts_at": starts_at,
-            "status": "open",
-        }
-
-        # Send the message first so we know its ID, which is our key.
-        embed = build_event_embed(event, [])
-        await interaction.response.send_message(embed=embed, view=SignupView())
-        message = await interaction.original_response()
-        await self.bot.db.create_event(message_id=message.id, **event)
+        await publish_event(
+            interaction,
+            title=title,
+            activity=activity.value,
+            comp_mode=comp_mode,
+            size=party_size,
+            starts_at=starts_at,
+            description=description,
+        )
 
     # ----- /events -----
 

@@ -35,4 +35,20 @@ EMOJI_TANK = os.getenv("EMOJI_TANK") or "🛡️"
 EMOJI_HEAL = os.getenv("EMOJI_HEAL") or "💚"
 EMOJI_DPS = os.getenv("EMOJI_DPS") or "🗡️"
 
+# Event-type emojis, overridable the same way (EMOJI_DUNGEON, EMOJI_RAID...).
+# Note: custom emojis show up in embeds and messages, but Discord renders the
+# slash-command choice lists as plain text, where only Unicode emojis work.
+EMOJI_ACTIVITY = {
+    name: os.getenv(f"EMOJI_{name.upper()}") or default
+    for name, default in {
+        "Dungeon": "🏰",
+        "Raid": "🐉",
+        "Battleground": "🚩",
+        "PvP": "⚔️",
+        "Rift": "🌀",
+        "Abyss": "🌌",
+        "Other": "🎲",
+    }.items()
+}
+
 DB_PATH = os.getenv("DB_PATH", "data/bot.db")

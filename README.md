@@ -46,6 +46,9 @@ Like the in-game kisk, it's the rally point you drop before the fight.
   re-posts it automatically every week in the chosen channel.
 - **"Done ✅" button**: closes an event with a GG to the party and archives
   the announcement.
+- **No-command panel**: `/panel` (moderators) posts a pinned message whose
+  buttons open a fill-in form — members create an event or report an absence
+  without typing a single command.
 - **Welcoming newcomers**: `/welcome` (moderators) — the bot greets new
   members with the how-to.
 - **Bot status**: the next event shows up in its Discord status
@@ -129,7 +132,18 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)**: the free or nearly-free options
 /availability post        → this week's availability board (Mon→Sun buttons)
 /availability weekly      → re-post it here every week (moderators)
 /welcome                  → greet newcomers in this channel (moderators)
+/panel                    → post the click-only quick-actions panel (moderators)
 ```
+
+**Tip for a smooth server**: post `/panel` in your main channel and pin it.
+Members who don't like typing commands just click **Create an event** or
+**Report an absence** and fill in the pop-up form.
+
+Role and event-type emojis can be replaced with your own: upload the PNGs
+from `assets/emoji/` in the developer portal (**Emojis** tab), then set
+`EMOJI_TANK`, `EMOJI_DUNGEON`, ... in `.env` (see `.env.example`). Custom
+emojis show up in embeds, buttons and messages; Discord renders
+slash-command choice lists as plain text, where only Unicode emojis work.
 
 The classes suggested by `/profile` are just suggestions (free text): the
 list lives in `bot/cogs/profiles.py` (`AION_CLASSES`) — update it there once
@@ -150,6 +164,9 @@ bot/
   cogs/profiles.py     /profile (main + alt) and /roster
   cogs/legion.py       /away, /absences, /back, /announce, /welcome
   cogs/polls.py        /vote and /availability (weekly auto-post)
+  cogs/panel.py        /panel: buttons opening fill-in forms
+  actions.py           Event/absence logic shared by commands and forms
+  errors.py            Always answer the user when something fails
   utils/time_parse.py  "tomorrow 9pm" -> real date (pure, tested)
 tests/                 python -m tests.test_logic ; python -m tests.test_time_parse
 ```

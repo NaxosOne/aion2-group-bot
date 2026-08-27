@@ -12,10 +12,11 @@ import discord
 
 from . import config
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed
+from .errors import ViewErrorMixin
 from .logic import assign
 
 
-class SignupView(discord.ui.View):
+class SignupView(ViewErrorMixin, discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 

@@ -2,27 +2,16 @@
 and welcoming newcomers (/welcome)."""
 
 import time
-from datetime import datetime
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from .. import config
-from ..utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
+from ..actions import fmt_absence_ts, register_absence
+from ..errors import ModalErrorMixin
 
 
-def _fmt_ts(ts: int, end: bool = False) -> str:
-    """Date seule (<t:D>) pour une journée entière, date + heure (<t:f>) sinon.
-
-    Une borne « journée entière » est stockée à 00:00 (début) ou 23:59 (fin).
-    """
-    dt = datetime.fromtimestamp(ts, config.TIMEZONE)
-    day_boundary = (dt.hour, dt.minute) == ((23, 59) if end else (0, 0))
-    return f"<t:{ts}:D>" if day_boundary else f"<t:{ts}:f>"
-
-
-class AnnounceModal(discord.ui.Modal, title="Legion announcement"):
+class AnnounceModal(ModalErrorMixin, discord.ui.Modal, title="Legion announcement"):
     """Pop-up form: allows a multi-line message."""
 
     announce_title = discord.ui.TextInput(label="Title", max_length=100)
@@ -80,51 +69,7 @@ class Legion(commands.Cog):
         until: str | None = None,
         reason: app_commands.Range[str, 1, 100] | None = None,
     ):
-        tz = config.TIMEZONE
-        try:
-            start_dt, start_has_time = parse_when_or_date(start, tz)
-            if until:
-                end_dt, end_has_time = parse_when_or_date(until, tz)
-            else:
-                # No "until": away until the end of the starting day.
-                end_dt, end_has_time = start_dt, False
-        except ParseError as err:
-            await interaction.response.send_message(
-                f"{err} {HELP_FORMATS_DATETIME}", ephemeral=True
-            )
-            return
-
-        start_ts = int(start_dt.timestamp())
-        if end_has_time:
-            end_ts = int(end_dt.timestamp())
-        else:
-            end_ts = int(
-                datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, tzinfo=tz).timestamp()
-            )
-        if end_ts < start_ts:
-            await interaction.response.send_message(
-                "The return moment is before the departure. 🤔", ephemeral=True
-            )
-            return
-
-        await self.bot.db.add_absence(
-            interaction.guild_id, interaction.user.id, start_ts, end_ts, reason
-        )
-
-        whole_single_day = (
-            not start_has_time and not end_has_time
-            and start_dt.date() == end_dt.date()
-        )
-        if whole_single_day:
-            period = f"on <t:{start_ts}:D>"
-        else:
-            period = f"from {_fmt_ts(start_ts)} to {_fmt_ts(end_ts, end=True)}"
-        await interaction.response.send_message(
-            f"🏖️ {interaction.user.mention} will be away {period}"
-            + (f" ({reason})" if reason else "")
-            + ". Enjoy the break!",
-            allowed_mentions=discord.AllowedMentions.none(),
-        )
+        await register_absence(interaction, start, until, reason)
 
     @app_commands.command(name="absences", description="See who's away or about to be")
     async def absences(self, interaction: discord.Interaction):
@@ -140,9 +85,13 @@ class Legion(commands.Cog):
         lines = []
         for a in absences:
             ongoing = a["starts_on"] <= now
-            state = "🔴 ongoing" if ongoing else f"starting {_fmt_ts(a['starts_on'])}"
+            state = (
+                "🔴 ongoing" if ongoing
+                else f"starting {fmt_absence_ts(a['starts_on'])}"
+            )
             lines.append(
-                f"• <@{a['user_id']}> — {state}, back after {_fmt_ts(a['ends_on'], end=True)}"
+                f"• <@{a['user_id']}> — {state}, back after "
+                f"{fmt_absence_ts(a['ends_on'], end=True)}"
                 + (f" *({a['reason']})*" if a["reason"] else "")
             )
 

@@ -5,19 +5,13 @@ import discord
 from . import config
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 
+# Event-type emojis come from the config (.env EMOJI_DUNGEON etc.); the
+# legacy French labels keep working for events created by earlier versions.
 ACTIVITY_EMOJI = {
-    "Dungeon": "🏰",
-    "Raid": "🐉",
-    "Battleground": "🚩",
-    "PvP": "⚔️",
-    "Rift": "🌀",
-    "Abyss": "🌌",
-    "Other": "🎲",
-    # Legacy French labels, kept so events created by earlier versions
-    # still show their emoji.
-    "Donjon": "🏰",
-    "Abysses": "🌌",
-    "Autre": "🎲",
+    **config.EMOJI_ACTIVITY,
+    "Donjon": config.EMOJI_ACTIVITY["Dungeon"],
+    "Abysses": config.EMOJI_ACTIVITY["Abyss"],
+    "Autre": config.EMOJI_ACTIVITY["Other"],
 }
 # Role emojis are configurable (.env EMOJI_TANK/HEAL/DPS) so servers can use
 # their own custom emojis instead of the Unicode defaults.

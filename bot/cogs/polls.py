@@ -14,6 +14,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config
+from ..errors import ViewErrorMixin
 
 CHOICE_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -53,7 +54,7 @@ def build_poll_embed(poll, votes: list) -> discord.Embed:
     return embed
 
 
-class VoteView(discord.ui.View):
+class VoteView(ViewErrorMixin, discord.ui.View):
     def __init__(self, option_count: int = 5):
         super().__init__(timeout=None)
         # Drop the extra buttons for a poll with fewer than 5 options.
@@ -157,7 +158,7 @@ def build_availability_embed(board, marks: list) -> discord.Embed:
     return embed
 
 
-class AvailabilityView(discord.ui.View):
+class AvailabilityView(ViewErrorMixin, discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         for i, day in enumerate(DAYS_SHORT):

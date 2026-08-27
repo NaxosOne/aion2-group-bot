@@ -1,9 +1,12 @@
 """Bot entry point: `python -m bot.main`."""
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from . import config
+from .errors import report_error
+from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
 from .views import SignupView
@@ -19,6 +22,7 @@ class GroupBot(commands.Bot):
         self.db = Database(config.DB_PATH)
 
     async def setup_hook(self):
+        self.tree.on_error = self.on_tree_error
         await self.db.connect()
 
         # Re-register the persistent views so the buttons of already
@@ -26,11 +30,13 @@ class GroupBot(commands.Bot):
         self.add_view(SignupView())
         self.add_view(VoteView())
         self.add_view(AvailabilityView())
+        self.add_view(PanelView())
 
         await self.load_extension("bot.cogs.groups")
         await self.load_extension("bot.cogs.profiles")
         await self.load_extension("bot.cogs.legion")
         await self.load_extension("bot.cogs.polls")
+        await self.load_extension("bot.cogs.panel")
 
         if config.GUILD_ID:
             # Single-guild sync: the commands show up right away.
@@ -51,6 +57,18 @@ class GroupBot(commands.Bot):
                 ) from None
         else:
             await self.tree.sync()
+
+    async def on_tree_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ):
+        """Without this, an unexpected error leaves Discord waiting and the
+        user sees "the application did not respond". Log it, and always tell
+        the user something."""
+        await report_error(
+            interaction,
+            error,
+            interaction.command.name if interaction.command else "an interaction",
+        )
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (id {self.user.id})")
