@@ -7,6 +7,7 @@ messages.
 """
 
 import json
+import logging
 from datetime import datetime, timedelta
 
 import discord
@@ -15,6 +16,8 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..errors import ViewErrorMixin
+
+log = logging.getLogger(__name__)
 
 CHOICE_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -237,14 +240,25 @@ class Polls(commands.Cog):
         embed = build_poll_embed(poll, [])
         await interaction.response.send_message(embed=embed, view=VoteView(len(options)))
         message = await interaction.original_response()
-        await self.bot.db.create_poll(
-            message.id,
-            interaction.guild_id,
-            interaction.channel_id,
-            interaction.user.id,
-            question,
-            json.dumps(options),
-        )
+        try:
+            await self.bot.db.create_poll(
+                message.id,
+                interaction.guild_id,
+                interaction.channel_id,
+                interaction.user.id,
+                question,
+                json.dumps(options),
+            )
+        except Exception:
+            log.exception("Failed to persist poll for message %s", message.id)
+            try:
+                await message.delete()
+            except discord.HTTPException:
+                pass
+            await interaction.followup.send(
+                "Something went wrong saving this poll — please try again.",
+                ephemeral=True,
+            )
 
     @availability.command(name="post", description="Post this week's availability board")
     async def availability_post(self, interaction: discord.Interaction):
@@ -252,9 +266,21 @@ class Polls(commands.Cog):
         embed = build_availability_embed({"week_label": label}, [])
         await interaction.response.send_message(embed=embed, view=AvailabilityView())
         message = await interaction.original_response()
-        await self.bot.db.create_availability(
-            message.id, interaction.guild_id, interaction.channel_id, label
-        )
+        try:
+            await self.bot.db.create_availability(
+                message.id, interaction.guild_id, interaction.channel_id, label
+            )
+        except Exception:
+            log.exception("Failed to persist availability board %s", message.id)
+            try:
+                await message.delete()
+            except discord.HTTPException:
+                pass
+            await interaction.followup.send(
+                "Something went wrong posting the availability board — "
+                "please try again.",
+                ephemeral=True,
+            )
 
     @availability.command(
         name="weekly",
