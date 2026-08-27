@@ -276,6 +276,55 @@ class Database:
         ) as cur:
             return await cur.fetchone() is not None
 
+    async def delete_profile(
+        self, guild_id: int, user_id: int, slot: str | None = None
+    ) -> int:
+        """Deletes a member's profile. `slot` None removes both. Returns count."""
+        if slot is None:
+            cur = await self.conn.execute(
+                "DELETE FROM profiles WHERE guild_id = ? AND user_id = ?",
+                (guild_id, user_id),
+            )
+        else:
+            cur = await self.conn.execute(
+                "DELETE FROM profiles WHERE guild_id = ? AND user_id = ? AND slot = ?",
+                (guild_id, user_id, slot),
+            )
+        await self.conn.commit()
+        return cur.rowcount
+
+    async def purge_member(self, guild_id: int, user_id: int) -> None:
+        """Removes every trace of a member from a guild (they left/were removed).
+
+        Profiles and absences are keyed by guild_id; sign-ups, poll votes and
+        availability marks are keyed by message_id, so they are filtered through
+        their parent table's guild_id.
+        """
+        await self.conn.execute(
+            "DELETE FROM profiles WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        )
+        await self.conn.execute(
+            "DELETE FROM absences WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        )
+        await self.conn.execute(
+            """DELETE FROM signups WHERE user_id = ? AND message_id IN
+               (SELECT message_id FROM events WHERE guild_id = ?)""",
+            (user_id, guild_id),
+        )
+        await self.conn.execute(
+            """DELETE FROM poll_votes WHERE user_id = ? AND message_id IN
+               (SELECT message_id FROM polls WHERE guild_id = ?)""",
+            (user_id, guild_id),
+        )
+        await self.conn.execute(
+            """DELETE FROM dispo_marks WHERE user_id = ? AND message_id IN
+               (SELECT message_id FROM dispos WHERE guild_id = ?)""",
+            (user_id, guild_id),
+        )
+        await self.conn.commit()
+
     async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
         """{user_id: main character's class} to display classes in parties."""
         if not user_ids:
