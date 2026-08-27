@@ -18,7 +18,7 @@ the PC is on. Great for developing and testing, not for the guild.
 repo, it detects the `Dockerfile`, and every `git push` redeploys.
 
 1. Create an account on railway.com (GitHub sign-in).
-2. **New Project → Deploy from GitHub repo** → pick `discord-group-creator`.
+2. **New Project → Deploy from GitHub repo** → pick `aion2-group-bot`.
 3. Under **Variables**, add `DISCORD_TOKEN` (and `GUILD_ID`, `TIMEZONE`...).
 4. Add a **Volume** mounted on `/app/data` so the SQLite database survives
    redeployments.
@@ -39,8 +39,8 @@ administer.
 
 ```bash
 sudo apt update && sudo apt install -y python3-venv git
-git clone https://github.com/NaxosOne/discord-group-creator.git
-cd discord-group-creator
+git clone https://github.com/NaxosOne/aion2-group-bot.git
+cd aion2-group-bot
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env && nano .env   # paste your token
 ```
@@ -55,8 +55,8 @@ After=network-online.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/discord-group-creator
-ExecStart=/home/ubuntu/discord-group-creator/.venv/bin/python -m bot.main
+WorkingDirectory=/home/ubuntu/aion2-group-bot
+ExecStart=/home/ubuntu/aion2-group-bot/.venv/bin/python -m bot.main
 Restart=always
 RestartSec=5
 

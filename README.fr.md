@@ -68,8 +68,8 @@ chacun s'inscrit en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal,
 Il faut Python 3.11 ou plus récent (<https://www.python.org/downloads/>).
 
 ```bash
-git clone https://github.com/NaxosOne/discord-group-creator.git
-cd discord-group-creator
+git clone https://github.com/NaxosOne/aion2-group-bot.git
+cd aion2-group-bot
 
 python -m venv .venv
 source .venv/bin/activate        # Windows : .venv\Scripts\activate

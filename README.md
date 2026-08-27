@@ -85,8 +85,8 @@ Like the in-game kisk, it's the rally point you drop before the fight.
 You need Python 3.11 or newer (<https://www.python.org/downloads/>).
 
 ```bash
-git clone https://github.com/NaxosOne/discord-group-creator.git
-cd discord-group-creator
+git clone https://github.com/NaxosOne/aion2-group-bot.git
+cd aion2-group-bot
 
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
