@@ -124,6 +124,7 @@ class Database:
             "guild_settings": {
                 "event_channel_id": "INTEGER",
                 "absence_channel_id": "INTEGER",
+                "member_role_id": "INTEGER",    # role that means "validated member"
             },
         }
         for table, columns in added.items():
@@ -265,6 +266,15 @@ class Database:
             (guild_id,),
         ) as cur:
             return await cur.fetchall()
+
+    async def has_main_profile(self, guild_id: int, user_id: int) -> bool:
+        """Whether the member has registered their main character (onboarded)."""
+        async with self.conn.execute(
+            """SELECT 1 FROM profiles
+               WHERE guild_id = ? AND user_id = ? AND slot = 'main' LIMIT 1""",
+            (guild_id, user_id),
+        ) as cur:
+            return await cur.fetchone() is not None
 
     async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
         """{user_id: main character's class} to display classes in parties."""

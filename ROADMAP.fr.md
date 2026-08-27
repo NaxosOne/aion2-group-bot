@@ -20,7 +20,7 @@ Les fondations sont en place :
 * Pack d'emojis personnalisés (rôles et types d'événement)
 * Rappels automatiques, clôture et annulation d'événement
 * Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
-* Ping de rôle à la création d'un événement (`/event ping: @role`)
+* Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), bilingue FR/EN, avec repli sur salon
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 

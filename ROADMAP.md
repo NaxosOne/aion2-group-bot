@@ -20,7 +20,7 @@ The foundations are in place:
 * Custom role and event-type emoji pack
 * Automatic reminders, event completion and cancellation
 * Multi-guild — Kisk runs independently on any number of servers
-* Role ping when creating an event (`/event ping: @role`)
+* Guided profile onboarding (`/onboard`) — validated members are DMed to register their main (and alt), bilingual EN/FR, with a channel fallback
 
 ## 🟢 Phase 1 — Better group organisation
 
