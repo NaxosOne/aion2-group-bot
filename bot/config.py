@@ -27,4 +27,12 @@ REMINDER_MINUTES = int(os.getenv("REMINDER_MINUTES") or 15)
 AVAILABILITY_DAY = int(os.getenv("AVAILABILITY_DAY") or 0)
 AVAILABILITY_HOUR = int(os.getenv("AVAILABILITY_HOUR") or 9)
 
+# Role emojis. Defaults are Unicode; to use custom emojis, upload PNGs in the
+# developer portal (your application -> Emojis tab), then paste the emoji
+# codes here, e.g. EMOJI_TANK=<:tank:123456789012345678>. Ready-made icons
+# matching Kisk's style live in assets/emoji/.
+EMOJI_TANK = os.getenv("EMOJI_TANK") or "🛡️"
+EMOJI_HEAL = os.getenv("EMOJI_HEAL") or "💚"
+EMOJI_DPS = os.getenv("EMOJI_DPS") or "🗡️"
+
 DB_PATH = os.getenv("DB_PATH", "data/bot.db")

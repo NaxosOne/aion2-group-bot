@@ -20,6 +20,11 @@ HELP_FORMATS_DATE = (
     "Accepted formats: `30/08` (day/month), `30/08/2026`, `today`, `tomorrow`."
 )
 
+HELP_FORMATS_DATETIME = (
+    "Accepted formats: `30/08`, `tomorrow` (whole days) or `30/08 14:00`, "
+    "`tomorrow 18h` (exact time)."
+)
+
 # English first, French kept as aliases.
 DAY_KEYWORDS = {
     "today": 0,
@@ -143,3 +148,14 @@ def parse_date(text: str, tz, now: datetime | None = None) -> date:
     if d < now.date():
         raise ParseError("That date is already in the past.")
     return d
+
+
+def parse_when_or_date(text: str, tz, now: datetime | None = None) -> tuple[datetime, bool]:
+    """Accepts a whole day ("30/08", "tomorrow") or an exact moment
+    ("30/08 14:00", "tomorrow 18h"). Returns (datetime, has_time); a whole
+    day comes back at 00:00 with has_time=False."""
+    s = " ".join(text.strip().lower().split())
+    if s in DAY_KEYWORDS or _DATE_ONLY_RE.match(s):
+        d = parse_date(s, tz, now)
+        return datetime(d.year, d.month, d.day, tzinfo=tz), False
+    return parse_when(text, tz, now), True

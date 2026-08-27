@@ -2,6 +2,7 @@
 
 import discord
 
+from . import config
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 
 ACTIVITY_EMOJI = {
@@ -18,7 +19,13 @@ ACTIVITY_EMOJI = {
     "Abysses": "🌌",
     "Autre": "🎲",
 }
-ROLE_EMOJI = {"tank": "🛡️", "heal": "💚", "dps": "🗡️"}
+# Role emojis are configurable (.env EMOJI_TANK/HEAL/DPS) so servers can use
+# their own custom emojis instead of the Unicode defaults.
+ROLE_EMOJI = {
+    "tank": config.EMOJI_TANK,
+    "heal": config.EMOJI_HEAL,
+    "dps": config.EMOJI_DPS,
+}
 ROLE_LABEL = {"tank": "Tank", "heal": "Heal", "dps": "DPS"}
 
 COLOUR_OPEN = discord.Colour.blurple()
@@ -36,15 +43,6 @@ def _names(members: list, classes: dict) -> str:
         return "*—*"
     return "\n".join(
         f"• <@{s['user_id']}>{_class_suffix(classes, s['user_id'])}" for s in members
-    )
-
-
-def standard_setup_text(slots: dict) -> str:
-    """E.g. "1 tank / 1 heal / 3 DPS" or "2 tanks / 2 heals / 6 DPS"."""
-    t, h, d = slots["tank"], slots["heal"], slots["dps"]
-    return (
-        f"{t} tank{'s' if t > 1 else ''} / "
-        f"{h} heal{'s' if h > 1 else ''} / {d} DPS"
     )
 
 
@@ -68,16 +66,14 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     elif completed:
         title = f"✅ {event['title']}"
 
-    lines = []
+    # The role fields below already show the layout, so no "Setup" line —
+    # just the event type in clear text, with the schedule when there is one.
+    header = f"**{event['activity']}**"
+    if event["starts_at"]:
+        header += f" • 🕘 <t:{event['starts_at']}:F> (<t:{event['starts_at']}:R>)"
+    lines = [header]
     if event["description"]:
         lines.append(event["description"])
-    if event["starts_at"]:
-        lines.append(f"🕘 <t:{event['starts_at']}:F> (<t:{event['starts_at']}:R>)")
-    if event["compo"] == COMPO_STANDARD:
-        slots = standard_slots(event["size"])
-        lines.append(f"Setup: **standard** ({standard_setup_text(slots)})")
-    else:
-        lines.append(f"Setup: **open** ({event['size']} slots)")
 
     if cancelled:
         colour = COLOUR_CANCELLED
@@ -130,7 +126,5 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
         suffix = " • FULL"
     else:
         suffix = ""
-    embed.set_footer(
-        text=f"{event['activity']} • Created by {event['creator_name']}{suffix}"
-    )
+    embed.set_footer(text=f"Created by {event['creator_name']}{suffix}")
     return embed

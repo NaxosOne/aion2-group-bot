@@ -10,6 +10,7 @@ import time
 
 import discord
 
+from . import config
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed
 from .logic import assign
 
@@ -21,19 +22,22 @@ class SignupView(discord.ui.View):
     # ----- Sign-up buttons -----
 
     @discord.ui.button(
-        label="Tank", emoji="🛡️", style=discord.ButtonStyle.primary, custom_id="aion2:tank"
+        label="Tank", emoji=config.EMOJI_TANK, style=discord.ButtonStyle.primary,
+        custom_id="aion2:tank",
     )
     async def tank_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "tank")
 
     @discord.ui.button(
-        label="Heal", emoji="💚", style=discord.ButtonStyle.success, custom_id="aion2:heal"
+        label="Heal", emoji=config.EMOJI_HEAL, style=discord.ButtonStyle.success,
+        custom_id="aion2:heal",
     )
     async def heal_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "heal")
 
     @discord.ui.button(
-        label="DPS", emoji="🗡️", style=discord.ButtonStyle.danger, custom_id="aion2:dps"
+        label="DPS", emoji=config.EMOJI_DPS, style=discord.ButtonStyle.danger,
+        custom_id="aion2:dps",
     )
     async def dps_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "dps")

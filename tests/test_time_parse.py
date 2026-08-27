@@ -3,7 +3,12 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from bot.utils.time_parse import ParseError, parse_date, parse_when
+from bot.utils.time_parse import (
+    ParseError,
+    parse_date,
+    parse_when,
+    parse_when_or_date,
+)
 
 TZ = ZoneInfo("Europe/Paris")
 # Freeze "now" for reproducible tests: Wednesday 26/08/2026, 18:00.
@@ -59,6 +64,24 @@ def test_parse_date():
     for bad in ("", "yesterday", "32/01", "31/02", "01/01/2020"):
         try:
             pd(bad)
+        except ParseError:
+            pass
+        else:
+            raise AssertionError(f"{bad!r} should have been rejected")
+
+
+def test_parse_when_or_date():
+    pwd = lambda t: parse_when_or_date(t, TZ, now=NOW)
+    # Whole days come back at midnight with has_time=False.
+    assert pwd("30/08") == (datetime(2026, 8, 30, 0, 0, tzinfo=TZ), False)
+    assert pwd("tomorrow") == (datetime(2026, 8, 27, 0, 0, tzinfo=TZ), False)
+    # Exact moments keep their time.
+    assert pwd("30/08 14:00") == (datetime(2026, 8, 30, 14, 0, tzinfo=TZ), True)
+    assert pwd("tomorrow 18h") == (datetime(2026, 8, 27, 18, 0, tzinfo=TZ), True)
+    assert pwd("21h") == (datetime(2026, 8, 26, 21, 0, tzinfo=TZ), True)
+    for bad in ("", "gibberish", "30/08 25:00"):
+        try:
+            pwd(bad)
         except ParseError:
             pass
         else:

@@ -9,7 +9,17 @@ from discord import app_commands
 from discord.ext import commands
 
 from .. import config
-from ..utils.time_parse import HELP_FORMATS_DATE, ParseError, parse_date
+from ..utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
+
+
+def _fmt_ts(ts: int, end: bool = False) -> str:
+    """Date seule (<t:D>) pour une journée entière, date + heure (<t:f>) sinon.
+
+    Une borne « journée entière » est stockée à 00:00 (début) ou 23:59 (fin).
+    """
+    dt = datetime.fromtimestamp(ts, config.TIMEZONE)
+    day_boundary = (dt.hour, dt.minute) == ((23, 59) if end else (0, 0))
+    return f"<t:{ts}:D>" if day_boundary else f"<t:{ts}:f>"
 
 
 class AnnounceModal(discord.ui.Modal, title="Legion announcement"):
@@ -59,8 +69,8 @@ class Legion(commands.Cog):
 
     @app_commands.command(name="away", description="Let the legion know you'll be away")
     @app_commands.describe(
-        start="First day away (e.g. “30/08”, “tomorrow”)",
-        until="Last day away (empty = same day as “start”)",
+        start="First day away, time optional (e.g. “30/08”, “30/08 14:00”, “tomorrow 18h”)",
+        until="Last day away, time optional (empty = same day as “start”)",
         reason="Optional: holidays, exams, IRL...",
     )
     async def away(
@@ -72,33 +82,43 @@ class Legion(commands.Cog):
     ):
         tz = config.TIMEZONE
         try:
-            first_day = parse_date(start, tz)
-            last_day = parse_date(until, tz) if until else first_day
+            start_dt, start_has_time = parse_when_or_date(start, tz)
+            if until:
+                end_dt, end_has_time = parse_when_or_date(until, tz)
+            else:
+                # No "until": away until the end of the starting day.
+                end_dt, end_has_time = start_dt, False
         except ParseError as err:
             await interaction.response.send_message(
-                f"{err} {HELP_FORMATS_DATE}", ephemeral=True
-            )
-            return
-        if last_day < first_day:
-            await interaction.response.send_message(
-                "The return day is before the departure day. 🤔", ephemeral=True
+                f"{err} {HELP_FORMATS_DATETIME}", ephemeral=True
             )
             return
 
-        start_ts = int(
-            datetime(first_day.year, first_day.month, first_day.day, 0, 0, tzinfo=tz).timestamp()
-        )
-        end_ts = int(
-            datetime(last_day.year, last_day.month, last_day.day, 23, 59, tzinfo=tz).timestamp()
-        )
+        start_ts = int(start_dt.timestamp())
+        if end_has_time:
+            end_ts = int(end_dt.timestamp())
+        else:
+            end_ts = int(
+                datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, tzinfo=tz).timestamp()
+            )
+        if end_ts < start_ts:
+            await interaction.response.send_message(
+                "The return moment is before the departure. 🤔", ephemeral=True
+            )
+            return
+
         await self.bot.db.add_absence(
             interaction.guild_id, interaction.user.id, start_ts, end_ts, reason
         )
 
-        if first_day == last_day:
+        whole_single_day = (
+            not start_has_time and not end_has_time
+            and start_dt.date() == end_dt.date()
+        )
+        if whole_single_day:
             period = f"on <t:{start_ts}:D>"
         else:
-            period = f"from <t:{start_ts}:D> to <t:{end_ts}:D>"
+            period = f"from {_fmt_ts(start_ts)} to {_fmt_ts(end_ts, end=True)}"
         await interaction.response.send_message(
             f"🏖️ {interaction.user.mention} will be away {period}"
             + (f" ({reason})" if reason else "")
@@ -120,9 +140,9 @@ class Legion(commands.Cog):
         lines = []
         for a in absences:
             ongoing = a["starts_on"] <= now
-            state = "🔴 ongoing" if ongoing else f"starting <t:{a['starts_on']}:D>"
+            state = "🔴 ongoing" if ongoing else f"starting {_fmt_ts(a['starts_on'])}"
             lines.append(
-                f"• <@{a['user_id']}> — {state}, back after <t:{a['ends_on']}:D>"
+                f"• <@{a['user_id']}> — {state}, back after {_fmt_ts(a['ends_on'], end=True)}"
                 + (f" *({a['reason']})*" if a["reason"] else "")
             )
 
