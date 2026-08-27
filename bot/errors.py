@@ -16,13 +16,26 @@ log = logging.getLogger("kisk")
 MESSAGE = "Something went wrong on my side. The error has been logged. 🛠️"
 
 
+def _detail(error: Exception) -> str:
+    """The error's type and message, short enough to fit in a chat reply.
+
+    Naming the failure lets whoever hit it report something useful without
+    reading the server logs.
+    """
+    text = f"{type(error).__name__}: {error}".strip()
+    if len(text) > 300:
+        text = text[:300] + "…"
+    return text
+
+
 async def report_error(interaction: discord.Interaction, error: Exception, where: str):
     log.error("Error on %s:\n%s", where, "".join(traceback.format_exception(error)))
+    message = f"{MESSAGE}\n```\n{_detail(error)}\n```"
     try:
         if interaction.response.is_done():
-            await interaction.followup.send(MESSAGE, ephemeral=True)
+            await interaction.followup.send(message, ephemeral=True)
         else:
-            await interaction.response.send_message(MESSAGE, ephemeral=True)
+            await interaction.response.send_message(message, ephemeral=True)
     except discord.HTTPException:
         pass  # interaction already expired: nothing left to answer with
 

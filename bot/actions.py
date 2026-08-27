@@ -29,7 +29,9 @@ async def resolve_channel(interaction: discord.Interaction, setting: str):
     channel_id = settings[setting] if settings else None
     if channel_id and channel_id != interaction.channel_id:
         channel = interaction.guild.get_channel(channel_id)
-        if channel is not None:
+        # Forum and category channels have no send(): fall back rather than
+        # crash on a destination that can't hold a message.
+        if channel is not None and hasattr(channel, "send"):
             return channel
     return interaction.channel
 
@@ -91,6 +93,14 @@ async def publish_event(
             f"I'm not allowed to post in {channel.mention}. Give me the "
             "Send Messages and Embed Links permissions there, or point "
             "`/channels` at another channel.",
+            ephemeral=True,
+        )
+        return
+    except discord.HTTPException as err:
+        log.exception("Could not post the event in channel %s", channel.id)
+        await interaction.followup.send(
+            f"Discord refused the event message in {channel.mention} "
+            f"({err.text or err}). Try another channel with `/channels`.",
             ephemeral=True,
         )
         return
