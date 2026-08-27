@@ -3,6 +3,8 @@
 import os
 from zoneinfo import ZoneInfo
 
+from .utils.emoji import resolve as _emoji
+
 try:
     from dotenv import load_dotenv
 
@@ -31,15 +33,17 @@ AVAILABILITY_HOUR = int(os.getenv("AVAILABILITY_HOUR") or 9)
 # developer portal (your application -> Emojis tab), then paste the emoji
 # codes here, e.g. EMOJI_TANK=<:tank:123456789012345678>. Ready-made icons
 # matching Kisk's style live in assets/emoji/.
-EMOJI_TANK = os.getenv("EMOJI_TANK") or "🛡️"
-EMOJI_HEAL = os.getenv("EMOJI_HEAL") or "💚"
-EMOJI_DPS = os.getenv("EMOJI_DPS") or "🗡️"
+EMOJI_TANK = _emoji(os.getenv("EMOJI_TANK"), "🛡️", "EMOJI_TANK")
+EMOJI_HEAL = _emoji(os.getenv("EMOJI_HEAL"), "💚", "EMOJI_HEAL")
+EMOJI_DPS = _emoji(os.getenv("EMOJI_DPS"), "🗡️", "EMOJI_DPS")
 
 # Event-type emojis, overridable the same way (EMOJI_DUNGEON, EMOJI_RAID...).
 # Note: custom emojis show up in embeds and messages, but Discord renders the
 # slash-command choice lists as plain text, where only Unicode emojis work.
 EMOJI_ACTIVITY = {
-    name: os.getenv(f"EMOJI_{name.upper()}") or default
+    name: _emoji(
+        os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}"
+    )
     for name, default in {
         "Dungeon": "🏰",
         "Raid": "🐉",
@@ -56,7 +60,9 @@ EMOJI_ACTIVITY = {
 # custom emojis on your Discord (developer portal -> Emojis) and paste the codes
 # here, e.g. EMOJI_GLADIATOR=<:gladiator:123456789012345678>.
 CLASS_EMOJI = {
-    name: os.getenv(f"EMOJI_{name.upper()}") or default
+    name: _emoji(
+        os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}"
+    )
     for name, default in {
         "Gladiator": "⚔️",
         "Templar": "🛡️",
