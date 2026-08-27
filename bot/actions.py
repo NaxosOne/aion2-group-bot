@@ -13,6 +13,7 @@ import discord
 from . import config
 from .embeds import build_event_embed
 from .utils.mentions import ping_permitted
+from .utils.threads import event_thread_name
 from .utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
 from .views import SignupView
 
@@ -119,9 +120,33 @@ async def publish_event(
             ephemeral=True,
         )
         return
+    await _open_event_thread(message, title)
     await interaction.followup.send(
         f"Event created in {channel.mention} — {message.jump_url}", ephemeral=True
     )
+
+
+async def _open_event_thread(message: discord.Message, title: str) -> None:
+    """Attaches a discussion thread to the event message (best-effort).
+
+    Skips silently if the bot lacks the Create Public Threads permission, so a
+    missing permission never blocks event creation.
+    """
+    try:
+        thread = await message.create_thread(
+            name=event_thread_name(title),
+            auto_archive_duration=4320,  # keep it alive ~3 days around the event
+        )
+    except discord.HTTPException:
+        log.info("Could not open a thread for event %s (missing perms?)", message.id)
+        return
+    try:
+        await thread.send(
+            f"💬 Discussion for **{title}** — coordinate here!\n"
+            f"*Discussion pour **{title}** — coordonnez-vous ici !*"
+        )
+    except discord.HTTPException:
+        pass
 
 
 def fmt_absence_ts(ts: int, end: bool = False) -> str:
