@@ -1,10 +1,15 @@
-# Discord Group Creator — Aion 2 party bot
+<p align="center">
+  <img src="assets/banner.png" alt="Kisk — your legion's rally point" width="720">
+</p>
+
+# Kisk — Aion 2 party bot
 
 🇫🇷 [Version française](README.fr.md)
 
-A Discord bot to organise parties for the launch of Aion 2: dungeons, PvP
-runs, abyss farming. One command creates a call, and everyone signs up in one
-click by picking their role (🛡️ Tank, 💚 Heal, 🗡️ DPS).
+**Kisk** is a Discord bot to organise parties for the launch of Aion 2:
+dungeons, PvP runs, abyss farming. One command creates a call, and everyone
+signs up in one click by picking their role (🛡️ Tank, 💚 Heal, 🗡️ DPS).
+Like the in-game kisk, it's the rally point you drop before the fight.
 
 ## Features
 
@@ -63,7 +68,8 @@ click by picking their role (🛡️ Tank, 💚 Heal, 🗡️ DPS).
 ### 1. Create the bot on the Discord portal
 
 1. Go to <https://discord.com/developers/applications> → **New Application**,
-   give it a name (e.g. "Aion 2 Parties").
+   name it "Kisk". Set the avatar (`assets/avatar.png`) and banner
+   (`assets/banner.png`) in **General Information** and in the **Bot** tab.
 2. **Bot** tab → **Reset Token** → copy the token somewhere safe.
    ⚠️ **Never share this token** (anyone who has it controls your bot). If it
    leaks, come back here and hit "Reset Token".
@@ -132,6 +138,7 @@ the final Aion 2 class names are known.
 ## Project layout
 
 ```
+assets/                Avatar and banner (PNG + SVG sources)
 bot/
   main.py              Entry point: connection, command sync
   config.py            Reads .env (token, timezone, reminders...)

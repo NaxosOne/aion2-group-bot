@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg2" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#1c2a63"/>
+      <stop offset="55%" stop-color="#101a44"/>
+      <stop offset="100%" stop-color="#070d24"/>
+    </radialGradient>
+    <linearGradient id="gemL2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bff7ff"/>
+      <stop offset="100%" stop-color="#46cbee"/>
+    </linearGradient>
+    <linearGradient id="gemR2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2fa9d9"/>
+      <stop offset="100%" stop-color="#0f6fa8"/>
+    </linearGradient>
+    <filter id="blurBig2" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <filter id="blurSoft2" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg2)"/>
+
+  <circle cx="256" cy="240" r="120" fill="#37c8f0" opacity="0.32" filter="url(#blurBig2)"/>
+
+  <!-- right wing (three feathers), mirrored for the left -->
+  <g fill="#f7f2e6">
+    <path d="M 318 236 Q 420 168 462 84 Q 402 186 314 258 Z" opacity="0.85"/>
+    <path d="M 320 264 Q 434 232 474 168 Q 412 254 318 288 Z" opacity="0.6"/>
+    <path d="M 318 296 Q 424 296 462 254 Q 408 318 314 318 Z" opacity="0.38"/>
+  </g>
+  <g fill="#f7f2e6" transform="translate(512,0) scale(-1,1)">
+    <path d="M 318 236 Q 420 168 462 84 Q 402 186 314 258 Z" opacity="0.85"/>
+    <path d="M 320 264 Q 434 232 474 168 Q 412 254 318 288 Z" opacity="0.6"/>
+    <path d="M 318 296 Q 424 296 462 254 Q 408 318 314 318 Z" opacity="0.38"/>
+  </g>
+
+  <!-- gold rally ring -->
+  <ellipse cx="256" cy="424" rx="140" ry="28" fill="#e9c05a" opacity="0.25" filter="url(#blurSoft2)"/>
+  <ellipse cx="256" cy="420" rx="126" ry="25" fill="none" stroke="#f0cf7a" stroke-width="8" opacity="0.9"/>
+  <ellipse cx="256" cy="420" rx="126" ry="25" fill="none" stroke="#fdf0cd" stroke-width="3" opacity="0.95"/>
+
+  <!-- crystal -->
+  <polygon points="256,88 182,214 256,400" fill="url(#gemL2)"/>
+  <polygon points="256,88 330,214 256,400" fill="url(#gemR2)"/>
+  <polygon points="256,88 221,214 256,400 291,214" fill="#eafcff" opacity="0.42"/>
+  <polygon points="256,88 182,214 256,400 330,214" fill="none" stroke="#dffaff" stroke-width="4" opacity="0.8"/>
+  <line x1="256" y1="88" x2="256" y2="400" stroke="#f2feff" stroke-width="2.5" opacity="0.55"/>
+  <circle cx="256" cy="228" r="32" fill="#eafdff" opacity="0.8" filter="url(#blurSoft2)"/>
+
+  <!-- sparkles -->
+  <polygon points="122,120 127,138 145,143 127,148 122,166 117,148 99,143 117,138" fill="#fdf3d5" opacity="0.95"/>
+  <polygon points="396,352 399,363 410,366 399,369 396,380 393,369 382,366 393,363" fill="#cdf6ff" opacity="0.85"/>
+  <polygon points="106,330 108,338 116,340 108,342 106,350 104,342 96,340 104,338" fill="#cdf6ff" opacity="0.7"/>
+</svg>

@@ -1,10 +1,15 @@
-# Discord Group Creator — Bot de groupes pour Aion 2
+<p align="center">
+  <img src="assets/banner.png" alt="Kisk — le point de ralliement de ta légion" width="720">
+</p>
+
+# Kisk — Bot de groupes pour Aion 2
 
 🇬🇧 [English version](README.md)
 
-Un bot Discord pour organiser les groupes à la sortie d'Aion 2 : donjons,
-sorties PvP, farm en abysses. Une commande crée un « call », et chacun
-s'inscrit en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ DPS).
+**Kisk** est un bot Discord pour organiser les groupes à la sortie d'Aion 2 :
+donjons, sorties PvP, farm en abysses. Une commande crée un « call », et
+chacun s'inscrit en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal,
+🗡️ DPS). Comme le kisk en jeu, c'est la balise qu'on pose avant le combat.
 
 > ℹ️ Le bot parle **anglais** (commandes et messages) pour une utilisation
 > internationale — ce guide, lui, est en français. Les horaires peuvent se
@@ -47,7 +52,8 @@ s'inscrit en un clic en choisissant son rôle (🛡️ Tank, 💚 Heal, 🗡️ 
 ### 1. Créer le bot sur le portail Discord
 
 1. Va sur <https://discord.com/developers/applications> → **New Application**,
-   donne-lui un nom (ex. « Aion 2 Parties »).
+   nomme-la « Kisk ». Mets l'avatar (`assets/avatar.png`) et la bannière
+   (`assets/banner.png`) dans **General Information** et dans l'onglet **Bot**.
 2. Onglet **Bot** → **Reset Token** → copie le token quelque part de sûr.
    ⚠️ **Ne partage jamais ce token**. S'il fuite, refais « Reset Token ».
 3. Toujours dans l'onglet **Bot**, active **SERVER MEMBERS INTENT**

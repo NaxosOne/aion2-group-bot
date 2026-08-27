@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480">
+  <defs>
+    <radialGradient id="bgB" cx="38%" cy="45%" r="95%">
+      <stop offset="0%" stop-color="#1c2a63"/>
+      <stop offset="55%" stop-color="#101a44"/>
+      <stop offset="100%" stop-color="#060c22"/>
+    </radialGradient>
+    <linearGradient id="gemLB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bff7ff"/>
+      <stop offset="100%" stop-color="#46cbee"/>
+    </linearGradient>
+    <linearGradient id="gemRB" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2fa9d9"/>
+      <stop offset="100%" stop-color="#0f6fa8"/>
+    </linearGradient>
+    <linearGradient id="txt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#8fe3ff"/>
+    </linearGradient>
+    <filter id="blurB" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+    <filter id="blurS" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="480" fill="url(#bgB)"/>
+
+  <!-- star field -->
+  <g fill="#cdeeff">
+    <circle cx="90" cy="70" r="2.5" opacity="0.8"/>
+    <circle cx="220" cy="46" r="1.8" opacity="0.6"/>
+    <circle cx="540" cy="60" r="2" opacity="0.7"/>
+    <circle cx="760" cy="42" r="2.4" opacity="0.8"/>
+    <circle cx="980" cy="74" r="1.8" opacity="0.6"/>
+    <circle cx="1120" cy="150" r="2.2" opacity="0.7"/>
+    <circle cx="1150" cy="300" r="2" opacity="0.6"/>
+    <circle cx="640" cy="420" r="1.8" opacity="0.5"/>
+    <circle cx="180" cy="420" r="2" opacity="0.5"/>
+    <circle cx="420" cy="120" r="1.6" opacity="0.5"/>
+  </g>
+  <polygon points="1105,90 1110,108 1128,113 1110,118 1105,136 1100,118 1082,113 1100,108" fill="#fdf3d5" opacity="0.9"/>
+  <polygon points="500,330 503,341 514,344 503,347 500,358 497,347 486,344 497,341" fill="#cdf6ff" opacity="0.8"/>
+
+  <!-- winged crystal, left side -->
+  <g transform="translate(60,40) scale(0.83)">
+    <circle cx="256" cy="240" r="120" fill="#37c8f0" opacity="0.3" filter="url(#blurB)"/>
+    <g fill="#f7f2e6">
+      <path d="M 318 236 Q 420 168 462 84 Q 402 186 314 258 Z" opacity="0.85"/>
+      <path d="M 320 264 Q 434 232 474 168 Q 412 254 318 288 Z" opacity="0.6"/>
+      <path d="M 318 296 Q 424 296 462 254 Q 408 318 314 318 Z" opacity="0.38"/>
+    </g>
+    <g fill="#f7f2e6" transform="translate(512,0) scale(-1,1)">
+      <path d="M 318 236 Q 420 168 462 84 Q 402 186 314 258 Z" opacity="0.85"/>
+      <path d="M 320 264 Q 434 232 474 168 Q 412 254 318 288 Z" opacity="0.6"/>
+      <path d="M 318 296 Q 424 296 462 254 Q 408 318 314 318 Z" opacity="0.38"/>
+    </g>
+    <ellipse cx="256" cy="424" rx="140" ry="28" fill="#e9c05a" opacity="0.25" filter="url(#blurS)"/>
+    <ellipse cx="256" cy="420" rx="126" ry="25" fill="none" stroke="#f0cf7a" stroke-width="8" opacity="0.9"/>
+    <ellipse cx="256" cy="420" rx="126" ry="25" fill="none" stroke="#fdf0cd" stroke-width="3" opacity="0.95"/>
+    <polygon points="256,88 182,214 256,400" fill="url(#gemLB)"/>
+    <polygon points="256,88 330,214 256,400" fill="url(#gemRB)"/>
+    <polygon points="256,88 221,214 256,400 291,214" fill="#eafcff" opacity="0.42"/>
+    <polygon points="256,88 182,214 256,400 330,214" fill="none" stroke="#dffaff" stroke-width="4" opacity="0.8"/>
+    <line x1="256" y1="88" x2="256" y2="400" stroke="#f2feff" stroke-width="2.5" opacity="0.55"/>
+    <circle cx="256" cy="228" r="32" fill="#eafdff" opacity="0.8" filter="url(#blurS)"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="530" y="252" font-family="DejaVu Sans" font-weight="bold" font-size="150"
+        letter-spacing="26" fill="url(#txt)">KISK</text>
+  <rect x="536" y="286" width="500" height="4" fill="#f0cf7a" opacity="0.85" rx="2"/>
+  <text x="536" y="345" font-family="DejaVu Sans" font-size="34"
+        letter-spacing="2" fill="#a9d9f2">Your legion's rally point.</text>
+  <text x="536" y="398" font-family="DejaVu Sans" font-size="24"
+        letter-spacing="1" fill="#6d87c4">Group calls • Waitlists • Reminders — for Aion 2</text>
+</svg>
