@@ -21,6 +21,7 @@ The foundations are in place:
 * Automatic reminders, event completion and cancellation
 * Multi-guild — Kisk runs independently on any number of servers
 * Guided profile onboarding (`/onboard`) — validated members are DMed to register their main (and alt), bilingual EN/FR, with a channel fallback
+* Profile management — `/profile delete` (yours, or a member's for moderators) and automatic cleanup when a member leaves the server
 
 ## 🟢 Phase 1 — Better group organisation
 

@@ -21,6 +21,7 @@ Les fondations sont en place :
 * Rappels automatiques, clôture et annulation d'événement
 * Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
 * Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), bilingue FR/EN, avec repli sur salon
+* Gestion des profils — `/profile delete` (le tien, ou celui d'un membre pour les modérateurs) et nettoyage automatique au départ d'un membre du serveur
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 

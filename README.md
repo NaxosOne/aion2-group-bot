@@ -177,7 +177,10 @@ Use:
 /roster
 ```
 
-to browse player information.
+to browse player information. A player can remove their own profile with
+`/profile delete` (moderators can target a member); Kisk also **cleans up
+automatically** when someone leaves the server — their profile, sign-ups,
+absences and availability marks are removed.
 
 ### 🏖️ Absences
 
@@ -517,7 +520,7 @@ posted. Pinging `@everyone` is reserved to moderators.
 /profile set character: Main name: Kratos class: Templar role: Tank
 
 /profile show [member]
-
+/profile delete [character: Main|Alt|All] [member]   → moderators can target a member
 /roster
 ```
 
