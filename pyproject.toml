@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kisk"
+version = "0.1.0"
+description = "Discord bot to organise Aion 2 legion parties"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "discord.py>=2.4,<3",
+    "aiosqlite>=0.20",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+kisk = "bot.main:main"
+
+[tool.setuptools]
+packages = ["bot", "bot.cogs", "bot.utils"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+# Conservative lint baseline: pyflakes (real bugs — unused imports, undefined
+# names) only, so CI stays meaningful without churning the existing style.
+# Widen (E, I, UP, B) and enable `ruff format` once the codebase is normalised.
+[tool.ruff.lint]
+select = ["F"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

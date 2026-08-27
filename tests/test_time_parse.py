@@ -1,4 +1,4 @@
-"""Tests for the schedule parser. Run: python -m tests.test_time_parse"""
+"""Tests for the schedule parser. Run: pytest"""
 
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -97,11 +97,3 @@ def test_errors():
             pass
         else:
             raise AssertionError(f"{bad!r} should have been rejected")
-
-
-if __name__ == "__main__":
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_"):
-            fn()
-            print(f"OK  {name}")
-    print("All schedule parser tests pass.")

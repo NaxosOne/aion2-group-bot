@@ -1,4 +1,4 @@
-"""Tests for the party/waitlist split. Run: python -m tests.test_logic"""
+"""Tests for the party/waitlist split. Run: pytest"""
 
 from bot.logic import COMPO_OPEN, COMPO_STANDARD, assign, standard_slots
 
@@ -74,11 +74,3 @@ def test_legacy_french_value():
     signups = [s(i, "dps") for i in range(1, 7)]
     party, waitlist = assign("libre", 5, signups)
     assert len(party) == 5 and ids(waitlist) == [6]
-
-
-if __name__ == "__main__":
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_"):
-            fn()
-            print(f"OK  {name}")
-    print("All logic tests pass.")
