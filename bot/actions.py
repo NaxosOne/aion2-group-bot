@@ -15,14 +15,30 @@ from .utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_d
 from .views import SignupView
 
 
+async def resolve_channel(interaction: discord.Interaction, setting: str):
+    """The channel configured for this kind of message, or the current one.
+
+    Lets a server keep the pinned /panel in one channel while events and
+    absences land in their own channels instead of burying it.
+    """
+    settings = await interaction.client.db.get_settings(interaction.guild_id)
+    channel_id = settings[setting] if settings else None
+    if channel_id and channel_id != interaction.channel_id:
+        channel = interaction.guild.get_channel(channel_id)
+        if channel is not None:
+            return channel
+    return interaction.channel
+
+
 async def publish_event(
     interaction: discord.Interaction, *,
     title: str, activity: str, comp_mode: str, size: int,
     starts_at: int | None, description: str | None,
 ) -> None:
-    """Posts the event message in the interaction's channel and stores it."""
+    """Posts the event message in the configured (or current) channel."""
+    channel = await resolve_channel(interaction, "event_channel_id")
     event = {
-        "channel_id": interaction.channel_id,
+        "channel_id": channel.id,
         "guild_id": interaction.guild_id,
         "creator_id": interaction.user.id,
         "creator_name": interaction.user.display_name,
@@ -36,9 +52,21 @@ async def publish_event(
     }
     # Send the message first so we know its ID, which is our key.
     embed = build_event_embed(event, [])
-    await interaction.response.send_message(embed=embed, view=SignupView())
-    message = await interaction.original_response()
+    await interaction.response.defer(ephemeral=True)
+    try:
+        message = await channel.send(embed=embed, view=SignupView())
+    except discord.Forbidden:
+        await interaction.followup.send(
+            f"I'm not allowed to post in {channel.mention}. Give me the "
+            "Send Messages and Embed Links permissions there, or point "
+            "`/channels` at another channel.",
+            ephemeral=True,
+        )
+        return
     await interaction.client.db.create_event(message_id=message.id, **event)
+    await interaction.followup.send(
+        f"Event created in {channel.mention} — {message.jump_url}", ephemeral=True
+    )
 
 
 def fmt_absence_ts(ts: int, end: bool = False) -> str:
@@ -96,9 +124,30 @@ async def register_absence(
         period = f"on <t:{start_ts}:D>"
     else:
         period = f"from {fmt_absence_ts(start_ts)} to {fmt_absence_ts(end_ts, end=True)}"
-    await interaction.response.send_message(
+    announcement = (
         f"🏖️ {interaction.user.mention} will be away {period}"
         + (f" ({reason})" if reason else "")
-        + ". Enjoy the break!",
-        allowed_mentions=discord.AllowedMentions.none(),
+        + ". Enjoy the break!"
+    )
+    quiet = discord.AllowedMentions.none()
+
+    channel = await resolve_channel(interaction, "absence_channel_id")
+    if channel.id == interaction.channel_id:
+        await interaction.response.send_message(announcement, allowed_mentions=quiet)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+    try:
+        message = await channel.send(announcement, allowed_mentions=quiet)
+    except discord.Forbidden:
+        await interaction.followup.send(
+            f"I'm not allowed to post in {channel.mention}. Give me the "
+            "Send Messages permission there, or point `/channels` at "
+            "another channel.",
+            ephemeral=True,
+        )
+        return
+    await interaction.followup.send(
+        f"Absence registered in {channel.mention} — {message.jump_url}",
+        ephemeral=True,
     )

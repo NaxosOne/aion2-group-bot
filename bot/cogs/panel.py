@@ -163,11 +163,74 @@ class Panel(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
+        name="channels",
+        description="Choose where events and absences are posted (moderators)",
+    )
+    @app_commands.describe(
+        events="Channel for event calls (leave empty to keep the current setting)",
+        absences="Channel for absence notices",
+        reset="Post everything back in the channel the command is used in",
+    )
+    @app_commands.default_permissions(manage_messages=True)
+    async def channels(
+        self,
+        interaction: discord.Interaction,
+        events: discord.TextChannel | None = None,
+        absences: discord.TextChannel | None = None,
+        reset: bool = False,
+    ):
+        db = self.bot.db
+        if reset:
+            await db.set_setting(interaction.guild_id, "event_channel_id", None)
+            await db.set_setting(interaction.guild_id, "absence_channel_id", None)
+            await interaction.response.send_message(
+                "Reset: events and absences are now posted wherever the "
+                "command or the button is used.",
+                ephemeral=True,
+            )
+            return
+
+        if events is not None:
+            await db.set_setting(interaction.guild_id, "event_channel_id", events.id)
+        if absences is not None:
+            await db.set_setting(
+                interaction.guild_id, "absence_channel_id", absences.id
+            )
+
+        settings = await db.get_settings(interaction.guild_id)
+
+        def describe(setting: str) -> str:
+            channel_id = settings[setting] if settings else None
+            return f"<#{channel_id}>" if channel_id else "*where the command is used*"
+
+        await interaction.response.send_message(
+            "📍 Current destinations:\n"
+            f"• Events → {describe('event_channel_id')}\n"
+            f"• Absences → {describe('absence_channel_id')}\n\n"
+            "Set them with `/channels events: #… absences: #…`, or clear them "
+            "with `/channels reset: True`.",
+            ephemeral=True,
+        )
+
+    @app_commands.command(
         name="panel",
         description="Post the quick-actions panel in this channel (moderators)",
     )
     @app_commands.default_permissions(manage_messages=True)
     async def panel(self, interaction: discord.Interaction):
+        settings = await self.bot.db.get_settings(interaction.guild_id)
+        event_channel = settings["event_channel_id"] if settings else None
+        absence_channel = settings["absence_channel_id"] if settings else None
+
+        where = ""
+        if event_channel or absence_channel:
+            targets = []
+            if event_channel:
+                targets.append(f"events go to <#{event_channel}>")
+            if absence_channel:
+                targets.append(f"absences go to <#{absence_channel}>")
+            where = "\n\n*" + ", ".join(targets) + ".*"
+
         embed = discord.Embed(
             title="⚡ Kisk — quick actions",
             description=(
@@ -177,11 +240,18 @@ class Panel(commands.Cog):
                 "🏖️ **Report an absence** — let the legion know when you're away\n\n"
                 "Joining an event stays one click on its "
                 f"{config.EMOJI_TANK} Tank / {config.EMOJI_HEAL} Heal / "
-                f"{config.EMOJI_DPS} DPS buttons."
+                f"{config.EMOJI_DPS} DPS buttons." + where
             ),
             colour=discord.Colour.blurple(),
         )
         await interaction.response.send_message(embed=embed, view=PanelView())
+        if not (event_channel and absence_channel):
+            await interaction.followup.send(
+                "💡 Pin this message, then use `/channels events: #… "
+                "absences: #…` so the results are posted in their own "
+                "channels instead of pushing the panel out of sight.",
+                ephemeral=True,
+            )
 
 
 async def setup(bot: commands.Bot):

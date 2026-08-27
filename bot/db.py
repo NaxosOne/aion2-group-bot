@@ -61,7 +61,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     guild_id           INTEGER PRIMARY KEY,
     welcome_channel_id INTEGER,                   -- channel greeting newcomers
     dispo_channel_id   INTEGER,                   -- weekly availability channel
-    dispo_last_posted  INTEGER NOT NULL DEFAULT 0
+    dispo_last_posted  INTEGER NOT NULL DEFAULT 0,
+    event_channel_id   INTEGER,                   -- where events are posted
+    absence_channel_id INTEGER                    -- where absences are posted
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -109,7 +111,29 @@ class Database:
         self.conn = await aiosqlite.connect(self.path)
         self.conn.row_factory = aiosqlite.Row
         await self.conn.executescript(SCHEMA)
+        await self._add_missing_columns()
         await self.conn.commit()
+
+    async def _add_missing_columns(self) -> None:
+        """Brings a database created by an earlier version up to date.
+
+        CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so
+        columns added later have to be applied by hand.
+        """
+        added = {
+            "guild_settings": {
+                "event_channel_id": "INTEGER",
+                "absence_channel_id": "INTEGER",
+            },
+        }
+        for table, columns in added.items():
+            async with self.conn.execute(f"PRAGMA table_info({table})") as cur:
+                existing = {row["name"] for row in await cur.fetchall()}
+            for name, kind in columns.items():
+                if name not in existing:
+                    await self.conn.execute(
+                        f"ALTER TABLE {table} ADD COLUMN {name} {kind}"
+                    )
 
     async def close(self) -> None:
         if self.conn:

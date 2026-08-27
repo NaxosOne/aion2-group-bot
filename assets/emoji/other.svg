@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="d" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#bff7ff"/><stop offset="100%" stop-color="#46a8d8"/>
+  </linearGradient></defs>
+  <!-- d20-ish die -->
+  <polygon points="64,8 114,38 114,90 64,120 14,90 14,38"
+           fill="url(#d)" stroke="#0b3a5c" stroke-width="7" stroke-linejoin="round"/>
+  <polygon points="64,8 114,38 64,64 14,38" fill="#eafcff" opacity="0.6"/>
+  <polygon points="64,64 114,38 114,90" fill="#1d8ec0" opacity="0.45"/>
+  <polygon points="64,36 84,74 44,74" fill="#0b3a5c" opacity="0.75"/>
+  <polygon points="64,64 64,120 14,90" fill="#2f9fd0" opacity="0.3"/>
+</svg>

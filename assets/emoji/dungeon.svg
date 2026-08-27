@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#8fa5c9"/><stop offset="100%" stop-color="#4a5f85"/>
+  </linearGradient></defs>
+  <!-- towers + curtain wall -->
+  <path d="M14 44 h20 v-14 h12 v14 h36 v-14 h12 v14 h20 v72 h-100 Z"
+        fill="url(#g)" stroke="#1b2540" stroke-width="7" stroke-linejoin="round"/>
+  <!-- gate -->
+  <path d="M44 116 v-34 a20 20 0 0 1 40 0 v34 Z" fill="#101a34" stroke="#1b2540" stroke-width="6"/>
+  <!-- portcullis bars -->
+  <g stroke="#5fd9f5" stroke-width="4" opacity="0.85">
+    <line x1="56" y1="70" x2="56" y2="116"/><line x1="72" y1="70" x2="72" y2="116"/>
+    <line x1="46" y1="92" x2="82" y2="92"/>
+  </g>
+  <rect x="22" y="56" width="14" height="16" rx="3" fill="#101a34"/>
+  <rect x="92" y="56" width="14" height="16" rx="3" fill="#101a34"/>
+</svg>

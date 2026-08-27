@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a6a4a"/><stop offset="100%" stop-color="#3d2a1a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#16204a"/>
+  <!-- big floating island -->
+  <path d="M24 56 L64 108 L104 56 Z" fill="url(#rock)" stroke="#0d1533" stroke-width="6" stroke-linejoin="round"/>
+  <ellipse cx="64" cy="55" rx="40" ry="13" fill="#54c98a" stroke="#0d1533" stroke-width="6"/>
+  <ellipse cx="56" cy="52" rx="16" ry="5" fill="#8ff0b4" opacity="0.7"/>
+  <!-- small islet -->
+  <path d="M92 84 L100 98 L108 84 Z" fill="url(#rock)" stroke="#0d1533" stroke-width="5" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="83" rx="9" ry="4" fill="#54c98a" stroke="#0d1533" stroke-width="4"/>
+  <g fill="#cdeeff">
+    <polygon points="28,24 31,33 40,36 31,39 28,48 25,39 16,36 25,33"/>
+    <polygon points="100,28 102,34 108,36 102,38 100,44 98,38 92,36 98,34"/>
+    <circle cx="30" cy="92" r="3"/><circle cx="70" cy="20" r="2.5"/>
+  </g>
+</svg>
