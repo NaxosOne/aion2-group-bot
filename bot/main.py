@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from . import config
 from .errors import report_error
+from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
@@ -32,11 +33,16 @@ class GroupBot(commands.Bot):
         self.add_view(AvailabilityView())
         self.add_view(PanelView())
 
+        # The onboarding DM button carries its guild id in the custom_id, so it
+        # is registered as a dynamic item rather than a fixed persistent view.
+        self.add_dynamic_items(OnboardButton)
+
         await self.load_extension("bot.cogs.groups")
         await self.load_extension("bot.cogs.profiles")
         await self.load_extension("bot.cogs.legion")
         await self.load_extension("bot.cogs.polls")
         await self.load_extension("bot.cogs.panel")
+        await self.load_extension("bot.cogs.onboarding")
 
         if config.GUILD_ID:
             # Single-guild sync: the commands show up right away.
