@@ -36,7 +36,19 @@ class GroupBot(commands.Bot):
             # Single-guild sync: the commands show up right away.
             guild = discord.Object(id=config.GUILD_ID)
             self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
+            try:
+                await self.tree.sync(guild=guild)
+            except discord.Forbidden:
+                raise SystemExit(
+                    f"Discord refused to register the commands on server "
+                    f"{config.GUILD_ID} (403 Missing Access). Two usual causes:\n"
+                    "  1. The bot isn't a member of that server yet, or was invited "
+                    "without the `applications.commands` scope\n"
+                    "     -> re-invite it: developer portal > OAuth2 > URL Generator, "
+                    "tick BOTH `bot` and `applications.commands`, open the URL.\n"
+                    "  2. GUILD_ID in .env isn't your server's ID (right-click the "
+                    "server name > Copy Server ID)."
+                ) from None
         else:
             await self.tree.sync()
 
