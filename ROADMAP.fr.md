@@ -10,6 +10,17 @@ L'objectif à long terme est d'évoluer d'un simple bot de groupe vers un **outi
 
 La feuille de route est flexible et évoluera avec le jeu et la communauté.
 
+## ✅ Déjà livré
+
+Les fondations sont en place :
+
+* Horaires localisés — chaque joueur voit l'heure de l'événement dans son propre fuseau
+* Promotion automatique depuis la liste d'attente — le premier joueur compatible est promu et notifié dès qu'une place se libère
+* Panneau sans commande (`/panel`) avec salons de résultats dédiés (`/channels`)
+* Pack d'emojis personnalisés (rôles et types d'événement)
+* Rappels automatiques, clôture et annulation d'événement
+* Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
+
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 
 Rendre la création et la gestion des groupes aussi fluides que possible.
@@ -17,10 +28,10 @@ Rendre la création et la gestion des groupes aussi fluides que possible.
 * [ ] Ping de rôle Discord lors de la création d'un événement
 * [ ] Fil de discussion automatique pour chaque événement
 * [ ] Sélecteur de classe Aion 2 lors de l'inscription
-* [ ] Confirmation de présence
+* [ ] Confirmation d'inscription avant l'événement (un rapide « tu viens ? »)
 * [ ] UX améliorée des événements et des groupes
-* [ ] Meilleure gestion de la liste d'attente
-* [ ] Compositions de groupe plus flexibles
+* [ ] Meilleure gestion de la liste d'attente (réorganisation manuelle, places par rôle)
+* [ ] Compositions de groupe plus flexibles (ratios personnalisés)
 
 ## 🔵 Phase 2 — Planification de légion
 
@@ -31,50 +42,40 @@ Faciliter l'organisation des activités récurrentes de la légion.
 * [ ] Salons vocaux temporaires
 * [ ] Export calendrier (`.ics`)
 * [ ] Disponibilités hebdomadaires améliorées
-* [ ] Meilleure prise en charge des fuseaux horaires
 * [ ] Gestion de séries d'événements
 
 ## 🟣 Phase 3 — Formation intelligente des groupes
 
-Passer de l'organisation manuelle des groupes à une aide pour trouver automatiquement le bon groupe.
+Passer de l'organisation manuelle des groupes à une aide automatique pour trouver le bon groupe.
 
 * [ ] Système LFG
-* [ ] Statut « Disponible maintenant »
-* [ ] Suggestions automatiques de groupe
-* [ ] Équilibrage des rôles et des classes
-* [ ] Promotion intelligente depuis la liste d'attente
+* [ ] Statut « disponible maintenant »
+* [ ] Suggestions automatiques de groupes
+* [ ] Équilibrage rôle/classe
+* [ ] Promotion intelligente (selon les rôles) depuis la liste d'attente
 * [ ] Suggestions de remplaçants
-* [ ] Historique des groupes
 * [ ] Meilleures préférences des joueurs
 
-## 🟠 Phase 4 — Intelligence de légion
+## 🟠 Phase 4 — Outils de légion
 
-Donner aux organisateurs une meilleure visibilité sur leur communauté.
+Donner aux organisateurs une vision plus claire de ce qui se passe.
 
-* [ ] Historique de présence
-* [ ] Statistiques de participation
-* [ ] Répartition des classes et des rôles
-* [ ] Statistiques d'activité de la légion
-* [ ] Tendances d'activité
 * [ ] Tableau de bord de légion
 * [ ] Interface web
-* [ ] Prise en charge multi-serveurs
 
 ## 💡 En exploration
 
 Certaines idées sont intéressantes, mais ne sont pas prioritaires actuellement :
 
-* Jets de loot
+* Jets de butin (loot rolls)
 * Anniversaires
-* Panthéon des captures d'écran
-* DKP
-* Statistiques de présence avancées
-* Plus d'intégrations Aion 2
+* Hall of fame de screenshots
+* Davantage d'intégrations Aion 2
 * Outils communautaires supplémentaires
 
 Kisk doit rester **utile plutôt que surchargé**.
 
-Si une fonctionnalité n'aide pas une légion à s'organiser, à communiquer ou à jouer ensemble, elle n'a probablement pas sa place dans Kisk.
+Si une fonctionnalité n'aide pas une légion à s'organiser, communiquer ou jouer ensemble, elle n'a probablement pas sa place dans Kisk.
 
 ---
 
@@ -82,7 +83,7 @@ Si une fonctionnalité n'aide pas une légion à s'organiser, à communiquer ou 
 
 Les communautés Aion 2 ne devraient pas avoir besoin de tableurs, de calendriers externes et de dizaines de messages Discord juste pour organiser un groupe.
 
-Kisk vise à rendre le processus simple :
+Kisk vise à simplifier le processus :
 
 ```text
 Player

@@ -10,6 +10,17 @@ The long-term goal is to evolve from a simple party bot into a **complete coordi
 
 The roadmap is flexible and will evolve with the game and community.
 
+## ✅ Already shipped
+
+The foundations are in place:
+
+* Timezone-aware schedules — every player sees the event time in their own timezone
+* Automatic waitlist promotion — the first compatible player is promoted and pinged when a spot opens
+* No-command panel (`/panel`) with dedicated result channels (`/channels`)
+* Custom role and event-type emoji pack
+* Automatic reminders, event completion and cancellation
+* Multi-guild — Kisk runs independently on any number of servers
+
 ## 🟢 Phase 1 — Better group organisation
 
 Make creating and managing groups as frictionless as possible.
@@ -17,10 +28,10 @@ Make creating and managing groups as frictionless as possible.
 * [ ] Discord role ping when creating an event
 * [ ] Automatic thread for each event
 * [ ] Aion 2 class picker during sign-up
-* [ ] Attendance confirmation
+* [ ] Sign-up confirmation before an event (a quick "are you coming?" RSVP)
 * [ ] Improved event and party UX
-* [ ] Better waitlist management
-* [ ] More flexible party compositions
+* [ ] Better waitlist management (manual reordering, role-aware slots)
+* [ ] More flexible party compositions (custom ratios)
 
 ## 🔵 Phase 2 — Legion scheduling
 
@@ -31,7 +42,6 @@ Make recurring legion activities easier to organise.
 * [ ] Temporary voice channels
 * [ ] Calendar export (`.ics`)
 * [ ] Improved weekly availability
-* [ ] Better timezone support
 * [ ] Event series management
 
 ## 🟣 Phase 3 — Smart group formation
@@ -42,23 +52,16 @@ Move from manually organising parties toward helping players find the right grou
 * [ ] "Available now" status
 * [ ] Automatic party suggestions
 * [ ] Role/class balancing
-* [ ] Smart waitlist promotion
+* [ ] Smart, role-aware waitlist promotion
 * [ ] Replacement suggestions
-* [ ] Group history
 * [ ] Better player preferences
 
-## 🟠 Phase 4 — Legion intelligence
+## 🟠 Phase 4 — Legion tools
 
-Give organisers better visibility into their community.
+Give organisers a clearer view of what's happening.
 
-* [ ] Attendance history
-* [ ] Participation statistics
-* [ ] Class and role distribution
-* [ ] Legion activity statistics
-* [ ] Activity trends
 * [ ] Legion dashboard
 * [ ] Web interface
-* [ ] Multi-guild support
 
 ## 💡 Exploring
 
@@ -67,8 +70,6 @@ Some ideas are interesting, but aren't currently priorities:
 * Loot rolls
 * Birthdays
 * Screenshot hall of fame
-* DKP
-* Advanced attendance statistics
 * More Aion 2 integrations
 * Additional community tools
 
