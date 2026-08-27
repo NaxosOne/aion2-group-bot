@@ -28,6 +28,16 @@ ROLE_OPTIONS = (
 )
 ROLE_LABELS = {value: label for value, label, _ in ROLE_OPTIONS}
 
+# The two character slots a member can register (bilingual labels).
+SLOT_SETUP_TITLE = {
+    "main": "📝 Set up your profile / Configurer ton profil",
+    "alt": "📝 Add an alt / Ajouter un reroll",
+}
+SLOT_MODAL_TITLE = {
+    "main": "Main character / Personnage principal",
+    "alt": "Alt character / Reroll",
+}
+
 
 class ClassSelect(discord.ui.Select):
     """Dropdown of Aion 2 classes: no typing, no typos, no invented classes."""
@@ -82,12 +92,15 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
     instance — nothing to persist across restarts.
     """
 
-    def __init__(self, guild_id: int, guild_name: str, ephemeral: bool):
+    def __init__(
+        self, guild_id: int, guild_name: str, ephemeral: bool, slot: str = "main"
+    ):
         super().__init__(timeout=600)
         self.guild_id = guild_id
         self.guild_name = guild_name
         # Ephemeral in a guild channel (the DM fallback), plain in a real DM.
         self.ephemeral = ephemeral
+        self.slot = slot  # 'main' or 'alt'
         self.char_class: str | None = None
         self.role: str | None = None
         self.add_item(ClassSelect(None))
@@ -101,7 +114,7 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
             class_line = not_set
         role_line = f"**{ROLE_LABELS[self.role]}**" if self.role else not_set
         return discord.Embed(
-            title=f"📝 Set up your profile / Configurer ton profil — {self.guild_name}",
+            title=f"{SLOT_SETUP_TITLE[self.slot]} — {self.guild_name}",
             description=(
                 f"**Class / Classe :** {class_line}\n"
                 f"**Role / Rôle :** {role_line}\n\n"
@@ -125,21 +138,27 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
             )
             return
         await interaction.response.send_modal(
-            ProfileNameModal(self.guild_id, self.char_class, self.role, self.ephemeral)
+            ProfileNameModal(
+                self.guild_id, self.guild_name, self.char_class,
+                self.role, self.ephemeral, self.slot,
+            )
         )
 
 
-class ProfileNameModal(
-    ModalErrorMixin, discord.ui.Modal, title="Main character / Personnage principal"
-):
+class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
     """Step two: the one thing that genuinely needs typing — the name."""
 
-    def __init__(self, guild_id: int, char_class: str, role: str, ephemeral: bool):
-        super().__init__()
+    def __init__(
+        self, guild_id: int, guild_name: str, char_class: str,
+        role: str, ephemeral: bool, slot: str,
+    ):
+        super().__init__(title=SLOT_MODAL_TITLE[slot])
         self.guild_id = guild_id
+        self.guild_name = guild_name
         self.char_class = char_class
         self.role = role
         self.ephemeral = ephemeral
+        self.slot = slot
         self.char_name = discord.ui.TextInput(
             label="Character name / Nom du personnage",
             max_length=32, placeholder="e.g. / ex. Kratos",
@@ -149,15 +168,46 @@ class ProfileNameModal(
     async def on_submit(self, interaction: discord.Interaction):
         name = self.char_name.value.strip()
         await interaction.client.db.set_profile(
-            self.guild_id, interaction.user.id, "main", name, self.char_class, self.role
+            self.guild_id, interaction.user.id, self.slot,
+            name, self.char_class, self.role,
         )
         emoji = config.CLASS_EMOJI.get(self.char_class, "")
+        detail = f"**{name}** — {emoji} {self.char_class}, {ROLE_LABELS[self.role]}"
+        if self.slot == "main":
+            # Offer to register an alt right away; adding one later works too
+            # via /profile set character: Alt.
+            view = AddAltView(self.guild_id, self.guild_name, self.ephemeral)
+            await interaction.response.send_message(
+                f"✅ All set! Your main is {detail}. Want to add an alt?\n"
+                f"*C'est fait ! Ton perso principal est {detail}. Ajouter un reroll ?*",
+                view=view, ephemeral=self.ephemeral,
+            )
+        else:
+            await interaction.response.send_message(
+                f"✅ Alt added: {detail}.\n*Reroll ajouté : {detail}.*",
+                ephemeral=self.ephemeral,
+            )
+
+
+class AddAltView(ViewErrorMixin, discord.ui.View):
+    """A single button, shown after the main is set, to register an alt too."""
+
+    def __init__(self, guild_id: int, guild_name: str, ephemeral: bool):
+        super().__init__(timeout=600)
+        self.guild_id = guild_id
+        self.guild_name = guild_name
+        self.ephemeral = ephemeral
+
+    @discord.ui.button(
+        label="Add an alt / Ajouter un reroll", emoji="➕",
+        style=discord.ButtonStyle.secondary,
+    )
+    async def add_alt(self, interaction: discord.Interaction, _):
+        view = ProfileSetupView(
+            self.guild_id, self.guild_name, self.ephemeral, slot="alt"
+        )
         await interaction.response.send_message(
-            f"✅ All set! Your main is **{name}** — {emoji} {self.char_class}, "
-            f"{ROLE_LABELS[self.role]}. Update it any time with `/profile set`.\n"
-            f"*C'est fait ! Ton perso principal est **{name}**. Tu peux le modifier "
-            "quand tu veux avec `/profile set`.*",
-            ephemeral=self.ephemeral,
+            embed=view.summary(), view=view, ephemeral=self.ephemeral
         )
 
 
