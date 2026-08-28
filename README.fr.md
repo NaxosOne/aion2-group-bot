@@ -103,8 +103,8 @@ Les joueurs peuvent :
 **Avec quel personnage ?** Les joueurs ayant enregistré plusieurs personnages
 reçoivent, après avoir choisi leur rôle, un menu déroulant privé listant leurs
 personnages avec leurs icônes de classe. Le groupe affiche ensuite le
-personnage par son nom — `@Naxos — Kratos (Templar)` — pour que chacun sache
-qui vient avec quoi. Recliquer sur le même rôle change de personnage sans
+personnage par son nom, précédé de l'icône de sa classe —
+`@Naxos — ⚔️ Kratos (Templar)` — pour lire la compo d'un coup d'œil. Recliquer sur le même rôle change de personnage sans
 perdre sa place dans la file. Les joueurs avec un seul personnage (ou aucun)
 sont inscrits directement, exactement comme avant.
 

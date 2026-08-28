@@ -102,8 +102,9 @@ Players can:
 
 **Which character are you bringing?** Players who registered more than one
 character get a private dropdown after picking their role, listing their
-characters with their class icons. The party then shows the character by name
-— `@Naxos — Kratos (Templar)` — so everyone knows who is coming as what.
+characters with their class icons. The party then shows the character by name,
+led by its class icon — `@Naxos — ⚔️ Kratos (Templar)` — so the composition
+reads as a column of classes at a glance.
 Clicking the same role again swaps character without losing your place in the
 queue. Players with a single character (or none) are signed up straight away,
 exactly as before.
