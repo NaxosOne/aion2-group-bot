@@ -184,6 +184,7 @@ async def register_absence(
         )
         return
 
+    lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     start_ts = int(start_dt.timestamp())
     if end_has_time:
         end_ts = int(end_dt.timestamp())
@@ -193,7 +194,7 @@ async def register_absence(
         )
     if end_ts < start_ts:
         await interaction.response.send_message(
-            "The return moment is before the departure. 🤔", ephemeral=True
+            i18n.t("absence.end_before_start", lang), ephemeral=True
         )
         return
 
@@ -206,13 +207,16 @@ async def register_absence(
         and start_dt.date() == end_dt.date()
     )
     if whole_single_day:
-        period = f"on <t:{start_ts}:D>"
+        period = i18n.t("absence.period_single", lang, date=f"<t:{start_ts}:D>")
     else:
-        period = f"from {fmt_absence_ts(start_ts)} to {fmt_absence_ts(end_ts, end=True)}"
-    announcement = (
-        f"🏖️ {interaction.user.mention} will be away {period}"
-        + (f" ({reason})" if reason else "")
-        + ". Enjoy the break!"
+        period = i18n.t(
+            "absence.period_range", lang,
+            start=fmt_absence_ts(start_ts), end=fmt_absence_ts(end_ts, end=True),
+        )
+    announcement = i18n.t(
+        "absence.announcement", lang,
+        mention=interaction.user.mention, period=period,
+        reason=(f" ({reason})" if reason else ""),
     )
     quiet = discord.AllowedMentions.none()
 
@@ -226,13 +230,12 @@ async def register_absence(
         message = await channel.send(announcement, allowed_mentions=quiet)
     except discord.Forbidden:
         await interaction.followup.send(
-            f"I'm not allowed to post in {channel.mention}. Give me the "
-            "Send Messages permission there, or point `/channels` at "
-            "another channel.",
+            i18n.t("absence.post_forbidden", lang, channel=channel.mention),
             ephemeral=True,
         )
         return
     await interaction.followup.send(
-        f"Absence registered in {channel.mention} — {message.jump_url}",
+        i18n.t("absence.registered", lang, channel=channel.mention,
+               link=message.jump_url),
         ephemeral=True,
     )

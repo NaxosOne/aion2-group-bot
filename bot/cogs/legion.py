@@ -7,23 +7,28 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from .. import i18n
 from ..actions import fmt_absence_ts, register_absence
 from ..errors import ModalErrorMixin
 
 
-class AnnounceModal(ModalErrorMixin, discord.ui.Modal, title="Legion announcement"):
+class AnnounceModal(ModalErrorMixin, discord.ui.Modal):
     """Pop-up form: allows a multi-line message."""
 
-    announce_title = discord.ui.TextInput(label="Title", max_length=100)
-    content = discord.ui.TextInput(
-        label="Message",
-        style=discord.TextStyle.paragraph,
-        max_length=2000,
-    )
-
-    def __init__(self, ping: discord.Role | None):
-        super().__init__()
+    def __init__(self, ping: discord.Role | None, lang: str):
+        super().__init__(title=i18n.t("announce.modal_title", lang))
         self.ping = ping
+        self.lang = lang
+        self.announce_title = discord.ui.TextInput(
+            label=i18n.t("announce.field_title", lang), max_length=100
+        )
+        self.content = discord.ui.TextInput(
+            label=i18n.t("announce.field_message", lang),
+            style=discord.TextStyle.paragraph,
+            max_length=2000,
+        )
+        self.add_item(self.announce_title)
+        self.add_item(self.content)
 
     async def on_submit(self, interaction: discord.Interaction):
         embed = discord.Embed(
@@ -32,7 +37,9 @@ class AnnounceModal(ModalErrorMixin, discord.ui.Modal, title="Legion announcemen
             colour=discord.Colour.gold(),
         )
         embed.set_footer(
-            text=f"Legion announcement • by {interaction.user.display_name}"
+            text=i18n.t(
+                "announce.footer", self.lang, name=interaction.user.display_name
+            )
         )
 
         content = None
@@ -73,11 +80,12 @@ class Legion(commands.Cog):
 
     @app_commands.command(name="absences", description="See who's away or about to be")
     async def absences(self, interaction: discord.Interaction):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         now = int(time.time())
         absences = await self.bot.db.list_absences(interaction.guild_id, now)
         if not absences:
             await interaction.response.send_message(
-                "Nobody's away — the legion is at full strength! 💪",
+                i18n.t("absences.none", lang),
                 ephemeral=True,
             )
             return
@@ -86,17 +94,24 @@ class Legion(commands.Cog):
         for a in absences:
             ongoing = a["starts_on"] <= now
             state = (
-                "🔴 ongoing" if ongoing
-                else f"starting {fmt_absence_ts(a['starts_on'])}"
+                i18n.t("absences.ongoing", lang) if ongoing
+                else i18n.t(
+                    "absences.starting", lang, date=fmt_absence_ts(a["starts_on"])
+                )
             )
             lines.append(
-                f"• <@{a['user_id']}> — {state}, back after "
-                f"{fmt_absence_ts(a['ends_on'], end=True)}"
+                i18n.t(
+                    "absences.line",
+                    lang,
+                    user=a["user_id"],
+                    state=state,
+                    date=fmt_absence_ts(a["ends_on"], end=True),
+                )
                 + (f" *({a['reason']})*" if a["reason"] else "")
             )
 
         embed = discord.Embed(
-            title="🏖️ Absences",
+            title=i18n.t("absences.title", lang),
             description="\n".join(lines),
             colour=discord.Colour.orange(),
         )
@@ -104,17 +119,18 @@ class Legion(commands.Cog):
 
     @app_commands.command(name="back", description="Cancel your absences (early return)")
     async def back(self, interaction: discord.Interaction):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         cancelled = await self.bot.db.clear_absences(
             interaction.guild_id, interaction.user.id, int(time.time())
         )
         if cancelled:
             await interaction.response.send_message(
-                f"🎉 {interaction.user.mention} is back!",
+                i18n.t("back.welcome_back", lang, mention=interaction.user.mention),
                 allowed_mentions=discord.AllowedMentions.none(),
             )
         else:
             await interaction.response.send_message(
-                "You had no current or upcoming absence.", ephemeral=True
+                i18n.t("back.none", lang), ephemeral=True
             )
 
     # ----- Welcoming newcomers -----
@@ -134,12 +150,13 @@ class Legion(commands.Cog):
     async def welcome(
         self, interaction: discord.Interaction, action: app_commands.Choice[str]
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         if action.value == "on":
             await self.bot.db.set_setting(
                 interaction.guild_id, "welcome_channel_id", interaction.channel_id
             )
             await interaction.response.send_message(
-                "👋 Got it: I'll greet new members here with the bot's how-to.",
+                i18n.t("welcome_cmd.on", lang),
                 ephemeral=True,
             )
         else:
@@ -147,7 +164,7 @@ class Legion(commands.Cog):
                 interaction.guild_id, "welcome_channel_id", None
             )
             await interaction.response.send_message(
-                "Welcome message disabled.", ephemeral=True
+                i18n.t("welcome_cmd.off", lang), ephemeral=True
             )
 
     @commands.Cog.listener()
@@ -161,19 +178,10 @@ class Legion(commands.Cog):
         if channel is None:
             return
 
+        lang = await i18n.resolve_lang(self.bot.db, member.guild)
         embed = discord.Embed(
-            title="Welcome to the legion! 👋",
-            description=(
-                "Here's how things work around here:\n"
-                "• `/profile set` — register your character (class, role), "
-                "it will show up in parties\n"
-                "• `/events` — the scheduled events; sign up in one click "
-                "(🛡️ Tank / 💚 Heal / 🗡️ DPS)\n"
-                "• `/event` — start your own run: dungeon, PvP, abyss...\n"
-                "• `/availability post` — tell us which evenings you can play "
-                "this week\n\n"
-                "Have fun! ⚔️"
-            ),
+            title=i18n.t("welcome_join.title", lang),
+            description=i18n.t("welcome_join.body", lang),
             colour=discord.Colour.blurple(),
         )
         try:
@@ -191,7 +199,8 @@ class Legion(commands.Cog):
     async def announce(
         self, interaction: discord.Interaction, ping: discord.Role | None = None
     ):
-        await interaction.response.send_modal(AnnounceModal(ping))
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
+        await interaction.response.send_modal(AnnounceModal(ping, lang))
 
 
 async def setup(bot: commands.Bot):
