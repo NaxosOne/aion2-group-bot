@@ -174,7 +174,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 )
                 return
 
-            await self._refresh(interaction, event)
+            await self._update_message(interaction, event)
             await interaction.followup.send("You've left the event. 👋", ephemeral=True)
             await self.announce_promoted(interaction, event, party_before)
 
@@ -356,8 +356,13 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             return None
         return event
 
-    async def _refresh(self, interaction: discord.Interaction, event) -> list:
-        """Updates the message's embed and returns the fresh sign-ups."""
+    async def _update_message(self, interaction: discord.Interaction, event) -> list:
+        """Updates the message's embed and returns the fresh sign-ups.
+
+        Named `_update_message` on purpose: `_refresh` is an internal discord.py
+        View method (`View._refresh(components)`), and shadowing it crashes the
+        gateway when Discord refreshes the view on a message update.
+        """
         db = interaction.client.db
         signups = await db.get_signups(event["message_id"])
         classes = await db.get_main_classes(
