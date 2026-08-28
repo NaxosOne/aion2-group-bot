@@ -20,15 +20,15 @@ Les fondations sont en place :
 * Pack d'emojis personnalisés — rôles, types d'événement et toutes les classes Aion 2
 * Rappels automatiques, clôture et annulation d'événement
 * Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
-* Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main et autant de rerolls qu'ils en jouent, bilingue FR/EN, avec repli sur salon
-* Choix du personnage à l'inscription — les membres ayant plusieurs personnages désignent celui qu'ils amènent, nommé dans la liste du groupe
-* Gestion des profils — jusqu'à 10 personnages chacun, `/profile main` pour choisir le principal, `/profile delete` (le tien, ou celui d'un membre pour les modérateurs) et nettoyage automatique au départ d'un membre du serveur
+* Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), bilingue FR/EN, avec repli sur salon
+* Gestion des profils — `/profile delete` (le tien, ou celui d'un membre pour les modérateurs) et nettoyage automatique au départ d'un membre du serveur
+* Fil de discussion automatique sur chaque message d'événement (best-effort ; sauté si le bot n'a pas Create Public Threads)
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 
 Rendre la création et la gestion des groupes aussi fluides que possible.
 
-* [ ] Fil de discussion automatique pour chaque événement
+* [ ] Sélecteur de classe Aion 2 lors de l'inscription
 * [ ] Confirmation d'inscription avant l'événement (un rapide « tu viens ? »)
 * [ ] UX améliorée des événements et des groupes
 * [ ] Meilleure gestion de la liste d'attente (réorganisation manuelle, places par rôle)

@@ -20,15 +20,15 @@ The foundations are in place:
 * Custom emoji pack — roles, event types and every Aion 2 class
 * Automatic reminders, event completion and cancellation
 * Multi-guild — Kisk runs independently on any number of servers
-* Guided profile onboarding (`/onboard`) — validated members are DMed to register their main and as many alts as they play, bilingual EN/FR, with a channel fallback
-* Character picker at sign-up — members with several characters choose the one they're bringing, named in the party list
-* Profile management — up to 10 characters each, `/profile main` to pick the default, `/profile delete` (yours, or a member's for moderators) and automatic cleanup when a member leaves the server
+* Guided profile onboarding (`/onboard`) — validated members are DMed to register their main (and alt), bilingual EN/FR, with a channel fallback
+* Profile management — `/profile delete` (yours, or a member's for moderators) and automatic cleanup when a member leaves the server
+* Automatic discussion thread on every event message (best-effort; skipped if the bot lacks Create Public Threads)
 
 ## 🟢 Phase 1 — Better group organisation
 
 Make creating and managing groups as frictionless as possible.
 
-* [ ] Automatic thread for each event
+* [ ] Aion 2 class picker during sign-up
 * [ ] Sign-up confirmation before an event (a quick "are you coming?" RSVP)
 * [ ] Improved event and party UX
 * [ ] Better waitlist management (manual reordering, role-aware slots)
