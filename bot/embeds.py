@@ -36,19 +36,31 @@ def _row_get(row, key: str):
         return None
 
 
-def _class_suffix(signup, classes: dict) -> str:
-    """Suffix " — Kratos (Templar)" naming the character brought along.
+def _class_suffix(signup, classes: dict, *, role_shown: bool = False) -> str:
+    """Suffix " — 🛡️ Kratos (Templar)" naming the character brought along.
 
-    Falls back to the member's main class when they signed up without picking
-    a character, and to nothing at all when they have no profile.
+    The class icon leads so the party reads as a column of classes at a
+    glance. Falls back to the member's main class when they signed up without
+    picking a character, and to nothing at all when they have no profile.
+    A class with no configured icon (free text) simply has none.
+
+    `role_shown` says the line already starts with the role icon: with the
+    Unicode defaults a class shares its glyph with a role (Templar and Tank
+    are both 🛡️), and the same icon twice on one line reads as a mistake.
+    Servers that installed the class icons never hit this.
     """
     name = _row_get(signup, "char_name")
     char_class = _row_get(signup, "char_class") or classes.get(signup["user_id"])
+    icon = config.CLASS_EMOJI.get(char_class, "") if char_class else ""
+    if icon and role_shown and icon == ROLE_EMOJI.get(signup["role"]):
+        icon = ""
+    if icon:
+        icon += " "
     if name and char_class:
-        return f" — *{name} ({char_class})*"
+        return f" — {icon}*{name} ({char_class})*"
     if name:
         return f" — *{name}*"
-    return f" — *{char_class}*" if char_class else ""
+    return f" — {icon}*{char_class}*" if char_class else ""
 
 
 def _names(members: list, classes: dict) -> str:
@@ -117,7 +129,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             name=f"👥 Party ({len(party)}/{event['size']})",
             value="\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_class_suffix(s, classes)}"
+                f"{_class_suffix(s, classes, role_shown=True)}"
                 for s in party
             )
             or "*—*",
@@ -129,7 +141,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             name=f"⏳ Waitlist ({len(waitlist)})",
             value="\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_class_suffix(s, classes)}"
+                f"{_class_suffix(s, classes, role_shown=True)}"
                 for i, s in enumerate(waitlist, start=1)
             ),
             inline=False,
