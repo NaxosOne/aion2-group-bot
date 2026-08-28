@@ -2,7 +2,7 @@
 
 import discord
 
-from . import config
+from . import config, i18n
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 from .utils.rsvp import rsvp_summary
 
@@ -79,7 +79,9 @@ def _names(members: list, classes: dict) -> str:
     )
 
 
-def build_event_embed(event, signups: list, classes: dict | None = None) -> discord.Embed:
+def build_event_embed(
+    event, signups: list, classes: dict | None = None, lang: str = "en"
+) -> discord.Embed:
     """Builds an event's embed from its database row.
 
     `classes`: {user_id: main character's class} to display the class of
@@ -96,7 +98,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
     title = f"{emoji} {event['title']}"
     if cancelled:
-        title = f"❌ [CANCELLED] {event['title']}"
+        title = f"❌ {i18n.t('event.cancelled_prefix', lang)} {event['title']}"
     elif completed:
         title = f"✅ {event['title']}"
 
@@ -134,7 +136,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             )
     else:
         embed.add_field(
-            name=f"👥 Party ({len(party)}/{event['size']})",
+            name=f"👥 {i18n.t('event.party', lang)} ({len(party)}/{event['size']})",
             value="\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
@@ -146,7 +148,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
 
     if waitlist:
         embed.add_field(
-            name=f"⏳ Waitlist ({len(waitlist)})",
+            name=f"⏳ {i18n.t('event.waitlist', lang)} ({len(waitlist)})",
             value="\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
@@ -156,12 +158,14 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
         )
 
     if completed:
-        suffix = " • Completed 🎉"
+        suffix = " • " + i18n.t("event.completed_suffix", lang)
     elif full and not cancelled:
-        suffix = " • FULL"
+        suffix = " • " + i18n.t("event.full", lang)
     else:
         suffix = ""
-    embed.set_footer(text=f"Created by {event['creator_name']}{suffix}")
+    embed.set_footer(
+        text=i18n.t("event.footer_created_by", lang, name=event["creator_name"], suffix=suffix)
+    )
     return embed
 
 

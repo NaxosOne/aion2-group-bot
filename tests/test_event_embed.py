@@ -98,3 +98,16 @@ def test_a_different_class_icon_is_kept_next_to_the_role_icon():
         f"• {ROLE_EMOJI['dps']} <@10> — {config.CLASS_EMOJI['Ranger']} "
         "*Zed (Ranger)*"
     )
+
+
+def test_field_names_follow_the_language():
+    full = [signup(i, "tank", f"C{i}", "Templar") for i in range(1, 4)]
+    embed = build_event_embed(EVENT, full, lang="fr")
+    names = [f.name for f in embed.fields]
+    assert any("Liste d'attente" in n for n in names)
+
+
+def test_cancelled_prefix_is_translated():
+    cancelled = {**EVENT, "status": "cancelled"}
+    embed = build_event_embed(cancelled, [], lang="fr")
+    assert "[ANNULÉ]" in embed.title
