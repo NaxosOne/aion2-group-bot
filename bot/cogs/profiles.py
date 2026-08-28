@@ -5,27 +5,34 @@ exactly one of them is their main, and that is the one the bot falls back on
 whenever a character isn't named explicitly.
 """
 
+import logging
+
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from .. import config
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..logic import MAX_CHARACTERS, ROLES
 
 # The playable classes, taken from the emoji configuration so that adding one
-# (Fist Fighter, on release) is a single line in config.py. Free text is still
-# accepted: the list only drives the suggestions.
+# (Fist Fighter, on release) is a single line in config.py. This is the whole
+# list a member may pick from, in the slash command as in the onboarding form.
 AION_CLASSES = list(config.CLASS_EMOJI)
+
+# Discord caps a choice list at 25; the class list is far shorter, so it fits
+# whole and needs no paging.
+CLASS_CHOICES = [app_commands.Choice(name=name, value=name) for name in AION_CLASSES]
 
 ALL_CHARACTERS = "all"
 
+# How many absentees one pruning pass will confirm against the API. A member
+# missing from the cache is almost always someone who left, but a guild whose
+# cache never filled would put every profile in that bucket, so the work is
+# spread over successive passes rather than fired off at once.
+PRUNE_BATCH = 25
 
-async def class_autocomplete(_: discord.Interaction, current: str):
-    cur = current.lower()
-    return [
-        app_commands.Choice(name=c, value=c) for c in AION_CLASSES if cur in c.lower()
-    ][:25]
+log = logging.getLogger(__name__)
 
 
 def _target_of(interaction: discord.Interaction):
@@ -103,33 +110,39 @@ class Profile(commands.GroupCog, name="profile"):
         self.bot = bot
         super().__init__()
 
+    async def cog_load(self):
+        self.prune_departed.start()
+
+    async def cog_unload(self):
+        self.prune_departed.cancel()
+
     @app_commands.command(
         name="set", description="Register one of your characters (or update it)"
     )
     @app_commands.rename(char_class="class")
     @app_commands.describe(
         name="The character's in-game name — an existing name updates it",
-        char_class="Its class (suggestions offered, free text accepted)",
+        char_class="Its class",
         role="Its party role",
         main="Make it your main character (your first one always is)",
     )
     @app_commands.choices(
+        char_class=CLASS_CHOICES,
         role=[
             app_commands.Choice(name="🛡️ Tank", value="tank"),
             app_commands.Choice(name="💚 Heal", value="heal"),
             app_commands.Choice(name="🗡️ DPS", value="dps"),
         ],
     )
-    @app_commands.autocomplete(char_class=class_autocomplete)
     async def set(
         self,
         interaction: discord.Interaction,
         name: app_commands.Range[str, 1, 32],
-        char_class: app_commands.Range[str, 1, 32],
+        char_class: app_commands.Choice[str],
         role: app_commands.Choice[str],
         main: bool = False,
     ):
-        name, char_class = name.strip(), char_class.strip()
+        name, char_class = name.strip(), char_class.value
         characters = await self.bot.db.get_profiles(
             interaction.guild_id, interaction.user.id
         )
@@ -284,6 +297,47 @@ class Profile(commands.GroupCog, name="profile"):
         if member.bot:
             return
         await self.bot.db.purge_member(member.guild.id, member.id)
+
+    # ----- Catching the departures the listener missed -----
+
+    @tasks.loop(hours=24)
+    async def prune_departed(self):
+        """Forgets members who left while the bot wasn't there to see it.
+
+        on_member_remove only fires while the bot is connected, so anyone who
+        left during a restart — or before that listener existed — keeps their
+        characters on the roster forever. This runs once at startup and daily
+        after that, and cleans them up.
+
+        Deleting from a cold cache would wipe every profile on the server, so
+        a member missing from it is never trusted: only an explicit 404 from
+        the API counts as proof they are gone. Anything else (a network blip,
+        a rate limit) leaves the profile alone for the next pass.
+        """
+        for guild in self.bot.guilds:
+            checked = 0
+            for user_id in await self.bot.db.profile_user_ids(guild.id):
+                if guild.get_member(user_id) is not None:
+                    continue
+                if checked >= PRUNE_BATCH:
+                    break
+                checked += 1
+                try:
+                    await guild.fetch_member(user_id)
+                except discord.NotFound:
+                    await self.bot.db.purge_member(guild.id, user_id)
+                    log.info(
+                        "Purged %s: no longer a member of %s (%s)",
+                        user_id, guild.name, guild.id,
+                    )
+                except discord.HTTPException:
+                    continue
+
+    @prune_departed.before_loop
+    async def _wait_ready(self):
+        # Guilds are chunked by the time the bot is ready (the members intent
+        # is on), so the member cache is trustworthy for the cheap check.
+        await self.bot.wait_until_ready()
 
 
 @app_commands.guild_only()

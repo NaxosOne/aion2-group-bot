@@ -254,3 +254,19 @@ def test_migration_runs_once_and_alts_can_be_added_after(tmp_path):
         return [(r["char_name"], r["is_main"]) for r in rows]
 
     assert run(go) == [("Kratos", 1), ("Loki", 0), ("Zed", 0)]
+
+
+def test_profile_user_ids_lists_each_member_once_per_guild(tmp_path):
+    async def go():
+        db = await _fresh(tmp_path)
+        await db.add_character(1, 42, "Kratos", "Templar", "tank")
+        await db.add_character(1, 42, "Loki", "Assassin", "dps")   # same member
+        await db.add_character(1, 99, "Solo", "Ranger", "dps")
+        await db.add_character(2, 77, "Elsewhere", "Cleric", "heal")  # other guild
+        here = sorted(await db.profile_user_ids(1))
+        there = await db.profile_user_ids(2)
+        empty = await db.profile_user_ids(3)
+        await db.close()
+        return here, there, empty
+
+    assert run(go) == ([42, 99], [77], [])
