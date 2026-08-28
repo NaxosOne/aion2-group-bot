@@ -454,10 +454,10 @@ class Database:
             return (await cur.fetchone())["n"]
 
     async def get_profiles(self, guild_id: int, user_id: int):
-        """A member's characters, main first then alphabetically."""
+        """A member's characters: main first, then by class, then by name."""
         async with self.conn.execute(
             """SELECT * FROM profiles WHERE guild_id = ? AND user_id = ?
-               ORDER BY is_main DESC, char_name""",
+               ORDER BY is_main DESC, char_class, char_name""",
             (guild_id, user_id),
         ) as cur:
             return await cur.fetchall()
@@ -473,7 +473,7 @@ class Database:
     async def all_profiles(self, guild_id: int):
         async with self.conn.execute(
             """SELECT * FROM profiles WHERE guild_id = ?
-               ORDER BY user_id, is_main DESC, char_name""",
+               ORDER BY user_id, is_main DESC, char_class, char_name""",
             (guild_id,),
         ) as cur:
             return await cur.fetchall()

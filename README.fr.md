@@ -220,8 +220,11 @@ Utilisez :
 /roster
 ```
 
-pour parcourir les informations des joueurs. Pour supprimer un personnage, ou
-tout un profil :
+pour parcourir les informations des joueurs. `/roster` affiche une ligne par
+membre, triée par rôle — tanks, puis heals, puis DPS — et à rôle égal par
+classe, puis par nom de personnage.
+
+Pour supprimer un personnage, ou tout un profil :
 
 ```text
 /profile delete character: Loki      → ce personnage précis
@@ -373,6 +376,10 @@ Kisk peut afficher le prochain événement à venir dans son statut Discord :
 ```text
 Playing 🏰 Fire Temple — tomorrow 21:00
 ```
+
+Le statut utilise toujours les icônes Unicode, même sur un serveur qui a
+configuré les siennes : Discord affiche la présence d'un bot littéralement, un
+emoji personnalisé y apparaîtrait donc sous forme de code `<:dungeon:123…>`.
 
 ### 💾 Persistance
 
@@ -637,11 +644,10 @@ Les emojis de rôle, de type d'événement et de **classe Aion 2** peuvent être
 remplacés par les vôtres — importez-les comme emojis personnalisés dans le
 portail développeur (onglet **Emojis**), puis définissez `EMOJI_TANK`,
 `EMOJI_DUNGEON`, `EMOJI_GLADIATOR`, … dans `.env`. Un pack d'icônes de rôle et
-de type est fourni dans [`assets/emoji/`](assets/emoji/README.md). Les emojis
-personnalisés
-apparaissent dans les embeds, les boutons et les messages ; Discord affiche les
-listes de choix des commandes slash en texte brut, où seuls les emojis Unicode
-fonctionnent.
+de type est fourni dans [`assets/emoji/`](assets/emoji/README.md). Les emojis personnalisés apparaissent dans les embeds, les boutons et les
+messages. Deux surfaces sont du texte brut pour Discord et retombent toujours
+sur les icônes Unicode : les listes de choix des commandes slash, et le statut
+du bot lui-même.
 
 ---
 

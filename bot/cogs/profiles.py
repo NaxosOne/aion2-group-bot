@@ -11,7 +11,7 @@ from discord.ext import commands
 
 from .. import config
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
-from ..logic import MAX_CHARACTERS
+from ..logic import MAX_CHARACTERS, ROLES
 
 # The playable classes, taken from the emoji configuration so that adding one
 # (Fist Fighter, on release) is a single line in config.py. Free text is still
@@ -72,6 +72,19 @@ async def resolve_character(db, guild_id: int, user_id: int, value: str):
         if row["char_name"].lower() == value.lower():
             return row
     return None
+
+
+def _roster_order(entry) -> tuple:
+    """Roster order: role first, then class, then character name.
+
+    Keyed on the member's main, the character the roster line shows. Sorting
+    by role first lines the roster up as tanks, then heals, then DPS — the
+    question a legion actually asks it. A role that isn't one of the three
+    (data from a future version) sorts last rather than raising.
+    """
+    main = entry[1][0]
+    rank = ROLES.index(main["role"]) if main["role"] in ROLES else len(ROLES)
+    return (rank, main["char_class"].lower(), main["char_name"].lower())
 
 
 def character_line(row, *, star: bool = True) -> str:
@@ -290,13 +303,14 @@ class Roster(commands.Cog):
             )
             return
 
-        # Group each member's characters (rows arrive sorted, main first).
+        # Group each member's characters (rows arrive main first, then by
+        # class, then by name).
         by_member: dict[int, list] = {}
         for row in characters:
             by_member.setdefault(row["user_id"], []).append(row)
 
         lines = []
-        for user_id, chars in by_member.items():
+        for user_id, chars in sorted(by_member.items(), key=_roster_order):
             line = f"• <@{user_id}>: {character_line(chars[0], star=False)}"
             if len(chars) > 1:
                 alts = ", ".join(row["char_name"] for row in chars[1:])

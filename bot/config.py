@@ -40,22 +40,28 @@ EMOJI_TANK = _emoji(os.getenv("EMOJI_TANK"), "🛡️", "EMOJI_TANK")
 EMOJI_HEAL = _emoji(os.getenv("EMOJI_HEAL"), "💚", "EMOJI_HEAL")
 EMOJI_DPS = _emoji(os.getenv("EMOJI_DPS"), "🗡️", "EMOJI_DPS")
 
-# Event-type emojis, overridable the same way (EMOJI_DUNGEON, EMOJI_RAID...).
-# Note: custom emojis show up in embeds and messages, but Discord renders the
-# slash-command choice lists as plain text, where only Unicode emojis work.
+# The built-in event-type emojis. Kept reachable because a few surfaces
+# cannot render a custom emoji and have to fall back to Unicode: Discord
+# shows slash-command choice lists as plain text, and prints the bot's
+# presence literally, raw <:name:id> code and all.
+DEFAULT_EMOJI_ACTIVITY = {
+    "Dungeon": "🏰",
+    "Raid": "🐉",
+    "Battleground": "🚩",
+    "PvP": "⚔️",
+    "Rift": "🌀",
+    "Abyss": "🌌",
+    "Other": "🎲",
+}
+
+# The same list, with the .env overrides applied (EMOJI_DUNGEON, EMOJI_RAID
+# ...). Use this everywhere a custom emoji renders: embeds, messages,
+# buttons and menus.
 EMOJI_ACTIVITY = {
     name: _emoji(
         os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}"
     )
-    for name, default in {
-        "Dungeon": "🏰",
-        "Raid": "🐉",
-        "Battleground": "🚩",
-        "PvP": "⚔️",
-        "Rift": "🌀",
-        "Abyss": "🌌",
-        "Other": "🎲",
-    }.items()
+    for name, default in DEFAULT_EMOJI_ACTIVITY.items()
 }
 
 # Aion 2 class emojis, overridable the same way (EMOJI_GLADIATOR, EMOJI_TEMPLAR

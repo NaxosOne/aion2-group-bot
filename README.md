@@ -217,7 +217,11 @@ Use:
 /roster
 ```
 
-to browse player information. To remove a character, or a whole profile:
+to browse player information. `/roster` lists one line per member, ordered by
+role — tanks, then heals, then DPS — and within a role by class, then by
+character name.
+
+To remove a character, or a whole profile:
 
 ```text
 /profile delete character: Loki      → that one character
@@ -367,6 +371,10 @@ Kisk can display the next upcoming event in its Discord status:
 ```text
 Playing 🏰 Fire Temple — tomorrow 21:00
 ```
+
+The status always uses the Unicode icons, even on a server that configured
+custom ones: Discord prints a bot's presence literally, so a custom emoji
+would show there as its raw `<:dungeon:123…>` code.
 
 ### 💾 Persistence
 
@@ -630,8 +638,9 @@ Role, event-type and **Aion 2 class** emojis can be replaced with your own —
 upload them as custom emojis in the developer portal (**Emojis** tab), then set
 `EMOJI_TANK`, `EMOJI_DUNGEON`, `EMOJI_GLADIATOR`, … in `.env`. A ready-made role
 and event-type icon pack ships in [`assets/emoji/`](assets/emoji/README.md).
-Custom emojis show up in embeds, buttons and messages; Discord renders
-slash-command choice lists as plain text, where only Unicode emojis work.
+Custom emojis show up in embeds, buttons and messages. Two surfaces are plain
+text to Discord and always fall back to the Unicode icons: slash-command
+choice lists, and the bot's own status.
 
 ---
 
