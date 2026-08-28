@@ -301,7 +301,7 @@ class Groups(commands.Cog):
         return await channel.send(
             content=mentions or None,
             embed=embed,
-            view=RSVPView(),
+            view=RSVPView(lang),
             allowed_mentions=discord.AllowedMentions(users=True),
         )
 

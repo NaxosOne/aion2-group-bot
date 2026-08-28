@@ -131,8 +131,20 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     # concurrent clicks can't double-promote or emit phantom promotions.
     _locks: dict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
 
-    def __init__(self):
+    # Which buttons carry a translatable label; role buttons (tank/heal/dps)
+    # keep their emoji-driven tokens untouched.
+    _LABELS = {
+        "aion2:leave": "signup.btn_leave",
+        "aion2:done": "signup.btn_done",
+        "aion2:cancel": "signup.btn_cancel",
+    }
+
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
+        for child in self.children:
+            key = self._LABELS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
 
     # ----- Sign-up buttons -----
 
@@ -418,8 +430,17 @@ class RSVPView(ViewErrorMixin, discord.ui.View):
     buttons find their event through `events.rsvp_prompt_id`.
     """
 
-    def __init__(self):
+    _LABELS = {
+        "rsvp:yes": "rsvp.btn_coming",
+        "rsvp:no": "rsvp.btn_not_coming",
+    }
+
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
+        for child in self.children:
+            key = self._LABELS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
 
     @discord.ui.button(
         label="I'm coming", emoji="✅",

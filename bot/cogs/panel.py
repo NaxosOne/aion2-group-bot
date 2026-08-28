@@ -249,8 +249,17 @@ class AwayModal(ModalErrorMixin, discord.ui.Modal):
 
 
 class PanelView(ViewErrorMixin, discord.ui.View):
-    def __init__(self):
+    _LABELS = {
+        "panel:event": "panel.btn_create_event",
+        "panel:away": "panel.btn_report_absence",
+    }
+
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
+        for child in self.children:
+            key = self._LABELS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
 
     @discord.ui.button(
         label="Create an event", emoji="📅", style=discord.ButtonStyle.primary,
@@ -374,7 +383,7 @@ class Panel(commands.Cog):
             ),
             colour=discord.Colour.blurple(),
         )
-        await interaction.response.send_message(embed=embed, view=PanelView())
+        await interaction.response.send_message(embed=embed, view=PanelView(lang))
         if not (event_channel and absence_channel):
             await interaction.followup.send(
                 i18n.t("panel.pin_tip", lang),

@@ -88,7 +88,7 @@ async def publish_event(
     await interaction.response.defer(ephemeral=True)
     try:
         message = await channel.send(
-            content=content, embed=embed, view=SignupView(), allowed_mentions=mentions
+            content=content, embed=embed, view=SignupView(lang), allowed_mentions=mentions
         )
     except discord.Forbidden:
         await interaction.followup.send(

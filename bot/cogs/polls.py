@@ -58,7 +58,7 @@ def build_poll_embed(poll, votes: list, lang: str = "en") -> discord.Embed:
 
 
 class VoteView(ViewErrorMixin, discord.ui.View):
-    def __init__(self, option_count: int = 5):
+    def __init__(self, option_count: int = 5, lang: str = "en"):
         super().__init__(timeout=None)
         # Drop the extra buttons for a poll with fewer than 5 options.
         for item in list(self.children):
@@ -67,6 +67,8 @@ class VoteView(ViewErrorMixin, discord.ui.View):
                 and int(item.custom_id.rsplit(":", 1)[1]) >= option_count
             ):
                 self.remove_item(item)
+            elif item.custom_id == "vote:clore":
+                item.label = i18n.t("poll.btn_close", lang)
 
     @discord.ui.button(emoji="1️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:0")
     async def option_0(self, interaction: discord.Interaction, _):
@@ -164,11 +166,11 @@ def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Em
 
 
 class AvailabilityView(ViewErrorMixin, discord.ui.View):
-    def __init__(self):
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
-        for i, day in enumerate(DAYS_SHORT):
+        for i in range(len(DAYS_SHORT)):
             button = discord.ui.Button(
-                label=day,
+                label=i18n.t(f"weekday_short.{i}", lang),
                 style=discord.ButtonStyle.primary,
                 custom_id=f"dispo:{i}",
                 row=0 if i < 5 else 1,
@@ -242,7 +244,9 @@ class Polls(commands.Cog):
             "status": "open",
         }
         embed = build_poll_embed(poll, [], lang)
-        await interaction.response.send_message(embed=embed, view=VoteView(len(options)))
+        await interaction.response.send_message(
+            embed=embed, view=VoteView(len(options), lang)
+        )
         message = await interaction.original_response()
         try:
             await self.bot.db.create_poll(
@@ -269,7 +273,7 @@ class Polls(commands.Cog):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         label = week_label(datetime.now(config.TIMEZONE), lang)
         embed = build_availability_embed({"week_label": label}, [], lang)
-        await interaction.response.send_message(embed=embed, view=AvailabilityView())
+        await interaction.response.send_message(embed=embed, view=AvailabilityView(lang))
         message = await interaction.original_response()
         try:
             await self.bot.db.create_availability(
@@ -350,7 +354,7 @@ class Polls(commands.Cog):
                 ) or await self.bot.fetch_channel(settings["dispo_channel_id"])
                 label = week_label(now, lang)
                 embed = build_availability_embed({"week_label": label}, [], lang)
-                message = await channel.send(embed=embed, view=AvailabilityView())
+                message = await channel.send(embed=embed, view=AvailabilityView(lang))
                 await self.bot.db.create_availability(
                     message.id, settings["guild_id"], channel.id, label
                 )
