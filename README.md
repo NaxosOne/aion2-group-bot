@@ -367,7 +367,24 @@ opens a guided, dropdown-based form to register their main character — **class
 (with Aion 2 class icons), **role** and name — and then to add as many other
 characters as they like, all without typing a command. If their DMs are closed, Kisk falls back to the
 welcome channel (or the server's system channel). The whole member-facing flow
-is bilingual **English / French**.
+is shown in the server's language (see `/language` below).
+
+### 🌍 Server language
+
+Kisk speaks **English** or **French**, chosen per server:
+
+```text
+/language choice: Français
+```
+
+Everything members see — event and RSVP embeds, buttons, onboarding DMs,
+profiles, polls, the panel and error messages — then appears **only** in that
+language. Choose **Auto** (the default) to follow the server's own Discord
+language automatically. Only moderators (Manage Server) can change it.
+
+The one exception is the Discord `/` command picker itself: Discord localises
+command names and descriptions to each member's **own** Discord client language,
+not the server setting — so that menu always stays readable for everyone.
 
 ### 🤖 Bot status
 
@@ -633,6 +650,12 @@ posted. Pinging `@everyone` is reserved to moderators.
 /channels events: #events absences: #absences rsvp: #rsvp   → where results are posted
 ```
 
+## Language
+
+```text
+/language choice: Français     → set the server language: Français / English / Auto (moderators)
+```
+
 **Tip for a smooth server**: post `/panel` in a channel of its own and pin it,
 then run `/channels events: #events absences: #absences` so the panel never
 gets buried under its own results. Members who dislike typing commands just
@@ -667,6 +690,7 @@ bot/
   views.py             Buttons and interactions
   actions.py           Event/absence logic shared by commands and forms
   errors.py            Always answer the user when something fails
+  i18n.py              Per-server language resolution and string catalog
 
   cogs/
     groups.py           /event, /events, reminders and bot status
@@ -675,6 +699,11 @@ bot/
     polls.py            /vote and /availability
     panel.py            /panel: buttons opening fill-in forms
     onboarding.py       /onboard: DM new members to set up their profile
+    settings.py         /language: choose the server's language
+
+  locales/
+    en.json             English strings (edit alongside fr.json)
+    fr.json             French strings — same keys as en.json
 
   utils/
     time_parse.py       Natural-language time parsing
