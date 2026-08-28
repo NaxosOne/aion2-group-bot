@@ -16,6 +16,19 @@ background; the `.svg` next to each one is the editable source.
 | `rift.png` | Rift events | `EMOJI_RIFT` |
 | `abyss.png` | Abyss events | `EMOJI_ABYSS` |
 | `other.png` | Other events | `EMOJI_OTHER` |
+| `gladiator.png` | Gladiator | `EMOJI_GLADIATOR` |
+| `templar.png` | Templar | `EMOJI_TEMPLAR` |
+| `assassin.png` | Assassin | `EMOJI_ASSASSIN` |
+| `ranger.png` | Ranger | `EMOJI_RANGER` |
+| `sorcerer.png` | Sorcerer | `EMOJI_SORCERER` |
+| `spiritmaster.png` | Spiritmaster | `EMOJI_SPIRITMASTER` |
+| `cleric.png` | Cleric | `EMOJI_CLERIC` |
+| `chanter.png` | Chanter | `EMOJI_CHANTER` |
+| `fistfighter.png` | Fist Fighter (unreleased) | `EMOJI_FIST_FIGHTER` |
+
+`fistfighter.png` is drawn and ready but the class isn't in the game yet: it
+is listed here so the pack is complete. Uncomment the `"Fist Fighter"` line in
+`bot/config.py` on release and it joins every class menu on its own.
 
 ## Installing them
 

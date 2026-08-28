@@ -17,7 +17,7 @@ The foundations are in place:
 * Timezone-aware schedules — every player sees the event time in their own timezone
 * Automatic waitlist promotion — the first compatible player is promoted and pinged when a spot opens
 * No-command panel (`/panel`) with dedicated result channels (`/channels`)
-* Custom role and event-type emoji pack
+* Custom emoji pack — roles, event types and every Aion 2 class
 * Automatic reminders, event completion and cancellation
 * Multi-guild — Kisk runs independently on any number of servers
 * Guided profile onboarding (`/onboard`) — validated members are DMed to register their main (and alt), bilingual EN/FR, with a channel fallback

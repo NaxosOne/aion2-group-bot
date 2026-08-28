@@ -59,10 +59,13 @@ EMOJI_ACTIVITY = {
 # ...). Defaults are Unicode; to use the real in-game icons, upload them as
 # custom emojis on your Discord (developer portal -> Emojis) and paste the codes
 # here, e.g. EMOJI_GLADIATOR=<:gladiator:123456789012345678>.
+def _class_variable(name: str) -> str:
+    """"Fist Fighter" -> EMOJI_FIST_FIGHTER."""
+    return f"EMOJI_{name.upper().replace(' ', '_')}"
+
+
 CLASS_EMOJI = {
-    name: _emoji(
-        os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}"
-    )
+    name: _emoji(os.getenv(_class_variable(name)), default, _class_variable(name))
     for name, default in {
         "Gladiator": "⚔️",
         "Templar": "🛡️",
@@ -72,6 +75,10 @@ CLASS_EMOJI = {
         "Spiritmaster": "👻",
         "Cleric": "✨",
         "Chanter": "🎵",
+        # Aion 2's Fist Fighter hasn't launched yet. Uncomment this line the
+        # day it does: the class then shows up in every menu, the roster and
+        # the autocomplete on its own (icon ready in assets/emoji/).
+        # "Fist Fighter": "👊",
     }.items()
 }
 

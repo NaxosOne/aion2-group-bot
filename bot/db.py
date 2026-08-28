@@ -35,17 +35,21 @@ CREATE TABLE IF NOT EXISTS signups (
     display_name TEXT    NOT NULL,
     role         TEXT    NOT NULL,                -- 'tank', 'heal' or 'dps'
     joined_at    REAL    NOT NULL,
+    character_id INTEGER,                         -- profiles.id, NULL = unspecified
     PRIMARY KEY (message_id, user_id)
 );
 
+-- One row per character: a member registers a main and as many alts as
+-- they like. Exactly one of their rows carries is_main = 1.
 CREATE TABLE IF NOT EXISTS profiles (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id   INTEGER NOT NULL,
     user_id    INTEGER NOT NULL,
-    slot       TEXT    NOT NULL,                  -- 'main' or 'alt'
-    char_name  TEXT    NOT NULL,
+    char_name  TEXT    NOT NULL COLLATE NOCASE,
     char_class TEXT    NOT NULL,
     role       TEXT    NOT NULL,                  -- 'tank', 'heal' or 'dps'
-    PRIMARY KEY (guild_id, user_id, slot)
+    is_main    INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (guild_id, user_id, char_name)
 );
 
 CREATE TABLE IF NOT EXISTS absences (
@@ -110,8 +114,10 @@ class Database:
             os.makedirs(directory, exist_ok=True)
         self.conn = await aiosqlite.connect(self.path)
         self.conn.row_factory = aiosqlite.Row
+        await self._retire_slot_profiles()
         await self.conn.executescript(SCHEMA)
         await self._add_missing_columns()
+        await self._import_slot_profiles()
         await self.conn.commit()
 
     async def _add_missing_columns(self) -> None:
@@ -126,6 +132,9 @@ class Database:
                 "absence_channel_id": "INTEGER",
                 "member_role_id": "INTEGER",    # role that means "validated member"
             },
+            "signups": {
+                "character_id": "INTEGER",      # which character the member brings
+            },
         }
         for table, columns in added.items():
             async with self.conn.execute(f"PRAGMA table_info({table})") as cur:
@@ -135,6 +144,47 @@ class Database:
                     await self.conn.execute(
                         f"ALTER TABLE {table} ADD COLUMN {name} {kind}"
                     )
+
+    async def _retire_slot_profiles(self) -> None:
+        """Step 1 of the main/alt -> many-characters migration.
+
+        Older databases key `profiles` on a 'main'/'alt' slot, which caps a
+        member at two characters. Move that table aside so the schema above
+        can create the new one; `_import_slot_profiles` refills it.
+        """
+        async with self.conn.execute("PRAGMA table_info(profiles)") as cur:
+            columns = {row["name"] for row in await cur.fetchall()}
+        if "slot" in columns:  # empty on a fresh database: nothing to migrate
+            await self.conn.execute("ALTER TABLE profiles RENAME TO profiles_slots")
+
+    async def _import_slot_profiles(self) -> None:
+        """Step 2: copy the retired rows into the new table, then drop it.
+
+        Mains are copied first so that if a member somehow gave their main and
+        their alt the same name, the main is the one that survives the
+        (guild_id, user_id, char_name) uniqueness constraint.
+        """
+        async with self.conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ("profiles_slots",),
+        ) as cur:
+            if await cur.fetchone() is None:
+                return
+        await self.conn.execute(
+            """INSERT OR IGNORE INTO profiles
+                   (guild_id, user_id, char_name, char_class, role, is_main)
+               SELECT guild_id, user_id, char_name, char_class, role, slot = 'main'
+               FROM profiles_slots ORDER BY slot DESC"""
+        )
+        # A member who only ever registered an alt now has no main at all;
+        # seat their oldest character so the roster and party lists still
+        # have a class to show for them.
+        await self.conn.execute(
+            """UPDATE profiles SET is_main = 1 WHERE id IN (
+                   SELECT MIN(id) FROM profiles
+                   GROUP BY guild_id, user_id HAVING MAX(is_main) = 0)"""
+        )
+        await self.conn.execute("DROP TABLE profiles_slots")
 
     async def close(self) -> None:
         if self.conn:
@@ -203,8 +253,16 @@ class Database:
     # ----- Sign-ups -----
 
     async def get_signups(self, message_id: int):
+        """Sign-ups, oldest first, each carrying its character when one is set.
+
+        The join is outer: members who never registered a profile — and
+        sign-ups whose character has since been deleted — keep their spot with
+        char_name / char_class left NULL.
+        """
         async with self.conn.execute(
-            "SELECT * FROM signups WHERE message_id = ? ORDER BY joined_at",
+            """SELECT s.*, p.char_name, p.char_class
+               FROM signups s LEFT JOIN profiles p ON p.id = s.character_id
+               WHERE s.message_id = ? ORDER BY s.joined_at""",
             (message_id,),
         ) as cur:
             return await cur.fetchall()
@@ -217,17 +275,34 @@ class Database:
             return await cur.fetchone()
 
     async def upsert_signup(
-        self, message_id: int, user_id: int, display_name: str, role: str, joined_at: float
+        self, message_id: int, user_id: int, display_name: str, role: str,
+        joined_at: float, character_id: int | None = None,
     ) -> None:
         # REPLACE also overwrites joined_at: switching roles sends you to the
         # back of the queue, so you can never bump someone out of the party.
         await self.conn.execute(
             """INSERT OR REPLACE INTO signups
-               (message_id, user_id, display_name, role, joined_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (message_id, user_id, display_name, role, joined_at),
+               (message_id, user_id, display_name, role, joined_at, character_id)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (message_id, user_id, display_name, role, joined_at, character_id),
         )
         await self.conn.commit()
+
+    async def set_signup_character(
+        self, message_id: int, user_id: int, character_id: int | None
+    ) -> bool:
+        """Swaps the character brought to an event, keeping the queue position.
+
+        Unlike upsert_signup this leaves joined_at alone: bringing another
+        character is not a re-sign-up, so it must not cost the member their
+        spot in the party.
+        """
+        cur = await self.conn.execute(
+            "UPDATE signups SET character_id = ? WHERE message_id = ? AND user_id = ?",
+            (character_id, message_id, user_id),
+        )
+        await self.conn.commit()
+        return cur.rowcount > 0
 
     async def remove_signup(self, message_id: int, user_id: int) -> bool:
         cur = await self.conn.execute(
@@ -237,59 +312,135 @@ class Database:
         await self.conn.commit()
         return cur.rowcount > 0
 
-    # ----- Profiles (main / alt) -----
+    # ----- Profiles (the members' characters) -----
 
-    async def set_profile(
-        self, guild_id: int, user_id: int, slot: str,
-        char_name: str, char_class: str, role: str,
-    ) -> None:
-        await self.conn.execute(
-            """INSERT OR REPLACE INTO profiles
-               (guild_id, user_id, slot, char_name, char_class, role)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (guild_id, user_id, slot, char_name, char_class, role),
-        )
+    async def add_character(
+        self, guild_id: int, user_id: int, char_name: str, char_class: str,
+        role: str, make_main: bool = False,
+    ) -> int:
+        """Registers a character, or updates the one already under that name.
+
+        Names are matched case-insensitively, so re-running the command on
+        "kratos" edits Kratos rather than creating a twin. A member's first
+        character always becomes their main, whatever `make_main` says: the
+        party lists and the roster need one to fall back on.
+        """
+        async with self.conn.execute(
+            """SELECT id FROM profiles
+               WHERE guild_id = ? AND user_id = ? AND char_name = ?""",
+            (guild_id, user_id, char_name),
+        ) as cur:
+            row = await cur.fetchone()
+
+        if row is None:
+            cur = await self.conn.execute(
+                """INSERT INTO profiles
+                       (guild_id, user_id, char_name, char_class, role)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (guild_id, user_id, char_name, char_class, role),
+            )
+            character_id, is_first = cur.lastrowid, True
+        else:
+            character_id, is_first = row["id"], False
+            await self.conn.execute(
+                """UPDATE profiles SET char_name = ?, char_class = ?, role = ?
+                   WHERE id = ?""",
+                (char_name, char_class, role, character_id),
+            )
+
+        if make_main or (is_first and await self.count_characters(guild_id, user_id) == 1):
+            await self._seat_main(guild_id, user_id, character_id)
         await self.conn.commit()
+        return character_id
+
+    async def _seat_main(self, guild_id: int, user_id: int, character_id: int) -> None:
+        """Makes `character_id` the one row of that member carrying is_main."""
+        await self.conn.execute(
+            "UPDATE profiles SET is_main = (id = ?) WHERE guild_id = ? AND user_id = ?",
+            (character_id, guild_id, user_id),
+        )
+
+    async def _reseat_main(self, guild_id: int, user_id: int) -> None:
+        """Keeps a main seated after a deletion.
+
+        Ordering by is_main first leaves an untouched main in place and
+        otherwise promotes the member's oldest remaining character.
+        """
+        async with self.conn.execute(
+            """SELECT id FROM profiles WHERE guild_id = ? AND user_id = ?
+               ORDER BY is_main DESC, id LIMIT 1""",
+            (guild_id, user_id),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is not None:
+            await self._seat_main(guild_id, user_id, row["id"])
+
+    async def set_main_character(
+        self, guild_id: int, user_id: int, character_id: int
+    ) -> bool:
+        """Promotes one of the member's own characters to main."""
+        if await self.get_character(guild_id, user_id, character_id) is None:
+            return False
+        await self._seat_main(guild_id, user_id, character_id)
+        await self.conn.commit()
+        return True
+
+    async def count_characters(self, guild_id: int, user_id: int) -> int:
+        async with self.conn.execute(
+            "SELECT COUNT(*) AS n FROM profiles WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        ) as cur:
+            return (await cur.fetchone())["n"]
 
     async def get_profiles(self, guild_id: int, user_id: int):
-        """A member's characters, main first ('main' > 'alt' in DESC order)."""
+        """A member's characters, main first then alphabetically."""
         async with self.conn.execute(
             """SELECT * FROM profiles WHERE guild_id = ? AND user_id = ?
-               ORDER BY slot DESC""",
+               ORDER BY is_main DESC, char_name""",
             (guild_id, user_id),
         ) as cur:
             return await cur.fetchall()
 
+    async def get_character(self, guild_id: int, user_id: int, character_id: int):
+        """One character, scoped to its owner so ids can't be borrowed."""
+        async with self.conn.execute(
+            "SELECT * FROM profiles WHERE id = ? AND guild_id = ? AND user_id = ?",
+            (character_id, guild_id, user_id),
+        ) as cur:
+            return await cur.fetchone()
+
     async def all_profiles(self, guild_id: int):
         async with self.conn.execute(
-            "SELECT * FROM profiles WHERE guild_id = ? ORDER BY user_id, slot DESC",
+            """SELECT * FROM profiles WHERE guild_id = ?
+               ORDER BY user_id, is_main DESC, char_name""",
             (guild_id,),
         ) as cur:
             return await cur.fetchall()
 
     async def has_main_profile(self, guild_id: int, user_id: int) -> bool:
-        """Whether the member has registered their main character (onboarded)."""
+        """Whether the member has registered a character at all (onboarded)."""
         async with self.conn.execute(
             """SELECT 1 FROM profiles
-               WHERE guild_id = ? AND user_id = ? AND slot = 'main' LIMIT 1""",
+               WHERE guild_id = ? AND user_id = ? AND is_main = 1 LIMIT 1""",
             (guild_id, user_id),
         ) as cur:
             return await cur.fetchone() is not None
 
     async def delete_profile(
-        self, guild_id: int, user_id: int, slot: str | None = None
+        self, guild_id: int, user_id: int, character_id: int | None = None
     ) -> int:
-        """Deletes a member's profile. `slot` None removes both. Returns count."""
-        if slot is None:
+        """Deletes one character, or every one of them. Returns the row count."""
+        if character_id is None:
             cur = await self.conn.execute(
                 "DELETE FROM profiles WHERE guild_id = ? AND user_id = ?",
                 (guild_id, user_id),
             )
         else:
             cur = await self.conn.execute(
-                "DELETE FROM profiles WHERE guild_id = ? AND user_id = ? AND slot = ?",
-                (guild_id, user_id, slot),
+                "DELETE FROM profiles WHERE guild_id = ? AND user_id = ? AND id = ?",
+                (guild_id, user_id, character_id),
             )
+        await self._reseat_main(guild_id, user_id)
         await self.conn.commit()
         return cur.rowcount
 
@@ -325,14 +476,16 @@ class Database:
         )
         await self.conn.commit()
 
+
     async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
-        """{user_id: main character's class} to display classes in parties."""
+        """{user_id: main character's class}, for members who signed up
+        without naming a character."""
         if not user_ids:
             return {}
         placeholders = ",".join("?" for _ in user_ids)
         async with self.conn.execute(
             f"""SELECT user_id, char_class FROM profiles
-                WHERE guild_id = ? AND slot = 'main' AND user_id IN ({placeholders})""",
+                WHERE guild_id = ? AND is_main = 1 AND user_id IN ({placeholders})""",
             (guild_id, *user_ids),
         ) as cur:
             return {row["user_id"]: row["char_class"] for row in await cur.fetchall()}

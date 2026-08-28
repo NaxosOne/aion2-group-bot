@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#eef3f9"/><stop offset="100%" stop-color="#7d8ea3"/>
+  </linearGradient></defs>
+  <!-- wrist wrap, showing under the fist -->
+  <rect x="36" y="92" width="72" height="28" rx="13"
+        fill="#ff8a3d" stroke="#22303f" stroke-width="7"/>
+  <!-- fist, knuckles traced along the top edge -->
+  <path d="M26 76 V44 A13 13 0 0 1 52 44 A13 13 0 0 1 78 44 A13 13 0 0 1 104 44
+           V76 C104 92 92 102 76 102 H54 C38 102 26 92 26 76 Z"
+        fill="url(#g)" stroke="#22303f" stroke-width="7" stroke-linejoin="round"/>
+  <!-- finger separations -->
+  <g stroke="#22303f" stroke-width="6" stroke-linecap="round">
+    <line x1="52" y1="46" x2="52" y2="68"/><line x1="78" y1="46" x2="78" y2="68"/>
+  </g>
+  <!-- thumb folded across -->
+  <path d="M28 70 H74 A13 13 0 0 1 74 96 H40"
+        fill="url(#g)" stroke="#22303f" stroke-width="7" stroke-linejoin="round"/>
+</svg>

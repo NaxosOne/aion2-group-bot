@@ -17,7 +17,7 @@ Les fondations sont en place :
 * Horaires localisés — chaque joueur voit l'heure de l'événement dans son propre fuseau
 * Promotion automatique depuis la liste d'attente — le premier joueur compatible est promu et notifié dès qu'une place se libère
 * Panneau sans commande (`/panel`) avec salons de résultats dédiés (`/channels`)
-* Pack d'emojis personnalisés (rôles et types d'événement)
+* Pack d'emojis personnalisés — rôles, types d'événement et toutes les classes Aion 2
 * Rappels automatiques, clôture et annulation d'événement
 * Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
 * Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), bilingue FR/EN, avec repli sur salon

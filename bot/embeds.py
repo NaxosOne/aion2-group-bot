@@ -27,16 +27,34 @@ COLOUR_FULL = discord.Colour.green()
 COLOUR_CANCELLED = discord.Colour.red()
 
 
-def _class_suffix(classes: dict, user_id: int) -> str:
-    """Suffix " — Class" when the member has filled in their /profile."""
-    return f" — *{classes[user_id]}*" if user_id in classes else ""
+def _row_get(row, key: str):
+    """sqlite3.Row has no .get(), and the tests pass plain dicts."""
+    try:
+        return row[key]
+    except (KeyError, IndexError):
+        return None
+
+
+def _class_suffix(signup, classes: dict) -> str:
+    """Suffix " — Kratos (Templar)" naming the character brought along.
+
+    Falls back to the member's main class when they signed up without picking
+    a character, and to nothing at all when they have no profile.
+    """
+    name = _row_get(signup, "char_name")
+    char_class = _row_get(signup, "char_class") or classes.get(signup["user_id"])
+    if name and char_class:
+        return f" — *{name} ({char_class})*"
+    if name:
+        return f" — *{name}*"
+    return f" — *{char_class}*" if char_class else ""
 
 
 def _names(members: list, classes: dict) -> str:
     if not members:
         return "*—*"
     return "\n".join(
-        f"• <@{s['user_id']}>{_class_suffix(classes, s['user_id'])}" for s in members
+        f"• <@{s['user_id']}>{_class_suffix(s, classes)}" for s in members
     )
 
 
@@ -98,7 +116,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             name=f"👥 Party ({len(party)}/{event['size']})",
             value="\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_class_suffix(classes, s['user_id'])}"
+                f"{_class_suffix(s, classes)}"
                 for s in party
             )
             or "*—*",
@@ -110,6 +128,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             name=f"⏳ Waitlist ({len(waitlist)})",
             value="\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                f"{_class_suffix(s, classes)}"
                 for i, s in enumerate(waitlist, start=1)
             ),
             inline=False,
