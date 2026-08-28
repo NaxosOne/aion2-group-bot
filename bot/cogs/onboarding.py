@@ -13,7 +13,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from .. import config
+from .. import config, i18n
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import MAX_CHARACTERS
 from ..utils.onboarding import onboard_custom_id, role_just_added, should_onboard
@@ -29,24 +29,14 @@ ROLE_OPTIONS = (
 )
 ROLE_LABELS = {value: label for value, label, _ in ROLE_OPTIONS}
 
-# The form is the same whether it registers the first character or another
-# one; only the wording changes (bilingual labels).
-SLOT_SETUP_TITLE = {
-    "main": "📝 Set up your profile / Configurer ton profil",
-    "alt": "📝 Add a character / Ajouter un personnage",
-}
-SLOT_MODAL_TITLE = {
-    "main": "Main character / Personnage principal",
-    "alt": "Another character / Autre personnage",
-}
-
 
 class ClassSelect(discord.ui.Select):
     """Dropdown of Aion 2 classes: no typing, no typos, no invented classes."""
 
-    def __init__(self, chosen: str | None):
+    def __init__(self, chosen: str | None, lang: str):
         super().__init__(
-            placeholder="Your class… / Ta classe…", row=0, options=self._options(chosen)
+            placeholder=i18n.t("onboard.class_placeholder", lang),
+            row=0, options=self._options(chosen),
         )
 
     @staticmethod
@@ -67,9 +57,10 @@ class ClassSelect(discord.ui.Select):
 class RoleSelect(discord.ui.Select):
     """Dropdown of the three party roles."""
 
-    def __init__(self, chosen: str | None):
+    def __init__(self, chosen: str | None, lang: str):
         super().__init__(
-            placeholder="Your role… / Ton rôle…", row=1, options=self._options(chosen)
+            placeholder=i18n.t("onboard.role_placeholder", lang),
+            row=1, options=self._options(chosen),
         )
 
     @staticmethod
@@ -95,54 +86,57 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
     """
 
     def __init__(
-        self, guild_id: int, guild_name: str, ephemeral: bool, slot: str = "main"
+        self, guild_id: int, guild_name: str, ephemeral: bool,
+        lang: str, slot: str = "main",
     ):
         super().__init__(timeout=600)
         self.guild_id = guild_id
         self.guild_name = guild_name
         # Ephemeral in a guild channel (the DM fallback), plain in a real DM.
         self.ephemeral = ephemeral
+        self.lang = lang
         self.slot = slot  # 'main' or 'alt'
         self.char_class: str | None = None
         self.role: str | None = None
-        self.add_item(ClassSelect(None))
-        self.add_item(RoleSelect(None))
+        self.add_item(ClassSelect(None, lang))
+        self.add_item(RoleSelect(None, lang))
+        # Localize the decorator-defined Continue button per server language.
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.label = i18n.t("onboard.continue", lang)
 
     def summary(self) -> discord.Embed:
-        not_set = "*not chosen yet / pas encore choisi*"
+        not_set = i18n.t("onboard.not_set", self.lang)
         if self.char_class:
             class_line = f"{config.CLASS_EMOJI[self.char_class]} **{self.char_class}**"
         else:
             class_line = not_set
         role_line = f"**{ROLE_LABELS[self.role]}**" if self.role else not_set
+        title = f"{i18n.t(f'onboard.setup_title_{self.slot}', self.lang)} — {self.guild_name}"
         return discord.Embed(
-            title=f"{SLOT_SETUP_TITLE[self.slot]} — {self.guild_name}",
-            description=(
-                f"**Class / Classe :** {class_line}\n"
-                f"**Role / Rôle :** {role_line}\n\n"
-                "Pick from the menus, then hit **Continue** to name your character.\n"
-                "*Choisis dans les menus, puis clique sur **Continuer** pour nommer "
-                "ton personnage.*"
+            title=title,
+            description=i18n.t(
+                "onboard.summary_body", self.lang,
+                class_line=class_line, role_line=role_line,
             ),
             colour=discord.Colour.blurple(),
         )
 
     @discord.ui.button(
-        label="Continue / Continuer", emoji="➡️",
+        label="Continue", emoji="➡️",
         style=discord.ButtonStyle.success, row=2,
     )
     async def proceed(self, interaction: discord.Interaction, _):
         if self.char_class is None or self.role is None:
             await interaction.response.send_message(
-                "Pick your class and role in the menus first.\n"
-                "*Choisis d'abord ta classe et ton rôle dans les menus.*",
+                i18n.t("onboard.pick_first", self.lang),
                 ephemeral=self.ephemeral,
             )
             return
         await interaction.response.send_modal(
             ProfileNameModal(
                 self.guild_id, self.guild_name, self.char_class,
-                self.role, self.ephemeral, self.slot,
+                self.role, self.ephemeral, self.lang, self.slot,
             )
         )
 
@@ -152,18 +146,19 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
 
     def __init__(
         self, guild_id: int, guild_name: str, char_class: str,
-        role: str, ephemeral: bool, slot: str,
+        role: str, ephemeral: bool, lang: str, slot: str,
     ):
-        super().__init__(title=SLOT_MODAL_TITLE[slot])
+        super().__init__(title=i18n.t(f"onboard.modal_title_{slot}", lang))
         self.guild_id = guild_id
         self.guild_name = guild_name
         self.char_class = char_class
         self.role = role
         self.ephemeral = ephemeral
+        self.lang = lang
         self.slot = slot
         self.char_name = discord.ui.TextInput(
-            label="Character name / Nom du personnage",
-            max_length=32, placeholder="e.g. / ex. Kratos",
+            label=i18n.t("onboard.name_label", lang),
+            max_length=32, placeholder=i18n.t("onboard.name_placeholder", lang),
         )
         self.add_item(self.char_name)
 
@@ -174,10 +169,7 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
         known = {row["char_name"].lower() for row in characters}
         if name.lower() not in known and len(characters) >= MAX_CHARACTERS:
             await interaction.response.send_message(
-                f"You've reached {MAX_CHARACTERS} characters — remove one with "
-                "`/profile delete` first.\n*Tu as atteint "
-                f"{MAX_CHARACTERS} personnages — supprimes-en un avec "
-                "`/profile delete`.*",
+                i18n.t("onboard.cap_reached", self.lang, max=MAX_CHARACTERS),
                 ephemeral=self.ephemeral,
             )
             return
@@ -188,20 +180,13 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
         emoji = config.CLASS_EMOJI.get(self.char_class, "")
         detail = f"**{name}** — {emoji} {self.char_class}, {ROLE_LABELS[self.role]}"
         if characters:
-            text = (
-                f"✅ Character added: {detail}. Another one?\n"
-                f"*Personnage ajouté : {detail}. Un autre ?*"
-            )
+            text = i18n.t("onboard.added_more", self.lang, detail=detail)
         else:
-            text = (
-                f"✅ All set! Your main is {detail}. Want to add another character?\n"
-                f"*C'est fait ! Ton perso principal est {detail}. "
-                "Ajouter un autre personnage ?*"
-            )
+            text = i18n.t("onboard.added_main", self.lang, detail=detail)
         # Keep offering the button until they hit the cap; /profile set adds
         # more later just as well.
         view = (
-            AddAltView(self.guild_id, self.guild_name, self.ephemeral)
+            AddAltView(self.guild_id, self.guild_name, self.ephemeral, self.lang)
             if len(characters) + 1 < MAX_CHARACTERS
             else discord.utils.MISSING
         )
@@ -213,19 +198,24 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
 class AddAltView(ViewErrorMixin, discord.ui.View):
     """A single button, shown after each character, to register one more."""
 
-    def __init__(self, guild_id: int, guild_name: str, ephemeral: bool):
+    def __init__(self, guild_id: int, guild_name: str, ephemeral: bool, lang: str):
         super().__init__(timeout=600)
         self.guild_id = guild_id
         self.guild_name = guild_name
         self.ephemeral = ephemeral
+        self.lang = lang
+        # Localize the decorator-defined "add a character" button.
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.label = i18n.t("onboard.add_char", lang)
 
     @discord.ui.button(
-        label="Add a character / Ajouter un personnage", emoji="➕",
+        label="Add a character", emoji="➕",
         style=discord.ButtonStyle.secondary,
     )
     async def add_alt(self, interaction: discord.Interaction, _):
         view = ProfileSetupView(
-            self.guild_id, self.guild_name, self.ephemeral, slot="alt"
+            self.guild_id, self.guild_name, self.ephemeral, self.lang, slot="alt"
         )
         await interaction.response.send_message(
             embed=view.summary(), view=view, ephemeral=self.ephemeral
@@ -238,11 +228,11 @@ class OnboardButton(
 ):
     """Persistent DM button that opens the onboarding form for a given guild."""
 
-    def __init__(self, guild_id: int):
+    def __init__(self, guild_id: int, lang: str = i18n.DEFAULT):
         self.guild_id = guild_id
         super().__init__(
             discord.ui.Button(
-                label="Configure my profile / Configurer mon profil",
+                label=i18n.t("onboard.configure_button", lang),
                 emoji="📝",
                 style=discord.ButtonStyle.primary,
                 custom_id=onboard_custom_id(guild_id),
@@ -251,22 +241,25 @@ class OnboardButton(
 
     @classmethod
     async def from_custom_id(cls, interaction, item, match, /):
+        # Reconstructed on click; the label shown is the one baked into the
+        # already-sent message, so the default language here is irrelevant.
         return cls(int(match["guild_id"]))
 
     async def callback(self, interaction: discord.Interaction):
         db = interaction.client.db
+        guild = interaction.client.get_guild(self.guild_id)
+        lang = await i18n.resolve_lang(db, guild)
         # In a real DM the message is already private; in the channel fallback
         # keep the form ephemeral so it stays private to the member who clicks.
         ephemeral = interaction.guild is not None
         if await db.has_main_profile(self.guild_id, interaction.user.id):
             await interaction.response.send_message(
-                "You're already set up — thanks! / Tu es déjà configuré — merci ! 🙌",
+                i18n.t("onboard.already_setup", lang),
                 ephemeral=ephemeral,
             )
             return
-        guild = interaction.client.get_guild(self.guild_id)
-        guild_name = guild.name if guild else "your legion"
-        view = ProfileSetupView(self.guild_id, guild_name, ephemeral)
+        guild_name = guild.name if guild else i18n.t("onboard.your_legion", lang)
+        view = ProfileSetupView(self.guild_id, guild_name, ephemeral, lang)
         await interaction.response.send_message(
             embed=view.summary(), view=view, ephemeral=ephemeral
         )
@@ -286,12 +279,12 @@ class Onboarding(commands.GroupCog, name="onboard"):
     @app_commands.describe(role="The role newly-validated members receive")
     @app_commands.default_permissions(manage_guild=True)
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         await self.bot.db.set_setting(
             interaction.guild_id, "member_role_id", role.id
         )
         await interaction.response.send_message(
-            f"✅ Members who receive **{role.name}** will now be DMed to set up "
-            "their profile.",
+            i18n.t("onboard.role_set_confirm", lang, role=role.name),
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
@@ -317,53 +310,48 @@ class Onboarding(commands.GroupCog, name="onboard"):
             return
         await self._onboard(after, settings)
 
-    def _onboard_view(self, guild_id: int) -> discord.ui.View:
+    def _onboard_view(self, guild_id: int, lang: str) -> discord.ui.View:
         view = discord.ui.View(timeout=None)
-        view.add_item(OnboardButton(guild_id))
+        view.add_item(OnboardButton(guild_id, lang))
         return view
 
     @staticmethod
-    def _welcome_embed(guild: discord.Guild) -> discord.Embed:
+    def _welcome_embed(guild: discord.Guild, lang: str) -> discord.Embed:
         return discord.Embed(
-            title=f"Welcome to {guild.name}! / Bienvenue sur {guild.name} ! 🎉",
-            description=(
-                "Let the legion know who you play — tap the button to pick your "
-                "**class** and **role** and register your main character.\n"
-                "*Fais savoir à la légion qui tu joues — clique sur le bouton pour "
-                "choisir ta **classe** et ton **rôle** et enregistrer ton "
-                "personnage principal.*"
-            ),
+            title=i18n.t("onboard.welcome_title", lang, guild=guild.name),
+            description=i18n.t("onboard.welcome_body", lang),
             colour=discord.Colour.blurple(),
         )
 
     async def _onboard(self, member: discord.Member, settings):
         """DM the member; if their DMs are closed, fall back to a channel."""
+        lang = await i18n.resolve_lang(self.bot.db, member.guild)
         try:
             await member.send(
-                embed=self._welcome_embed(member.guild),
-                view=self._onboard_view(member.guild.id),
+                embed=self._welcome_embed(member.guild, lang),
+                view=self._onboard_view(member.guild.id, lang),
             )
             return
         except discord.Forbidden:
             log.info("DMs closed for %s; trying a channel fallback", member.id)
-        await self._onboard_in_channel(member, settings)
+        await self._onboard_in_channel(member, settings, lang)
 
-    async def _onboard_in_channel(self, member: discord.Member, settings):
+    async def _onboard_in_channel(self, member: discord.Member, settings, lang: str):
         channel = self._fallback_channel(member.guild, settings)
         if channel is None:
             log.info("No fallback channel available to onboard %s", member.id)
             return
-        embed = self._welcome_embed(member.guild)
+        embed = self._welcome_embed(member.guild, lang)
         embed.description = (
-            "I couldn't DM you (your DMs are closed), so here it is.\n"
-            "*Je n'ai pas pu t'envoyer de MP (tes MP sont fermés), le voici ici.*\n\n"
+            i18n.t("onboard.dm_fallback_prefix", lang)
+            + "\n\n"
             + (embed.description or "")
         )
         try:
             await channel.send(
                 content=member.mention,
                 embed=embed,
-                view=self._onboard_view(member.guild.id),
+                view=self._onboard_view(member.guild.id, lang),
                 allowed_mentions=discord.AllowedMentions(users=[member]),
             )
         except discord.HTTPException:
