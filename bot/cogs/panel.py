@@ -155,6 +155,7 @@ class EventDetailsModal(ModalErrorMixin, discord.ui.Modal):
         )
         self.activity = activity
         self.setup = setup
+        self.lang = lang
 
         self.event_title = discord.ui.TextInput(
             label=i18n.t("panel.field_title", lang), max_length=100
@@ -189,7 +190,10 @@ class EventDetailsModal(ModalErrorMixin, discord.ui.Modal):
         starts_at = None
         if self.when.value:
             try:
-                starts_at = int(parse_when(self.when.value, config.TIMEZONE).timestamp())
+                starts_at = int(
+                    parse_when(self.when.value, config.TIMEZONE, lang=self.lang)
+                    .timestamp()
+                )
             except ParseError as err:
                 await interaction.response.send_message(str(err), ephemeral=True)
                 return

@@ -14,7 +14,7 @@ from . import config, i18n
 from .embeds import build_event_embed
 from .utils.mentions import ping_permitted
 from .utils.threads import event_thread_name
-from .utils.time_parse import HELP_FORMATS_DATETIME, ParseError, parse_when_or_date
+from .utils.time_parse import ParseError, parse_when_or_date
 from .views import SignupView
 
 log = logging.getLogger(__name__)
@@ -171,20 +171,18 @@ async def register_absence(
     """Parses the bounds, stores the absence and announces it (or explains
     the input error ephemerally)."""
     tz = config.TIMEZONE
+    lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     try:
-        start_dt, start_has_time = parse_when_or_date(start, tz)
+        start_dt, start_has_time = parse_when_or_date(start, tz, lang=lang)
         if until:
-            end_dt, end_has_time = parse_when_or_date(until, tz)
+            end_dt, end_has_time = parse_when_or_date(until, tz, lang=lang)
         else:
             # No "until": away until the end of the starting day.
             end_dt, end_has_time = start_dt, False
     except ParseError as err:
-        await interaction.response.send_message(
-            f"{err} {HELP_FORMATS_DATETIME}", ephemeral=True
-        )
+        await interaction.response.send_message(str(err), ephemeral=True)
         return
 
-    lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     start_ts = int(start_dt.timestamp())
     if end_has_time:
         end_ts = int(end_dt.timestamp())

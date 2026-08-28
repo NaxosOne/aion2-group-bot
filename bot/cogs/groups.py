@@ -80,8 +80,11 @@ class Groups(commands.Cog):
     ):
         starts_at = None
         if when:
+            lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
             try:
-                starts_at = int(parse_when(when, config.TIMEZONE).timestamp())
+                starts_at = int(
+                    parse_when(when, config.TIMEZONE, lang=lang).timestamp()
+                )
             except ParseError as err:
                 await interaction.response.send_message(str(err), ephemeral=True)
                 return
