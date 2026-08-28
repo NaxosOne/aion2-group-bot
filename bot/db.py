@@ -141,6 +141,7 @@ class Database:
                 "absence_channel_id": "INTEGER",
                 "member_role_id": "INTEGER",    # role that means "validated member"
                 "rsvp_channel_id": "INTEGER",   # where RSVP prompts are posted
+                "language": "TEXT",             # 'fr' | 'en' | NULL = auto
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings
@@ -609,6 +610,13 @@ class Database:
             (guild_id, value),
         )
         await self.conn.commit()
+
+    async def get_language(self, guild_id: int) -> str | None:
+        row = await self.get_settings(guild_id)
+        return row["language"] if row else None
+
+    async def set_language(self, guild_id: int, lang: str | None) -> None:
+        await self.set_setting(guild_id, "language", lang)
 
     async def guilds_with_availability(self):
         """Guilds where the weekly availability board is enabled."""

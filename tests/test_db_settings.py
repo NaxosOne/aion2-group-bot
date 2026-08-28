@@ -16,3 +16,18 @@ def test_rsvp_channel_setting_round_trips(tmp_path):
         return value
 
     assert asyncio.run(go()) == 999
+
+
+def test_language_setting_round_trips(tmp_path):
+    async def go():
+        db = Database(str(tmp_path / "lang.db"))
+        await db.connect()  # the language column is applied here
+        first = await db.get_language(1)
+        await db.set_language(1, "fr")
+        after_set = await db.get_language(1)
+        await db.set_language(1, None)  # reset to auto-detect
+        after_reset = await db.get_language(1)
+        await db.close()
+        return first, after_set, after_reset
+
+    assert asyncio.run(go()) == (None, "fr", None)
