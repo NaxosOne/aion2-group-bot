@@ -9,7 +9,7 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..actions import publish_event
-from ..embeds import ACTIVITY_EMOJI, build_rsvp_embed
+from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.messages import parse_message_id
 from ..utils.time_parse import ParseError, parse_when
@@ -296,8 +296,10 @@ class Groups(commands.Cog):
     async def status(self):
         ev = await self.bot.db.next_upcoming_event(int(time.time()))
         if ev:
-            emoji = ACTIVITY_EMOJI.get(
-                ev["activity"], config.EMOJI_ACTIVITY["Other"]
+            # Unicode only: the presence is plain text to Discord, so a
+            # custom emoji would read as "<:rift:154256...> Rift — 18:00".
+            emoji = PRESENCE_ACTIVITY_EMOJI.get(
+                ev["activity"], config.DEFAULT_EMOJI_ACTIVITY["Other"]
             )
             text = f"{emoji} {ev['title']} — {self._short_when(ev['starts_at'])}"
         else:

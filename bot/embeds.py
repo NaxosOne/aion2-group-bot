@@ -6,14 +6,22 @@ from . import config
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 from .utils.rsvp import rsvp_summary
 
-# Event-type emojis come from the config (.env EMOJI_DUNGEON etc.); the
-# legacy French labels keep working for events created by earlier versions.
-ACTIVITY_EMOJI = {
-    **config.EMOJI_ACTIVITY,
-    "Donjon": config.EMOJI_ACTIVITY["Dungeon"],
-    "Abysses": config.EMOJI_ACTIVITY["Abyss"],
-    "Autre": config.EMOJI_ACTIVITY["Other"],
-}
+def _with_legacy_labels(mapping: dict) -> dict:
+    """Events created by earlier versions carry French activity labels."""
+    return {
+        **mapping,
+        "Donjon": mapping["Dungeon"],
+        "Abysses": mapping["Abyss"],
+        "Autre": mapping["Other"],
+    }
+
+
+# Event-type emojis come from the config (.env EMOJI_DUNGEON etc.).
+ACTIVITY_EMOJI = _with_legacy_labels(config.EMOJI_ACTIVITY)
+
+# Same, forced to Unicode: Discord prints a bot's presence literally, so a
+# custom emoji would show there as its raw <:name:id> code.
+PRESENCE_ACTIVITY_EMOJI = _with_legacy_labels(config.DEFAULT_EMOJI_ACTIVITY)
 # Role emojis are configurable (.env EMOJI_TANK/HEAL/DPS) so servers can use
 # their own custom emojis instead of the Unicode defaults.
 ROLE_EMOJI = {

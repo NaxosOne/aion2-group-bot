@@ -46,6 +46,6 @@ is listed here so the pack is complete. Uncomment the `"Fist Fighter"` line in
 4. Restart the bot. Any variable left empty keeps the Unicode default.
 
 Application emojis work in every server the bot is in — members don't have to
-install anything. They show up in embeds, buttons and messages; Discord
-renders slash-command choice lists as plain text, so those keep the Unicode
-emojis.
+install anything. They show up in embeds, buttons and messages. Slash-command
+choice lists and the bot's status are plain text to Discord, so those two keep
+the Unicode emojis whatever you configure.
