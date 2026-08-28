@@ -470,6 +470,13 @@ class Database:
         ) as cur:
             return await cur.fetchone()
 
+    async def profile_user_ids(self, guild_id: int) -> list:
+        """Every member with at least one character on this server."""
+        async with self.conn.execute(
+            "SELECT DISTINCT user_id FROM profiles WHERE guild_id = ?", (guild_id,)
+        ) as cur:
+            return [row["user_id"] for row in await cur.fetchall()]
+
     async def all_profiles(self, guild_id: int):
         async with self.conn.execute(
             """SELECT * FROM profiles WHERE guild_id = ?

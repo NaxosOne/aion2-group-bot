@@ -235,6 +235,12 @@ Les modérateurs peuvent viser un autre membre avec `member:`. Kisk fait aussi l
 **ménage automatiquement** quand quelqu'un quitte le serveur — tous ses
 personnages, ses inscriptions, absences et disponibilités sont supprimés.
 
+Ce ménage se déclenche au moment du départ, ce qui ne marche que si le bot est
+en ligne. Un balayage quotidien, également joué au démarrage, rattrape ceux
+partis pendant un redémarrage. Il ne fait jamais confiance à un cache de
+membres vide : un profil n'est supprimé qu'une fois le départ confirmé par
+Discord.
+
 ### 🏖️ Absences
 
 Prévenez la légion quand vous êtes absent :
@@ -776,14 +782,17 @@ bot/config.py       → CLASS_EMOJI
 ```
 
 Chaque entrée associe une classe à son emoji par défaut, et alimente d'un coup
-les menus de classe, l'autocomplétion, le roster et le choix du personnage à
-l'inscription.
+les menus de classe, le roster et le choix du personnage à l'inscription.
 
 Le **Fist Fighter** est déjà dessiné (`assets/emoji/fistfighter.png`) et tient
 à une ligne commentée : décommentez-la dans `CLASS_EMOJI` le jour de sa sortie
 et il apparaîtra partout tout seul.
 
-Les classes sont des suggestions plutôt qu'une validation stricte, donc des valeurs personnalisées restent possibles.
+`/profile set` propose exactement ces classes et n'accepte rien d'autre : une
+faute de frappe ne peut plus se glisser dans le roster. Les personnages
+enregistrés sous une version antérieure, quand le champ était libre, continuent
+de fonctionner — ils n'affichent simplement pas d'icône de classe. Relancer
+`/profile set` avec le même nom de personnage les remet d'aplomb.
 
 ---
 

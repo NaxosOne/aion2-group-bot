@@ -232,6 +232,11 @@ Moderators can target another member with `member:`. Kisk also **cleans up
 automatically** when someone leaves the server — all of their characters,
 sign-ups, absences and availability marks are removed.
 
+That cleanup runs the moment someone leaves, which only works while the bot is
+online. A daily sweep, also run at startup, catches anyone who left during a
+restart. It never trusts an empty member cache: a profile is only dropped once
+Discord confirms the member is gone.
+
 ### 🏖️ Absences
 
 Tell the legion when you're away:
@@ -769,13 +774,16 @@ bot/config.py       → CLASS_EMOJI
 ```
 
 Each entry pairs a class with its default emoji, and drives the class menus,
-the autocomplete, the roster and the character picker at once.
+the roster and the character picker at once.
 
 **Fist Fighter** is already drawn (`assets/emoji/fistfighter.png`) and one
 commented-out line away: uncomment it in `CLASS_EMOJI` the day the class
 launches and it appears everywhere on its own.
 
-Classes are suggestions rather than strict validation, so custom values remain possible.
+`/profile set` offers exactly these classes and accepts nothing else, so a
+typo can't slip into the roster. Characters registered under an older version,
+when the field was free text, keep working — they simply show no class icon.
+Re-running `/profile set` with the same character name puts them right.
 
 ---
 
