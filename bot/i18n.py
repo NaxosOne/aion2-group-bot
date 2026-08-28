@@ -64,3 +64,15 @@ def t(key: str, lang: str, /, **params: object) -> str:
         # placeholder must degrade to the raw template, never raise.
         log.warning("i18n: bad placeholders for key %r", key)
         return template
+
+
+async def resolve_lang(db, guild) -> str:
+    """The server's language: explicit override, else the guild's Discord locale.
+
+    `guild` is a discord.Guild (or None outside a guild); `db` exposes
+    get_language(guild_id). Kept here so handlers resolve language in one call.
+    """
+    if guild is None:
+        return DEFAULT
+    setting = await db.get_language(guild.id)
+    return pick_lang(setting, str(getattr(guild, "preferred_locale", "") or ""))

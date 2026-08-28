@@ -1,3 +1,5 @@
+import asyncio
+
 from bot import i18n
 
 
@@ -53,3 +55,34 @@ def test_t_bad_params_never_raise_and_return_template():
     # to the raw template (so the {language} marker survives unformatted).
     out = i18n.t("language.set_confirm", "en", unrelated="x")
     assert "{language}" in out
+
+
+class _FakeDB:
+    def __init__(self, lang):
+        self._lang = lang
+
+    async def get_language(self, guild_id):
+        return self._lang
+
+
+class _FakeGuild:
+    def __init__(self, locale):
+        self.id = 1
+        self.preferred_locale = locale
+
+
+def test_resolve_lang_uses_setting_over_guild_locale():
+    assert asyncio.run(i18n.resolve_lang(_FakeDB("fr"), _FakeGuild("en-US"))) == "fr"
+
+
+def test_resolve_lang_auto_from_guild_locale_when_unset():
+    assert asyncio.run(i18n.resolve_lang(_FakeDB(None), _FakeGuild("fr-FR"))) == "fr"
+    assert asyncio.run(i18n.resolve_lang(_FakeDB(None), _FakeGuild("en-GB"))) == "en"
+
+
+def test_resolve_lang_none_guild_defaults_en():
+    assert asyncio.run(i18n.resolve_lang(_FakeDB(None), None)) == "en"
+
+
+def test_resolve_lang_handles_missing_preferred_locale():
+    assert asyncio.run(i18n.resolve_lang(_FakeDB(None), _FakeGuild(None))) == "en"
