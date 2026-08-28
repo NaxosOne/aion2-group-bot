@@ -11,6 +11,7 @@ from .. import config
 from ..actions import publish_event
 from ..embeds import ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
+from ..utils.messages import parse_message_id
 from ..utils.time_parse import ParseError, parse_when
 from ..views import RSVPView
 
@@ -135,6 +136,47 @@ class Groups(commands.Cog):
             colour=discord.Colour.blurple(),
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # ----- /rsvp: post the "are you coming?" prompt on demand -----
+
+    @app_commands.command(
+        name="rsvp",
+        description="Post the 'are you coming?' prompt for an event now (moderators)",
+    )
+    @app_commands.describe(event="The event message — paste its link or ID")
+    @app_commands.default_permissions(manage_messages=True)
+    async def rsvp(self, interaction: discord.Interaction, event: str):
+        message_id = parse_message_id(event)
+        if message_id is None:
+            await interaction.response.send_message(
+                "Give me an event message link or ID.", ephemeral=True
+            )
+            return
+        ev = await self.bot.db.get_event(message_id)
+        if ev is None or ev["guild_id"] != interaction.guild_id:
+            await interaction.response.send_message(
+                "I can't find that event on this server.", ephemeral=True
+            )
+            return
+        signups = await self.bot.db.get_signups(ev["message_id"])
+        party, _ = assign(ev["compo"], ev["size"], signups)
+        if not party:
+            await interaction.response.send_message(
+                "Nobody has signed up yet — nothing to RSVP.", ephemeral=True
+            )
+            return
+        try:
+            prompt = await self._send_rsvp(ev, party)
+        except discord.HTTPException:
+            await interaction.response.send_message(
+                "I couldn't post the prompt there (permissions?).", ephemeral=True
+            )
+            return
+        await self.bot.db.mark_rsvp_sent(ev["message_id"])
+        await self.bot.db.set_rsvp_prompt_id(ev["message_id"], prompt.id)
+        await interaction.response.send_message(
+            f"RSVP prompt posted — {prompt.jump_url}", ephemeral=True
+        )
 
     # ----- Automatic reminders -----
 
