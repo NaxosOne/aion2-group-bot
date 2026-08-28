@@ -243,10 +243,29 @@ class Groups(commands.Cog):
     async def _wait_ready_rsvp(self):
         await self.bot.wait_until_ready()
 
-    async def _send_rsvp(self, ev, party):
-        channel = self.bot.get_channel(ev["channel_id"])
+    async def _channel(self, channel_id: int):
+        channel = self.bot.get_channel(channel_id)
         if channel is None:
-            channel = await self.bot.fetch_channel(ev["channel_id"])
+            channel = await self.bot.fetch_channel(channel_id)
+        return channel
+
+    async def _rsvp_channel(self, ev):
+        """The configured RSVP channel if set, else the event's own channel."""
+        settings = await self.bot.db.get_settings(ev["guild_id"])
+        channel_id = settings["rsvp_channel_id"] if settings else None
+        if channel_id:
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(channel_id)
+                except discord.HTTPException:
+                    channel = None
+            if channel is not None and hasattr(channel, "send"):
+                return channel
+        return await self._channel(ev["channel_id"])
+
+    async def _send_rsvp(self, ev, party):
+        channel = await self._rsvp_channel(ev)
         rsvps = await self.bot.db.get_rsvps(ev["message_id"])
         embed = build_rsvp_embed(ev, party, rsvps)
         mentions = " ".join(f"<@{s['user_id']}>" for s in party)

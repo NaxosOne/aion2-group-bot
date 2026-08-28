@@ -140,6 +140,7 @@ class Database:
                 "event_channel_id": "INTEGER",
                 "absence_channel_id": "INTEGER",
                 "member_role_id": "INTEGER",    # role that means "validated member"
+                "rsvp_channel_id": "INTEGER",   # where RSVP prompts are posted
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings

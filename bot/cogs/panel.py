@@ -252,11 +252,12 @@ class Panel(commands.Cog):
 
     @app_commands.command(
         name="channels",
-        description="Choose where events and absences are posted (moderators)",
+        description="Choose where events, absences and RSVPs are posted (moderators)",
     )
     @app_commands.describe(
         events="Channel for event calls (leave empty to keep the current setting)",
         absences="Channel for absence notices",
+        rsvp="Channel for the 'are you coming?' RSVP prompts",
         reset="Post everything back in the channel the command is used in",
     )
     @app_commands.default_permissions(manage_messages=True)
@@ -265,14 +266,16 @@ class Panel(commands.Cog):
         interaction: discord.Interaction,
         events: discord.TextChannel | None = None,
         absences: discord.TextChannel | None = None,
+        rsvp: discord.TextChannel | None = None,
         reset: bool = False,
     ):
         db = self.bot.db
         if reset:
             await db.set_setting(interaction.guild_id, "event_channel_id", None)
             await db.set_setting(interaction.guild_id, "absence_channel_id", None)
+            await db.set_setting(interaction.guild_id, "rsvp_channel_id", None)
             await interaction.response.send_message(
-                "Reset: events and absences are now posted wherever the "
+                "Reset: events, absences and RSVPs are now posted wherever the "
                 "command or the button is used.",
                 ephemeral=True,
             )
@@ -284,6 +287,8 @@ class Panel(commands.Cog):
             await db.set_setting(
                 interaction.guild_id, "absence_channel_id", absences.id
             )
+        if rsvp is not None:
+            await db.set_setting(interaction.guild_id, "rsvp_channel_id", rsvp.id)
 
         settings = await db.get_settings(interaction.guild_id)
 
@@ -294,9 +299,10 @@ class Panel(commands.Cog):
         await interaction.response.send_message(
             "📍 Current destinations:\n"
             f"• Events → {describe('event_channel_id')}\n"
-            f"• Absences → {describe('absence_channel_id')}\n\n"
-            "Set them with `/channels events: #… absences: #…`, or clear them "
-            "with `/channels reset: True`.",
+            f"• Absences → {describe('absence_channel_id')}\n"
+            f"• RSVPs → {describe('rsvp_channel_id')}\n\n"
+            "Set them with `/channels events: #… absences: #… rsvp: #…`, or clear "
+            "them with `/channels reset: True`.",
             ephemeral=True,
         )
 

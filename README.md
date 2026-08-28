@@ -155,6 +155,9 @@ empty spots before it starts.
 Moderators can also trigger it on the spot with `/rsvp event: <message link or
 ID>` — handy to ask right away instead of waiting for the automatic window.
 
+Point RSVPs at their own channel with `/channels rsvp: #rsvp` so they don't
+clutter the events channel; otherwise they land in the event's own channel.
+
 ### 📅 Event overview
 
 Use:
@@ -600,7 +603,7 @@ posted. Pinging `@everyone` is reserved to moderators.
 
 ```text
 /panel                                          → post the click-only panel
-/channels events: #events absences: #absences   → where results are posted
+/channels events: #events absences: #absences rsvp: #rsvp   → where results are posted
 ```
 
 **Tip for a smooth server**: post `/panel` in a channel of its own and pin it,
