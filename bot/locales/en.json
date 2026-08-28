@@ -9,5 +9,10 @@
   "event.completed_suffix": "Completed 🎉",
   "event.footer_created_by": "Created by {name}{suffix}",
   "language.set_confirm": "✅ Language set to **{language}**. I'll speak {language} on this server.",
-  "language.auto_confirm": "✅ Language set to **Auto** — I'll follow this server's Discord language."
+  "language.auto_confirm": "✅ Language set to **Auto** — I'll follow this server's Discord language.",
+  "rsvp.title": "Are you coming? — {title}",
+  "rsvp.body_hint": "Tap a button below to let the party know.",
+  "rsvp.coming": "Coming ({n})",
+  "rsvp.declined": "Can't make it ({n})",
+  "rsvp.awaiting": "No reply ({n})"
 }

@@ -1,7 +1,7 @@
 """How the party list names each member's character. Run: pytest"""
 
 from bot import config
-from bot.embeds import ROLE_EMOJI, build_event_embed
+from bot.embeds import ROLE_EMOJI, build_event_embed, build_rsvp_embed
 from bot.logic import COMPO_OPEN, COMPO_STANDARD
 
 EVENT = {
@@ -111,3 +111,18 @@ def test_cancelled_prefix_is_translated():
     cancelled = {**EVENT, "status": "cancelled"}
     embed = build_event_embed(cancelled, [], lang="fr")
     assert "[ANNULÉ]" in embed.title
+
+
+def test_rsvp_embed_defaults_to_english():
+    event = {"activity": "Dungeon", "title": "Fire Temple", "starts_at": None}
+    embed = build_rsvp_embed(event, [], [])
+    assert "Are you coming?" in embed.title
+    assert any("Coming (0)" in f.name for f in embed.fields)
+
+
+def test_rsvp_embed_follows_language():
+    event = {"activity": "Dungeon", "title": "Fire Temple", "starts_at": None}
+    embed = build_rsvp_embed(event, [], [], lang="fr")
+    assert "Tu viens ?" in embed.title
+    assert any("Présents (0)" in f.name for f in embed.fields)
+    assert any("Sans réponse (0)" in f.name for f in embed.fields)

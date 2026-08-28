@@ -169,7 +169,7 @@ def build_event_embed(
     return embed
 
 
-def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
+def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> discord.Embed:
     """The 'are you coming?' prompt, with live confirmed/declined/awaiting."""
     responses = {r["user_id"]: r["status"] for r in rsvps}
     party_ids = [s["user_id"] for s in party]
@@ -178,8 +178,8 @@ def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
     emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
     when = f" • 🕘 <t:{event['starts_at']}:R>" if event["starts_at"] else ""
     embed = discord.Embed(
-        title=f"{emoji} Are you coming? — {event['title']}",
-        description=f"**{event['activity']}**{when}\nTap a button below to let the party know.",
+        title=f"{emoji} " + i18n.t("rsvp.title", lang, title=event["title"]),
+        description=f"**{event['activity']}**{when}\n" + i18n.t("rsvp.body_hint", lang),
         colour=discord.Colour.blurple(),
     )
 
@@ -187,12 +187,15 @@ def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
         return "\n".join(f"• <@{u}>" for u in ids) or "*—*"
 
     embed.add_field(
-        name=f"✅ Coming ({len(confirmed)})", value=_mentions(confirmed), inline=True
+        name="✅ " + i18n.t("rsvp.coming", lang, n=len(confirmed)),
+        value=_mentions(confirmed), inline=True
     )
     embed.add_field(
-        name=f"❌ Can't make it ({len(declined)})", value=_mentions(declined), inline=True
+        name="❌ " + i18n.t("rsvp.declined", lang, n=len(declined)),
+        value=_mentions(declined), inline=True
     )
     embed.add_field(
-        name=f"⏳ No reply ({len(awaiting)})", value=_mentions(awaiting), inline=True
+        name="⏳ " + i18n.t("rsvp.awaiting", lang, n=len(awaiting)),
+        value=_mentions(awaiting), inline=True
     )
     return embed
