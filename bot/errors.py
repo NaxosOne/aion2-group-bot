@@ -11,9 +11,9 @@ import traceback
 
 import discord
 
-log = logging.getLogger("kisk")
+from . import i18n
 
-MESSAGE = "Something went wrong on my side. The error has been logged. 🛠️"
+log = logging.getLogger("kisk")
 
 
 def _detail(error: Exception) -> str:
@@ -30,7 +30,13 @@ def _detail(error: Exception) -> str:
 
 async def report_error(interaction: discord.Interaction, error: Exception, where: str):
     log.error("Error on %s:\n%s", where, "".join(traceback.format_exception(error)))
-    message = f"{MESSAGE}\n```\n{_detail(error)}\n```"
+    # Best-effort language: this runs inside the error path, so a failure to
+    # read the setting must never mask the original error.
+    try:
+        lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
+    except Exception:
+        lang = i18n.DEFAULT
+    message = f"{i18n.t('common.error', lang)}\n```\n{_detail(error)}\n```"
     try:
         if interaction.response.is_done():
             await interaction.followup.send(message, ephemeral=True)
