@@ -156,6 +156,10 @@ Les modérateurs peuvent aussi la déclencher immédiatement avec `/rsvp event:
 <lien ou ID du message>` — pratique pour demander tout de suite sans attendre la
 fenêtre automatique.
 
+Dirigez les RSVP vers leur propre salon avec `/channels rsvp: #rsvp` pour ne pas
+encombrer le salon des événements ; sinon ils apparaissent dans le salon de
+l'événement.
+
 ### 📅 Vue d'ensemble des événements
 
 Utilisez :
@@ -604,7 +608,7 @@ Le ping `@everyone` est réservé aux modérateurs.
 
 ```text
 /panel                                          → publier le panneau à boutons
-/channels events: #events absences: #absences   → où sont postés les résultats
+/channels events: #events absences: #absences rsvp: #rsvp   → où sont postés les résultats
 ```
 
 **Astuce pour un serveur bien rangé** : publiez `/panel` dans un salon dédié et
