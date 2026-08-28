@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS events (
     size          INTEGER NOT NULL,
     starts_at     INTEGER,                        -- UTC timestamp, NULL = no schedule
     status        TEXT    NOT NULL DEFAULT 'open',-- 'open', 'cancelled' or 'done'
-    reminder_sent INTEGER NOT NULL DEFAULT 0
+    reminder_sent INTEGER NOT NULL DEFAULT 0,
+    rsvp_sent     INTEGER NOT NULL DEFAULT 0,      -- 'are you coming?' prompt posted
+    rsvp_prompt_id INTEGER                         -- message id of that prompt
 );
 
 CREATE TABLE IF NOT EXISTS signups (
@@ -100,6 +102,13 @@ CREATE TABLE IF NOT EXISTS dispo_marks (
     day        INTEGER NOT NULL,                  -- 0 = Monday ... 6 = Sunday
     PRIMARY KEY (message_id, user_id, day)
 );
+
+CREATE TABLE IF NOT EXISTS rsvp (
+    message_id INTEGER NOT NULL,                  -- the event's message id
+    user_id    INTEGER NOT NULL,
+    status     TEXT    NOT NULL,                  -- 'yes' or 'no'
+    PRIMARY KEY (message_id, user_id)
+);
 """
 
 
@@ -134,6 +143,10 @@ class Database:
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings
+            },
+            "events": {
+                "rsvp_sent": "INTEGER NOT NULL DEFAULT 0",
+                "rsvp_prompt_id": "INTEGER",
             },
         }
         for table, columns in added.items():
@@ -249,6 +262,53 @@ class Database:
             "UPDATE events SET reminder_sent = 1 WHERE message_id = ?", (message_id,)
         )
         await self.conn.commit()
+
+    # ----- RSVP ("are you coming?" before the event) -----
+
+    async def events_to_rsvp(self, now_ts: int, window_s: int):
+        """Scheduled open events whose RSVP prompt is due and not yet sent."""
+        async with self.conn.execute(
+            """SELECT * FROM events
+               WHERE status = 'open' AND rsvp_sent = 0
+                 AND starts_at IS NOT NULL AND starts_at <= ?""",
+            (now_ts + window_s,),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def mark_rsvp_sent(self, message_id: int) -> None:
+        """Claim the event so the RSVP prompt is posted at most once."""
+        await self.conn.execute(
+            "UPDATE events SET rsvp_sent = 1 WHERE message_id = ?", (message_id,)
+        )
+        await self.conn.commit()
+
+    async def set_rsvp_prompt_id(self, message_id: int, prompt_id: int) -> None:
+        await self.conn.execute(
+            "UPDATE events SET rsvp_prompt_id = ? WHERE message_id = ?",
+            (prompt_id, message_id),
+        )
+        await self.conn.commit()
+
+    async def get_event_by_rsvp_prompt(self, prompt_id: int):
+        """The event a given RSVP prompt message belongs to (for its buttons)."""
+        async with self.conn.execute(
+            "SELECT * FROM events WHERE rsvp_prompt_id = ?", (prompt_id,)
+        ) as cur:
+            return await cur.fetchone()
+
+    async def set_rsvp(self, message_id: int, user_id: int, status: str) -> None:
+        await self.conn.execute(
+            """INSERT OR REPLACE INTO rsvp (message_id, user_id, status)
+               VALUES (?, ?, ?)""",
+            (message_id, user_id, status),
+        )
+        await self.conn.commit()
+
+    async def get_rsvps(self, message_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM rsvp WHERE message_id = ?", (message_id,)
+        ) as cur:
+            return await cur.fetchall()
 
     # ----- Sign-ups -----
 
@@ -472,6 +532,11 @@ class Database:
         await self.conn.execute(
             """DELETE FROM dispo_marks WHERE user_id = ? AND message_id IN
                (SELECT message_id FROM dispos WHERE guild_id = ?)""",
+            (user_id, guild_id),
+        )
+        await self.conn.execute(
+            """DELETE FROM rsvp WHERE user_id = ? AND message_id IN
+               (SELECT message_id FROM events WHERE guild_id = ?)""",
             (user_id, guild_id),
         )
         await self.conn.commit()

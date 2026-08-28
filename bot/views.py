@@ -13,7 +13,7 @@ from collections import defaultdict
 import discord
 
 from . import config
-from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed
+from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ViewErrorMixin
 from .logic import assign
 
@@ -382,3 +382,48 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 f"📣 {mentions}: a spot opened up, you're in the party for "
                 f"**{event['title']}**!"
             )
+
+
+class RSVPView(ViewErrorMixin, discord.ui.View):
+    """The two buttons under an 'are you coming?' prompt.
+
+    Persistent (fixed custom_ids). The prompt is a separate message, so its
+    buttons find their event through `events.rsvp_prompt_id`.
+    """
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="I'm coming", emoji="✅",
+        style=discord.ButtonStyle.success, custom_id="rsvp:yes",
+    )
+    async def coming(self, interaction: discord.Interaction, _):
+        await self._respond(interaction, "yes")
+
+    @discord.ui.button(
+        label="Can't make it", emoji="❌",
+        style=discord.ButtonStyle.secondary, custom_id="rsvp:no",
+    )
+    async def not_coming(self, interaction: discord.Interaction, _):
+        await self._respond(interaction, "no")
+
+    async def _respond(self, interaction: discord.Interaction, status: str):
+        db = interaction.client.db
+        event = await db.get_event_by_rsvp_prompt(interaction.message.id)
+        if event is None:
+            await interaction.response.send_message(
+                "This RSVP is no longer active.", ephemeral=True
+            )
+            return
+        signups = await db.get_signups(event["message_id"])
+        party, _waitlist = assign(event["compo"], event["size"], signups)
+        if interaction.user.id not in {s["user_id"] for s in party}:
+            await interaction.response.send_message(
+                "Sign up for the event first, then RSVP here.", ephemeral=True
+            )
+            return
+        await db.set_rsvp(event["message_id"], interaction.user.id, status)
+        rsvps = await db.get_rsvps(event["message_id"])
+        embed = build_rsvp_embed(event, party, rsvps)
+        await interaction.response.edit_message(embed=embed, view=self)

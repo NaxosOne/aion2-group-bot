@@ -23,13 +23,13 @@ The foundations are in place:
 * Guided profile onboarding (`/onboard`) — validated members are DMed to register their main (and alt), bilingual EN/FR, with a channel fallback
 * Profile management — `/profile delete` (yours, or a member's for moderators) and automatic cleanup when a member leaves the server
 * Automatic discussion thread on every event message (best-effort; skipped if the bot lacks Create Public Threads)
+* RSVP prompt before an event — an "are you coming?" message with confirm/decline buttons and a live tally (configurable timing)
 
 ## 🟢 Phase 1 — Better group organisation
 
 Make creating and managing groups as frictionless as possible.
 
 * [ ] Aion 2 class picker during sign-up
-* [ ] Sign-up confirmation before an event (a quick "are you coming?" RSVP)
 * [ ] Improved event and party UX
 * [ ] Better waitlist management (manual reordering, role-aware slots)
 * [ ] More flexible party compositions (custom ratios)

@@ -144,6 +144,14 @@ Par défaut :
 
 **15 minutes avant l'événement.**
 
+### 🙋 RSVP — « tu viens ? »
+
+Une heure avant un événement planifié (réglable via `RSVP_MINUTES`), Kisk poste
+une courte invite **« tu viens ? »** qui ping le groupe, avec deux boutons —
+**Je viens ✅** et **Pas dispo ❌**. L'invite se met à jour en direct avec les
+confirmés, les absents et ceux qui n'ont pas répondu, pour que les organisateurs
+comblent les places vides avant le début.
+
 ### 📅 Vue d'ensemble des événements
 
 Utilisez :
