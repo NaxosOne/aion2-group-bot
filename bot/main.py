@@ -44,6 +44,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.polls")
         await self.load_extension("bot.cogs.panel")
         await self.load_extension("bot.cogs.onboarding")
+        await self.load_extension("bot.cogs.settings")
 
         if config.GUILD_ID:
             # Single-guild sync: the commands show up right away.
