@@ -4,6 +4,7 @@ import discord
 
 from . import config
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
+from .utils.rsvp import rsvp_summary
 
 # Event-type emojis come from the config (.env EMOJI_DUNGEON etc.); the
 # legacy French labels keep working for events created by earlier versions.
@@ -141,4 +142,33 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     else:
         suffix = ""
     embed.set_footer(text=f"Created by {event['creator_name']}{suffix}")
+    return embed
+
+
+def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
+    """The 'are you coming?' prompt, with live confirmed/declined/awaiting."""
+    responses = {r["user_id"]: r["status"] for r in rsvps}
+    party_ids = [s["user_id"] for s in party]
+    confirmed, declined, awaiting = rsvp_summary(party_ids, responses)
+
+    emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
+    when = f" • 🕘 <t:{event['starts_at']}:R>" if event["starts_at"] else ""
+    embed = discord.Embed(
+        title=f"{emoji} Are you coming? — {event['title']}",
+        description=f"**{event['activity']}**{when}\nTap a button below to let the party know.",
+        colour=discord.Colour.blurple(),
+    )
+
+    def _mentions(ids: list) -> str:
+        return "\n".join(f"• <@{u}>" for u in ids) or "*—*"
+
+    embed.add_field(
+        name=f"✅ Coming ({len(confirmed)})", value=_mentions(confirmed), inline=True
+    )
+    embed.add_field(
+        name=f"❌ Can't make it ({len(declined)})", value=_mentions(declined), inline=True
+    )
+    embed.add_field(
+        name=f"⏳ No reply ({len(awaiting)})", value=_mentions(awaiting), inline=True
+    )
     return embed

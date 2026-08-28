@@ -10,7 +10,7 @@ from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
-from .views import SignupView
+from .views import RSVPView, SignupView
 
 
 class GroupBot(commands.Bot):
@@ -29,6 +29,7 @@ class GroupBot(commands.Bot):
         # Re-register the persistent views so the buttons of already
         # published messages keep working after a restart.
         self.add_view(SignupView())
+        self.add_view(RSVPView())
         self.add_view(VoteView())
         self.add_view(AvailabilityView())
         self.add_view(PanelView())

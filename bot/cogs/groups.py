@@ -9,9 +9,10 @@ from discord.ext import commands, tasks
 
 from .. import config
 from ..actions import publish_event
-from ..embeds import ACTIVITY_EMOJI
+from ..embeds import ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.time_parse import ParseError, parse_when
+from ..views import RSVPView
 
 
 @app_commands.guild_only()
@@ -23,10 +24,12 @@ class Groups(commands.Cog):
 
     async def cog_load(self):
         self.reminders.start()
+        self.rsvp_prompts.start()
         self.status.start()
 
     async def cog_unload(self):
         self.reminders.cancel()
+        self.rsvp_prompts.cancel()
         self.status.cancel()
 
     # ----- /event -----
@@ -171,6 +174,45 @@ class Groups(commands.Cog):
             f"⏰ Reminder: [**{ev['title']}**](<{link}>) starts "
             f"<t:{ev['starts_at']}:R>!"
             + (f"\n{mentions}" if mentions else " (nobody signed up 😢)")
+        )
+
+    # ----- RSVP prompts ("are you coming?") -----
+
+    @tasks.loop(seconds=60)
+    async def rsvp_prompts(self):
+        now = int(time.time())
+        events = await self.bot.db.events_to_rsvp(now, config.RSVP_MINUTES * 60)
+        for ev in events:
+            # Claim first so the prompt is posted at most once, even on errors.
+            await self.bot.db.mark_rsvp_sent(ev["message_id"])
+            if ev["starts_at"] < now:
+                continue  # already started: nothing to ask
+            try:
+                signups = await self.bot.db.get_signups(ev["message_id"])
+                party, _ = assign(ev["compo"], ev["size"], signups)
+                if not party:
+                    continue  # nobody signed up
+                prompt = await self._send_rsvp(ev, party)
+                await self.bot.db.set_rsvp_prompt_id(ev["message_id"], prompt.id)
+            except discord.HTTPException:
+                pass  # channel deleted or permissions revoked: skip
+
+    @rsvp_prompts.before_loop
+    async def _wait_ready_rsvp(self):
+        await self.bot.wait_until_ready()
+
+    async def _send_rsvp(self, ev, party):
+        channel = self.bot.get_channel(ev["channel_id"])
+        if channel is None:
+            channel = await self.bot.fetch_channel(ev["channel_id"])
+        rsvps = await self.bot.db.get_rsvps(ev["message_id"])
+        embed = build_rsvp_embed(ev, party, rsvps)
+        mentions = " ".join(f"<@{s['user_id']}>" for s in party)
+        return await channel.send(
+            content=mentions or None,
+            embed=embed,
+            view=RSVPView(),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
 
     # ----- Bot status: the next event -----

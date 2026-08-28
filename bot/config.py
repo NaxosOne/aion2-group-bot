@@ -24,6 +24,9 @@ TIMEZONE = ZoneInfo(os.getenv("TIMEZONE", "Europe/Paris"))
 # How many minutes before an event's start the reminder is sent.
 REMINDER_MINUTES = int(os.getenv("REMINDER_MINUTES") or 15)
 
+# How many minutes before start the "are you coming?" RSVP prompt is posted.
+RSVP_MINUTES = int(os.getenv("RSVP_MINUTES") or 60)
+
 # Automatic weekly availability board (enabled with /availability weekly):
 # day (0 = Monday ... 6 = Sunday) and hour of posting.
 AVAILABILITY_DAY = int(os.getenv("AVAILABILITY_DAY") or 0)
