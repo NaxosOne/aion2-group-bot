@@ -144,6 +144,14 @@ Default:
 
 **15 minutes before the event.**
 
+### 🙋 RSVP — "are you coming?"
+
+An hour before a scheduled event (configurable via `RSVP_MINUTES`), Kisk posts a
+short **"are you coming?"** prompt that pings the party, with two buttons —
+**I'm coming ✅** and **Can't make it ❌**. The prompt updates live with who has
+confirmed, who can't make it, and who hasn't replied, so organisers can fill
+empty spots before it starts.
+
 ### 📅 Event overview
 
 Use:
