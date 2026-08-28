@@ -25,3 +25,31 @@ def test_pick_lang_falls_back_to_guild_locale_when_unset():
 
 def test_pick_lang_ignores_unsupported_setting():
     assert i18n.pick_lang("de", "fr") == "fr"
+
+
+def test_t_returns_string_for_language():
+    english = i18n.t("common.error", "en")
+    french = i18n.t("common.error", "fr")
+    assert english.startswith("Something went wrong")
+    assert french != english
+    assert "problème" in french.lower()
+
+
+def test_t_formats_placeholders():
+    out = i18n.t("language.set_confirm", "en", language="English")
+    assert "English" in out
+
+
+def test_t_missing_key_falls_back_to_key():
+    assert i18n.t("does.not.exist", "en") == "does.not.exist"
+
+
+def test_t_unknown_lang_uses_default():
+    assert i18n.t("common.error", "de") == i18n.t("common.error", "en")
+
+
+def test_t_bad_params_never_raise_and_return_template():
+    # A required placeholder was not supplied: t() must not raise; it degrades
+    # to the raw template (so the {language} marker survives unformatted).
+    out = i18n.t("language.set_confirm", "en", unrelated="x")
+    assert "{language}" in out

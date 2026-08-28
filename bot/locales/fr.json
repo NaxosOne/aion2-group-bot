@@ -1,0 +1,5 @@
+{
+  "common.error": "Un problème est survenu de mon côté. L'erreur a été enregistrée. 🛠️",
+  "language.set_confirm": "✅ Langue réglée sur **{language}**. Je parlerai {language} sur ce serveur.",
+  "language.auto_confirm": "✅ Langue réglée sur **Auto** — je suivrai la langue Discord du serveur."
+}
