@@ -10,7 +10,7 @@ from datetime import datetime
 
 import discord
 
-from . import config
+from . import config, i18n
 from .embeds import build_event_embed
 from .utils.mentions import ping_permitted
 from .utils.threads import event_thread_name
@@ -49,13 +49,14 @@ async def publish_event(
     notified. Pinging @everyone is reserved to moderators (mentioning through
     the bot bypasses the member's own permissions).
     """
+    lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     if ping_role is not None:
         is_moderator = interaction.user.guild_permissions.manage_messages
         if not ping_permitted(
             is_default_role=ping_role.is_default(), is_moderator=is_moderator
         ):
             await interaction.response.send_message(
-                "Only moderators can ping @everyone. Pick a specific role instead.",
+                i18n.t("event.mod_only_everyone", lang),
                 ephemeral=True,
             )
             return
@@ -75,7 +76,7 @@ async def publish_event(
         "status": "open",
     }
     # Send the message first so we know its ID, which is our key.
-    embed = build_event_embed(event, [])
+    embed = build_event_embed(event, [], lang=lang)
     if ping_role is not None:
         content = ping_role.mention
         mentions = discord.AllowedMentions(
@@ -91,17 +92,19 @@ async def publish_event(
         )
     except discord.Forbidden:
         await interaction.followup.send(
-            f"I'm not allowed to post in {channel.mention}. Give me the "
-            "Send Messages and Embed Links permissions there, or point "
-            "`/channels` at another channel.",
+            i18n.t("event.post_forbidden", lang, channel=channel.mention),
             ephemeral=True,
         )
         return
     except discord.HTTPException as err:
         log.exception("Could not post the event in channel %s", channel.id)
         await interaction.followup.send(
-            f"Discord refused the event message in {channel.mention} "
-            f"({err.text or err}). Try another channel with `/channels`.",
+            i18n.t(
+                "event.post_failed",
+                lang,
+                channel=channel.mention,
+                error=(err.text or err),
+            ),
             ephemeral=True,
         )
         return
@@ -116,17 +119,22 @@ async def publish_event(
         except discord.HTTPException:
             pass
         await interaction.followup.send(
-            "Something went wrong saving this event — please try again.",
+            i18n.t("event.save_failed", lang),
             ephemeral=True,
         )
         return
-    await _open_event_thread(message, title)
+    await _open_event_thread(message, title, lang)
     await interaction.followup.send(
-        f"Event created in {channel.mention} — {message.jump_url}", ephemeral=True
+        i18n.t(
+            "event.created", lang, channel=channel.mention, link=message.jump_url
+        ),
+        ephemeral=True,
     )
 
 
-async def _open_event_thread(message: discord.Message, title: str) -> None:
+async def _open_event_thread(
+    message: discord.Message, title: str, lang: str
+) -> None:
     """Attaches a discussion thread to the event message (best-effort).
 
     Skips silently if the bot lacks the Create Public Threads permission, so a
@@ -141,10 +149,7 @@ async def _open_event_thread(message: discord.Message, title: str) -> None:
         log.info("Could not open a thread for event %s (missing perms?)", message.id)
         return
     try:
-        await thread.send(
-            f"💬 Discussion for **{title}** — coordinate here!\n"
-            f"*Discussion pour **{title}** — coordonnez-vous ici !*"
-        )
+        await thread.send(i18n.t("event.thread_intro", lang, title=title))
     except discord.HTTPException:
         pass
 

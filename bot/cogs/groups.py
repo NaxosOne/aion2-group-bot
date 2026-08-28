@@ -7,7 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from .. import config
+from .. import config, i18n
 from ..actions import publish_event
 from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
@@ -107,10 +107,11 @@ class Groups(commands.Cog):
 
     @app_commands.command(name="events", description="See the upcoming events on this server")
     async def events(self, interaction: discord.Interaction):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         events = await self.bot.db.upcoming_events(interaction.guild_id, int(time.time()))
         if not events:
             await interaction.response.send_message(
-                "No events scheduled yet. Start your own with `/event`!",
+                i18n.t("events.none", lang),
                 ephemeral=True,
             )
             return
@@ -119,19 +120,31 @@ class Groups(commands.Cog):
         for ev in events:
             signups = await self.bot.db.get_signups(ev["message_id"])
             party, waitlist = assign(ev["compo"], ev["size"], signups)
-            when = f"<t:{ev['starts_at']}:R>" if ev["starts_at"] else "no time set"
+            when = (
+                f"<t:{ev['starts_at']}:R>"
+                if ev["starts_at"]
+                else i18n.t("events.no_time", lang)
+            )
             link = (
                 f"https://discord.com/channels/{ev['guild_id']}"
                 f"/{ev['channel_id']}/{ev['message_id']}"
             )
-            lines.append(
-                f"• [**{ev['title']}**]({link}) — {ev['activity']}, {when} — "
-                f"{len(party)}/{ev['size']} signed up"
-                + (f" (+{len(waitlist)} waitlisted)" if waitlist else "")
+            line = i18n.t(
+                "events.line",
+                lang,
+                title=ev["title"],
+                link=link,
+                activity=ev["activity"],
+                when=when,
+                signed=len(party),
+                size=ev["size"],
             )
+            if waitlist:
+                line += i18n.t("events.waitlist_suffix", lang, n=len(waitlist))
+            lines.append(line)
 
         embed = discord.Embed(
-            title="📅 Upcoming events",
+            title=i18n.t("events.title", lang),
             description="\n".join(lines),
             colour=discord.Colour.blurple(),
         )
@@ -146,36 +159,37 @@ class Groups(commands.Cog):
     @app_commands.describe(event="The event message — paste its link or ID")
     @app_commands.default_permissions(manage_messages=True)
     async def rsvp(self, interaction: discord.Interaction, event: str):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         message_id = parse_message_id(event)
         if message_id is None:
             await interaction.response.send_message(
-                "Give me an event message link or ID.", ephemeral=True
+                i18n.t("rsvp.need_id", lang), ephemeral=True
             )
             return
         ev = await self.bot.db.get_event(message_id)
         if ev is None or ev["guild_id"] != interaction.guild_id:
             await interaction.response.send_message(
-                "I can't find that event on this server.", ephemeral=True
+                i18n.t("rsvp.not_found_here", lang), ephemeral=True
             )
             return
         signups = await self.bot.db.get_signups(ev["message_id"])
         party, _ = assign(ev["compo"], ev["size"], signups)
         if not party:
             await interaction.response.send_message(
-                "Nobody has signed up yet — nothing to RSVP.", ephemeral=True
+                i18n.t("rsvp.nobody_signed_up", lang), ephemeral=True
             )
             return
         try:
             prompt = await self._send_rsvp(ev, party)
         except discord.HTTPException:
             await interaction.response.send_message(
-                "I couldn't post the prompt there (permissions?).", ephemeral=True
+                i18n.t("rsvp.post_failed", lang), ephemeral=True
             )
             return
         await self.bot.db.mark_rsvp_sent(ev["message_id"])
         await self.bot.db.set_rsvp_prompt_id(ev["message_id"], prompt.id)
         await interaction.response.send_message(
-            f"RSVP prompt posted — {prompt.jump_url}", ephemeral=True
+            i18n.t("rsvp.posted", lang, link=prompt.jump_url), ephemeral=True
         )
 
     # ----- Automatic reminders -----
@@ -202,6 +216,9 @@ class Groups(commands.Cog):
         await self.bot.wait_until_ready()
 
     async def _send_reminder(self, ev):
+        lang = await i18n.resolve_lang(
+            self.bot.db, self.bot.get_guild(ev["guild_id"])
+        )
         channel = self.bot.get_channel(ev["channel_id"])
         if channel is None:
             channel = await self.bot.fetch_channel(ev["channel_id"])
@@ -212,10 +229,16 @@ class Groups(commands.Cog):
             f"https://discord.com/channels/{ev['guild_id']}"
             f"/{ev['channel_id']}/{ev['message_id']}"
         )
+        text = i18n.t(
+            "reminder.text",
+            lang,
+            title=ev["title"],
+            link=link,
+            when=f"<t:{ev['starts_at']}:R>",
+        )
         await channel.send(
-            f"⏰ Reminder: [**{ev['title']}**](<{link}>) starts "
-            f"<t:{ev['starts_at']}:R>!"
-            + (f"\n{mentions}" if mentions else " (nobody signed up 😢)")
+            text
+            + (f"\n{mentions}" if mentions else i18n.t("reminder.nobody", lang))
         )
 
     # ----- RSVP prompts ("are you coming?") -----
@@ -265,9 +288,12 @@ class Groups(commands.Cog):
         return await self._channel(ev["channel_id"])
 
     async def _send_rsvp(self, ev, party):
+        lang = await i18n.resolve_lang(
+            self.bot.db, self.bot.get_guild(ev["guild_id"])
+        )
         channel = await self._rsvp_channel(ev)
         rsvps = await self.bot.db.get_rsvps(ev["message_id"])
-        embed = build_rsvp_embed(ev, party, rsvps)
+        embed = build_rsvp_embed(ev, party, rsvps, lang=lang)
         mentions = " ".join(f"<@{s['user_id']}>" for s in party)
         return await channel.send(
             content=mentions or None,
