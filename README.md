@@ -100,6 +100,14 @@ Players can:
 * rejoin
 * see the current composition
 
+**Which character are you bringing?** Players who registered more than one
+character get a private dropdown after picking their role, listing their
+characters with their class icons. The party then shows the character by name
+— `@Naxos — Kratos (Templar)` — so everyone knows who is coming as what.
+Clicking the same role again swaps character without losing your place in the
+queue. Players with a single character (or none) are signed up straight away,
+exactly as before.
+
 ### 🪑 Smart waitlist
 
 When an event is full, additional players are automatically placed on the waitlist.
@@ -157,30 +165,40 @@ Everyone who signed up is notified automatically.
 Players can register their characters with:
 
 ```text
-/profile set
+/profile set name: Kratos class: Templar role: Tank
 ```
 
-Profiles support:
+Each player can register **up to 10 characters** — a main and as many alts as
+they actually play. Every character has a name, a class and a preferred role.
 
-* main character
-* alt
-* character name
-* class
-* preferred role
+The first character registered becomes the **main**: it is the one shown by
+default in party lists and on the roster. To change it:
 
-The character's class can then appear next to their name in party lists.
+```text
+/profile main character: Loki
+```
+
+Re-running `/profile set` with a name that already exists updates that
+character instead of creating a twin, so fixing a class or a role is one
+command.
 
 Use:
 
 ```text
-/profile show
+/profile show [member]
 /roster
 ```
 
-to browse player information. A player can remove their own profile with
-`/profile delete` (moderators can target a member); Kisk also **cleans up
-automatically** when someone leaves the server — their profile, sign-ups,
-absences and availability marks are removed.
+to browse player information. To remove a character, or a whole profile:
+
+```text
+/profile delete character: Loki      → that one character
+/profile delete                      → every character
+```
+
+Moderators can target another member with `member:`. Kisk also **cleans up
+automatically** when someone leaves the server — all of their characters,
+sign-ups, absences and availability marks are removed.
 
 ### 🏖️ Absences
 
@@ -302,8 +320,8 @@ Point Kisk at your "validated member" role once:
 
 From then on, whenever a member receives that role, Kisk DMs them a button that
 opens a guided, dropdown-based form to register their main character — **class**
-(with Aion 2 class icons), **role** and name — and then to add an alt, all
-without typing a command. If their DMs are closed, Kisk falls back to the
+(with Aion 2 class icons), **role** and name — and then to add as many other
+characters as they like, all without typing a command. If their DMs are closed, Kisk falls back to the
 welcome channel (or the server's system channel). The whole member-facing flow
 is bilingual **English / French**.
 
@@ -517,10 +535,12 @@ posted. Pinging `@everyone` is reserved to moderators.
 ## Profiles
 
 ```text
-/profile set character: Main name: Kratos class: Templar role: Tank
+/profile set name: Kratos class: Templar role: Tank [main: True]
+/profile main character: Loki                        → change your default character
 
 /profile show [member]
-/profile delete [character: Main|Alt|All] [member]   → moderators can target a member
+/profile delete [character] [member]                 → empty character = all of them
+                                                       moderators can target a member
 /roster
 ```
 
@@ -697,17 +717,20 @@ Before opening a PR:
 
 # 🌍 Aion 2 classes
 
-The classes currently suggested by `/profile` are intentionally configurable.
-
-The list lives in:
+The class list is intentionally configurable, and lives in one place:
 
 ```text
-bot/cogs/profiles.py
+bot/config.py       → CLASS_EMOJI
 ```
 
-Update `AION_CLASSES` as the final Aion 2 class names become known.
+Each entry pairs a class with its default emoji, and drives the class menus,
+the autocomplete, the roster and the character picker at once.
 
-Classes are currently suggestions rather than strict validation, so custom values remain possible.
+**Fist Fighter** is already drawn (`assets/emoji/fistfighter.png`) and one
+commented-out line away: uncomment it in `CLASS_EMOJI` the day the class
+launches and it appears everywhere on its own.
+
+Classes are suggestions rather than strict validation, so custom values remain possible.
 
 ---
 

@@ -12,6 +12,10 @@ ROLES = ("tank", "heal", "dps")
 STANDARD_RATIO = {"tank": 1, "heal": 1, "dps": 3}
 STANDARD_SIZE = sum(STANDARD_RATIO.values())  # 5
 
+# How many characters one member may register. Discord caps a dropdown at 25
+# options; well under that keeps the character menus short enough to be useful.
+MAX_CHARACTERS = 10
+
 COMPO_STANDARD = "standard"
 # Stored value for the no-role-limits mode. Any value other than "standard"
 # behaves as open, which keeps old rows created as "libre" working.

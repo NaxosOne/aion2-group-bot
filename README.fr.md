@@ -100,6 +100,14 @@ Les joueurs peuvent :
 * revenir
 * consulter la composition actuelle
 
+**Avec quel personnage ?** Les joueurs ayant enregistré plusieurs personnages
+reçoivent, après avoir choisi leur rôle, un menu déroulant privé listant leurs
+personnages avec leurs icônes de classe. Le groupe affiche ensuite le
+personnage par son nom — `@Naxos — Kratos (Templar)` — pour que chacun sache
+qui vient avec quoi. Recliquer sur le même rôle change de personnage sans
+perdre sa place dans la file. Les joueurs avec un seul personnage (ou aucun)
+sont inscrits directement, exactement comme avant.
+
 ### 🪑 Liste d'attente intelligente
 
 Quand un événement est complet, les joueurs supplémentaires sont automatiquement placés sur la liste d'attente.
@@ -157,30 +165,41 @@ Toutes les personnes inscrites sont notifiées automatiquement.
 Les joueurs peuvent enregistrer leurs personnages avec :
 
 ```text
-/profile set
+/profile set name: Kratos class: Templar role: Tank
 ```
 
-Les profils prennent en charge :
+Chaque joueur peut enregistrer **jusqu'à 10 personnages** — un principal et
+autant de rerolls qu'il en joue vraiment. Chaque personnage a un nom, une
+classe et un rôle de prédilection.
 
-* le personnage principal
-* le reroll
-* le nom du personnage
-* la classe
-* le rôle préféré
+Le premier personnage enregistré devient le **principal** : c'est celui affiché
+par défaut dans les listes de groupe et sur le roster. Pour en changer :
 
-La classe du personnage peut ensuite apparaître à côté de son nom dans les listes de groupe.
+```text
+/profile main character: Loki
+```
+
+Relancer `/profile set` avec un nom déjà connu met à jour ce personnage au lieu
+d'en créer un jumeau : corriger une classe ou un rôle tient en une commande.
 
 Utilisez :
 
 ```text
-/profile show
+/profile show [member]
 /roster
 ```
 
-pour parcourir les informations des joueurs. Un joueur peut supprimer son propre
-profil avec `/profile delete` (les modérateurs peuvent cibler un membre) ; Kisk
-fait aussi le **ménage automatiquement** quand quelqu'un quitte le serveur — son
-profil, ses inscriptions, absences et disponibilités sont supprimés.
+pour parcourir les informations des joueurs. Pour supprimer un personnage, ou
+tout un profil :
+
+```text
+/profile delete character: Loki      → ce personnage précis
+/profile delete                      → tous les personnages
+```
+
+Les modérateurs peuvent viser un autre membre avec `member:`. Kisk fait aussi le
+**ménage automatiquement** quand quelqu'un quitte le serveur — tous ses
+personnages, ses inscriptions, absences et disponibilités sont supprimés.
 
 ### 🏖️ Absences
 
@@ -303,7 +322,8 @@ Indiquez une fois à Kisk votre rôle « membre validé » :
 Ensuite, dès qu'un membre reçoit ce rôle, Kisk lui envoie en MP un bouton qui
 ouvre un formulaire guidé à menus déroulants pour enregistrer son personnage
 principal — **classe** (avec les icônes de classes Aion 2), **rôle** et nom —
-puis pour ajouter un reroll, le tout sans taper la moindre commande. Si ses MP
+puis pour ajouter autant d'autres personnages qu'il le souhaite, le tout sans
+taper la moindre commande. Si ses MP
 sont fermés, Kisk bascule sur le salon de bienvenue (ou le salon système du
 serveur). Tout le flux côté membre est bilingue **anglais / français**.
 
@@ -517,10 +537,12 @@ Le ping `@everyone` est réservé aux modérateurs.
 ## Profils
 
 ```text
-/profile set character: Main name: Kratos class: Templar role: Tank
+/profile set name: Kratos class: Templar role: Tank [main: True]
+/profile main character: Loki                        → changer son personnage par défaut
 
 /profile show [member]
-/profile delete [character: Main|Alt|All] [member]   → les modérateurs peuvent cibler un membre
+/profile delete [character] [member]                 → character vide = tous
+                                                       les modérateurs peuvent cibler un membre
 /roster
 ```
 
@@ -701,17 +723,21 @@ Avant d'ouvrir une PR :
 
 # 🌍 Classes Aion 2
 
-Les classes actuellement suggérées par `/profile` sont volontairement configurables.
-
-La liste se trouve dans :
+La liste des classes est volontairement configurable, et tient en un seul endroit :
 
 ```text
-bot/cogs/profiles.py
+bot/config.py       → CLASS_EMOJI
 ```
 
-Mettez à jour `AION_CLASSES` à mesure que les noms définitifs des classes Aion 2 seront connus.
+Chaque entrée associe une classe à son emoji par défaut, et alimente d'un coup
+les menus de classe, l'autocomplétion, le roster et le choix du personnage à
+l'inscription.
 
-Les classes sont actuellement des suggestions plutôt qu'une validation stricte, donc des valeurs personnalisées restent possibles.
+Le **Fist Fighter** est déjà dessiné (`assets/emoji/fistfighter.png`) et tient
+à une ligne commentée : décommentez-la dans `CLASS_EMOJI` le jour de sa sortie
+et il apparaîtra partout tout seul.
+
+Les classes sont des suggestions plutôt qu'une validation stricte, donc des valeurs personnalisées restent possibles.
 
 ---
 
