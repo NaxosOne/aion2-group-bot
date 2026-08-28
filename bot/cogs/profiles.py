@@ -75,7 +75,7 @@ async def resolve_character(db, guild_id: int, user_id: int, value: str):
 
 
 def character_line(row, *, star: bool = True) -> str:
-    """E.g. "⭐ 🛡️ **Kratos** (⚔️ Templar)"."""
+    """E.g. "⭐ 💚 **Nami** (✨ Cleric)" — star, role icon, name, class."""
     emoji = config.CLASS_EMOJI.get(row["char_class"])
     char_class = f"{emoji} {row['char_class']}" if emoji else row["char_class"]
     prefix = "⭐ " if star and row["is_main"] else ""

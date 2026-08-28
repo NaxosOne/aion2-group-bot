@@ -37,7 +37,7 @@ def _row_get(row, key: str):
 
 
 def _class_suffix(signup, classes: dict, *, role_shown: bool = False) -> str:
-    """Suffix " — ⚔️ Kratos (Templar)" naming the character brought along.
+    """Suffix " — 🛡️ Kratos (Templar)" naming the character brought along.
 
     The class icon leads so the party reads as a column of classes at a
     glance. Falls back to the member's main class when they signed up without
