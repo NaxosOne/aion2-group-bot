@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#ffc2f0"/><stop offset="100%" stop-color="#c02da8"/>
+  </linearGradient></defs>
+  <!-- mantra pulses -->
+  <g fill="none" stroke="#4a0f3f" stroke-width="8" stroke-linecap="round">
+    <path d="M36 40 A 38 38 0 0 0 36 88"/><path d="M92 40 A 38 38 0 0 1 92 88"/>
+    <path d="M20 24 A 62 62 0 0 0 20 104"/><path d="M108 24 A 62 62 0 0 1 108 104"/>
+  </g>
+  <!-- core -->
+  <polygon points="64,26 88,64 64,102 40,64"
+           fill="url(#g)" stroke="#4a0f3f" stroke-width="7" stroke-linejoin="round"/>
+  <polygon points="64,26 64,102 40,64" fill="#ffe3f8" opacity="0.55"/>
+</svg>

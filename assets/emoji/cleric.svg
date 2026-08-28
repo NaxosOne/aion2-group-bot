@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><radialGradient id="g" cx="50%" cy="42%" r="60%">
+    <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f0c04b"/>
+  </radialGradient></defs>
+  <!-- sunburst rays -->
+  <g stroke="#7a5b16" stroke-width="7" stroke-linecap="round">
+    <line x1="64" y1="6" x2="64" y2="26"/><line x1="64" y1="102" x2="64" y2="122"/>
+    <line x1="6" y1="64" x2="26" y2="64"/><line x1="102" y1="64" x2="122" y2="64"/>
+    <line x1="23" y1="23" x2="37" y2="37"/><line x1="91" y1="91" x2="105" y2="105"/>
+    <line x1="105" y1="23" x2="91" y2="37"/><line x1="37" y1="91" x2="23" y2="105"/>
+  </g>
+  <circle cx="64" cy="64" r="34" fill="url(#g)" stroke="#7a5b16" stroke-width="7"/>
+  <circle cx="55" cy="55" r="10" fill="#ffffff" opacity="0.75"/>
+</svg>
