@@ -152,6 +152,9 @@ short **"are you coming?"** prompt that pings the party, with two buttons —
 confirmed, who can't make it, and who hasn't replied, so organisers can fill
 empty spots before it starts.
 
+Moderators can also trigger it on the spot with `/rsvp event: <message link or
+ID>` — handy to ask right away instead of waiting for the automatic window.
+
 ### 📅 Event overview
 
 Use:
