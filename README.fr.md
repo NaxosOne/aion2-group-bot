@@ -152,6 +152,10 @@ une courte invite **« tu viens ? »** qui ping le groupe, avec deux boutons —
 confirmés, les absents et ceux qui n'ont pas répondu, pour que les organisateurs
 comblent les places vides avant le début.
 
+Les modérateurs peuvent aussi la déclencher immédiatement avec `/rsvp event:
+<lien ou ID du message>` — pratique pour demander tout de suite sans attendre la
+fenêtre automatique.
+
 ### 📅 Vue d'ensemble des événements
 
 Utilisez :
