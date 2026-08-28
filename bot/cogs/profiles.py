@@ -1,4 +1,9 @@
-"""/profile commands and /roster: the legion's character directory (main + alt)."""
+"""/profile commands and /roster: the legion's character directory.
+
+A member registers as many characters as they like (up to MAX_CHARACTERS);
+exactly one of them is their main, and that is the one the bot falls back on
+whenever a character isn't named explicitly.
+"""
 
 import discord
 from discord import app_commands
@@ -6,21 +11,14 @@ from discord.ext import commands
 
 from .. import config
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
+from ..logic import MAX_CHARACTERS
 
-# Class suggestions (inherited from Aion — free text is accepted: update this
-# list in one place once the final Aion 2 class names are known).
-AION_CLASSES = [
-    "Gladiator",
-    "Templar",
-    "Assassin",
-    "Ranger",
-    "Sorcerer",
-    "Spiritmaster",
-    "Cleric",
-    "Chanter",
-]
+# The playable classes, taken from the emoji configuration so that adding one
+# (Fist Fighter, on release) is a single line in config.py. Free text is still
+# accepted: the list only drives the suggestions.
+AION_CLASSES = list(config.CLASS_EMOJI)
 
-SLOT_LABEL = {"main": "Main", "alt": "Alt"}
+ALL_CHARACTERS = "all"
 
 
 async def class_autocomplete(_: discord.Interaction, current: str):
@@ -30,11 +28,58 @@ async def class_autocomplete(_: discord.Interaction, current: str):
     ][:25]
 
 
-def _character_line(p) -> str:
-    """E.g. "🛡️ **Kratos** (⚔️ Templar)"."""
-    emoji = config.CLASS_EMOJI.get(p["char_class"])
-    char_class = f"{emoji} {p['char_class']}" if emoji else p["char_class"]
-    return f"{ROLE_EMOJI[p['role']]} **{p['char_name']}** ({char_class})"
+def _target_of(interaction: discord.Interaction):
+    """Whose characters a command is about: the `member` option, or the caller."""
+    return getattr(interaction.namespace, "member", None) or interaction.user
+
+
+async def _character_choices(interaction: discord.Interaction, current: str):
+    target = _target_of(interaction)
+    rows = await interaction.client.db.get_profiles(interaction.guild_id, target.id)
+    cur = current.lower()
+    return [
+        app_commands.Choice(
+            name=f"{'⭐ ' if row['is_main'] else ''}{row['char_name']} "
+            f"({row['char_class']})"[:100],
+            value=str(row["id"]),
+        )
+        for row in rows
+        if cur in row["char_name"].lower()
+    ]
+
+
+async def character_autocomplete(interaction: discord.Interaction, current: str):
+    return (await _character_choices(interaction, current))[:25]
+
+
+async def deletable_autocomplete(interaction: discord.Interaction, current: str):
+    """Same list, with "everything" as the first entry."""
+    choices = [
+        app_commands.Choice(name="🗑️ Every character", value=ALL_CHARACTERS)
+    ] + await _character_choices(interaction, current)
+    return choices[:25]
+
+
+async def resolve_character(db, guild_id: int, user_id: int, value: str):
+    """The character an option refers to: the id an autocomplete choice
+    carries, or a name typed out by hand. None when it matches nothing."""
+    value = value.strip()
+    if value.isdigit():
+        row = await db.get_character(guild_id, user_id, int(value))
+        if row is not None:
+            return row
+    for row in await db.get_profiles(guild_id, user_id):
+        if row["char_name"].lower() == value.lower():
+            return row
+    return None
+
+
+def character_line(row, *, star: bool = True) -> str:
+    """E.g. "⭐ 🛡️ **Kratos** (⚔️ Templar)"."""
+    emoji = config.CLASS_EMOJI.get(row["char_class"])
+    char_class = f"{emoji} {row['char_class']}" if emoji else row["char_class"]
+    prefix = "⭐ " if star and row["is_main"] else ""
+    return f"{prefix}{ROLE_EMOJI[row['role']]} **{row['char_name']}** ({char_class})"
 
 
 @app_commands.guild_only()
@@ -45,19 +90,17 @@ class Profile(commands.GroupCog, name="profile"):
         self.bot = bot
         super().__init__()
 
-    @app_commands.command(name="set", description="Register your main character or your alt")
+    @app_commands.command(
+        name="set", description="Register one of your characters (or update it)"
+    )
     @app_commands.rename(char_class="class")
     @app_commands.describe(
-        character="Main or alt?",
-        name="The character's in-game name",
+        name="The character's in-game name — an existing name updates it",
         char_class="Its class (suggestions offered, free text accepted)",
         role="Its party role",
+        main="Make it your main character (your first one always is)",
     )
     @app_commands.choices(
-        character=[
-            app_commands.Choice(name="Main", value="main"),
-            app_commands.Choice(name="Alt", value="alt"),
-        ],
         role=[
             app_commands.Choice(name="🛡️ Tank", value="tank"),
             app_commands.Choice(name="💚 Heal", value="heal"),
@@ -68,24 +111,66 @@ class Profile(commands.GroupCog, name="profile"):
     async def set(
         self,
         interaction: discord.Interaction,
-        character: app_commands.Choice[str],
         name: app_commands.Range[str, 1, 32],
         char_class: app_commands.Range[str, 1, 32],
         role: app_commands.Choice[str],
+        main: bool = False,
     ):
-        await self.bot.db.set_profile(
-            interaction.guild_id,
-            interaction.user.id,
-            character.value,
-            name.strip(),
-            char_class.strip(),
-            role.value,
+        name, char_class = name.strip(), char_class.strip()
+        characters = await self.bot.db.get_profiles(
+            interaction.guild_id, interaction.user.id
+        )
+        known = {row["char_name"].lower() for row in characters}
+        if name.lower() not in known and len(characters) >= MAX_CHARACTERS:
+            await interaction.response.send_message(
+                f"You've reached {MAX_CHARACTERS} characters — delete one with "
+                "`/profile delete` before adding another.",
+                ephemeral=True,
+            )
+            return
+
+        await self.bot.db.add_character(
+            interaction.guild_id, interaction.user.id,
+            name, char_class, role.value, make_main=main,
+        )
+        was_first = not characters
+        detail = (
+            f"{ROLE_EMOJI[role.value]} **{name}** "
+            f"({char_class}, {ROLE_LABEL[role.value]})"
+        )
+        if main or was_first:
+            note = "It's your **main**: it's the one shown by default in parties."
+        else:
+            note = (
+                "Sign up for an event and you'll get to pick which character "
+                "you're bringing. `/profile main` changes your default."
+            )
+        await interaction.response.send_message(
+            f"✅ Saved: {detail}\n{note}", ephemeral=True
+        )
+
+    @app_commands.command(
+        name="main", description="Choose which of your characters is your main"
+    )
+    @app_commands.describe(character="The character to promote")
+    @app_commands.autocomplete(character=character_autocomplete)
+    async def main(self, interaction: discord.Interaction, character: str):
+        row = await resolve_character(
+            self.bot.db, interaction.guild_id, interaction.user.id, character
+        )
+        if row is None:
+            await interaction.response.send_message(
+                f"You have no character called **{character}**. "
+                "Register it with `/profile set`.",
+                ephemeral=True,
+            )
+            return
+
+        await self.bot.db.set_main_character(
+            interaction.guild_id, interaction.user.id, row["id"]
         )
         await interaction.response.send_message(
-            f"{SLOT_LABEL[character.value]} saved: {ROLE_EMOJI[role.value]} "
-            f"**{name.strip()}** ({char_class.strip()}, {ROLE_LABEL[role.value]}). "
-            f"Your class will now show up in parties! ✅",
-            ephemeral=True,
+            f"⭐ **{row['char_name']}** is now your main.", ephemeral=True
         )
 
     @app_commands.command(name="show", description="See a member's profile")
@@ -109,32 +194,26 @@ class Profile(commands.GroupCog, name="profile"):
 
         embed = discord.Embed(
             title=f"👤 {target.display_name}'s profile",
+            description="\n".join(character_line(row) for row in characters),
             colour=discord.Colour.blurple(),
         )
-        for p in characters:  # main first, then alt
-            embed.add_field(
-                name=SLOT_LABEL[p["slot"]], value=_character_line(p), inline=True
-            )
+        embed.set_footer(
+            text=f"{len(characters)} character(s) • ⭐ = main"
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(
-        name="delete", description="Delete your profile (moderators can target a member)"
+        name="delete", description="Delete one character, or your whole profile"
     )
     @app_commands.describe(
-        character="Which character to remove (default: all)",
+        character="Which character to remove (empty = every one of them)",
         member="Moderators only: whose profile to delete (default: yours)",
     )
-    @app_commands.choices(
-        character=[
-            app_commands.Choice(name="Main", value="main"),
-            app_commands.Choice(name="Alt", value="alt"),
-            app_commands.Choice(name="All", value="all"),
-        ],
-    )
+    @app_commands.autocomplete(character=deletable_autocomplete)
     async def delete(
         self,
         interaction: discord.Interaction,
-        character: app_commands.Choice[str] | None = None,
+        character: str | None = None,
         member: discord.Member | None = None,
     ):
         target = member or interaction.user
@@ -147,8 +226,25 @@ class Profile(commands.GroupCog, name="profile"):
             )
             return
 
-        slot = None if character is None or character.value == "all" else character.value
-        count = await self.bot.db.delete_profile(interaction.guild_id, target.id, slot)
+        row = None
+        if character is not None and character != ALL_CHARACTERS:
+            row = await resolve_character(
+                self.bot.db, interaction.guild_id, target.id, character
+            )
+            if row is None:
+                whose = (
+                    "You have"
+                    if target == interaction.user
+                    else f"{target.display_name} has"
+                )
+                await interaction.response.send_message(
+                    f"{whose} no character called **{character}**.", ephemeral=True
+                )
+                return
+
+        count = await self.bot.db.delete_profile(
+            interaction.guild_id, target.id, None if row is None else row["id"]
+        )
         if count == 0:
             whose = (
                 "You have"
@@ -161,7 +257,10 @@ class Profile(commands.GroupCog, name="profile"):
             return
 
         whose = "Your" if target == interaction.user else f"{target.display_name}'s"
-        what = "profile" if slot is None else f"{SLOT_LABEL[slot]} character"
+        if row is None:
+            what = f"profile ({count} character(s))"
+        else:
+            what = f"character **{row['char_name']}**"
         await interaction.response.send_message(
             f"🗑️ {whose} {what} was deleted.", ephemeral=True
         )
@@ -191,16 +290,17 @@ class Roster(commands.Cog):
             )
             return
 
-        # Group main + alt per member (rows arrive sorted main first).
+        # Group each member's characters (rows arrive sorted, main first).
         by_member: dict[int, list] = {}
-        for p in characters:
-            by_member.setdefault(p["user_id"], []).append(p)
+        for row in characters:
+            by_member.setdefault(row["user_id"], []).append(row)
 
         lines = []
         for user_id, chars in by_member.items():
-            line = f"• <@{user_id}>: {_character_line(chars[0])}"
+            line = f"• <@{user_id}>: {character_line(chars[0], star=False)}"
             if len(chars) > 1:
-                line += f" — alt: {_character_line(chars[1])}"
+                alts = ", ".join(row["char_name"] for row in chars[1:])
+                line += f" — alts: {alts}"
             lines.append(line)
 
         # Safety margin under Discord's 4096-character description limit.
@@ -209,7 +309,7 @@ class Roster(commands.Cog):
             text = text[:3900] + "\n…"
 
         embed = discord.Embed(
-            title=f"📖 Legion roster ({len(by_member)} members)",
+            title=f"📖 Legion roster ({len(by_member)} members, {len(characters)} characters)",
             description=text,
             colour=discord.Colour.blurple(),
         )

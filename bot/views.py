@@ -18,6 +18,105 @@ from .errors import ViewErrorMixin
 from .logic import assign
 
 
+async def refresh_event_message(client, event) -> list:
+    """Redraws an event's message from the database; returns its sign-ups.
+
+    Edits the message by id rather than through the interaction, so the party
+    list also updates when the click came from an ephemeral character picker
+    rather than from the event message itself. Passing no `view` leaves the
+    buttons exactly as they are.
+    """
+    signups = await client.db.get_signups(event["message_id"])
+    classes = await client.db.get_main_classes(
+        event["guild_id"], [s["user_id"] for s in signups]
+    )
+    embed = build_event_embed(event, signups, classes)
+    channel = client.get_channel(event["channel_id"])
+    if channel is None:
+        channel = await client.fetch_channel(event["channel_id"])
+    await channel.get_partial_message(event["message_id"]).edit(embed=embed)
+    return signups
+
+
+def character_option(row, *, default: bool = False) -> discord.SelectOption:
+    """One character as a dropdown entry."""
+    return discord.SelectOption(
+        label=row["char_name"][:100],
+        value=str(row["id"]),
+        description=f"{row['char_class']} · {ROLE_LABEL[row['role']]}"[:100],
+        emoji=config.CLASS_EMOJI.get(row["char_class"]),
+        default=default,
+    )
+
+
+class CharacterSelect(discord.ui.Select):
+    """Which character the member is bringing to this event."""
+
+    def __init__(self, characters: list, current_id: int | None):
+        super().__init__(
+            placeholder="Which character are you bringing?",
+            options=[
+                character_option(row, default=row["id"] == current_id)
+                for row in characters
+            ],
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.chosen(interaction, int(self.values[0]))
+
+
+class CharacterPicker(ViewErrorMixin, discord.ui.View):
+    """The ephemeral menu shown to members who registered several characters.
+
+    Short-lived and private to one member, so it needs no persistence: the
+    event it belongs to is captured on the instance.
+    """
+
+    def __init__(self, signups: "SignupView", event, role: str, characters: list,
+                 current_id: int | None, switching: bool):
+        super().__init__(timeout=180)
+        self.signups = signups
+        self.event = event
+        self.role = role
+        # A member already in the party is only swapping characters; anyone
+        # else is joining (or changing role), which re-queues them.
+        self.switching = switching
+        self.add_item(CharacterSelect(characters, current_id))
+
+    async def chosen(self, interaction: discord.Interaction, character_id: int):
+        db = interaction.client.db
+        character = await db.get_character(
+            self.event["guild_id"], interaction.user.id, character_id
+        )
+        if character is None:  # deleted between opening the menu and picking
+            await interaction.response.edit_message(
+                content="That character doesn't exist any more.", view=None
+            )
+            return
+
+        async with self.signups._locks[self.event["message_id"]]:
+            if self.switching:
+                await db.set_signup_character(
+                    self.event["message_id"], interaction.user.id, character_id
+                )
+                await interaction.response.edit_message(
+                    content=f"🔁 You're bringing **{character['char_name']}** "
+                    f"to **{self.event['title']}**.",
+                    view=None,
+                )
+                await refresh_event_message(interaction.client, self.event)
+                return
+
+            message, party_before = await self.signups.perform_join(
+                interaction, self.event, self.role, character
+            )
+            await interaction.response.edit_message(content=message, view=None)
+            await refresh_event_message(interaction.client, self.event)
+            await self.signups.announce_promoted(
+                interaction, self.event, party_before
+            )
+
+
 class SignupView(ViewErrorMixin, discord.ui.View):
     # One lock per event message, shared across every SignupView instance (a
     # message may be created by one instance and, after a restart, served by
@@ -77,7 +176,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
             await self._refresh(interaction, event)
             await interaction.followup.send("You've left the event. 👋", ephemeral=True)
-            await self._announce_promoted(interaction, event, party_before)
+            await self.announce_promoted(interaction, event, party_before)
 
     @discord.ui.button(
         label="Done", emoji="✅", style=discord.ButtonStyle.success,
@@ -156,43 +255,87 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         if event is None:
             return
 
+        characters = await db.get_profiles(event["guild_id"], interaction.user.id)
         existing = await db.get_signup(event["message_id"], interaction.user.id)
-        if existing and existing["role"] == role:
+        already_in_this_role = existing is not None and existing["role"] == role
+
+        if already_in_this_role and len(characters) < 2:
             await interaction.response.send_message(
                 f"You're already signed up as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**.",
                 ephemeral=True,
             )
             return
 
-        async with self._locks[event["message_id"]]:
-            party_before, _ = assign(
-                event["compo"], event["size"],
-                await db.get_signups(event["message_id"]),
+        # Members with several characters say which one they're bringing;
+        # everyone else is signed up straight away, as before.
+        if len(characters) > 1:
+            picker = CharacterPicker(
+                self, event, role, characters,
+                current_id=existing["character_id"] if existing else None,
+                switching=already_in_this_role,
             )
-            await db.upsert_signup(
-                event["message_id"],
-                interaction.user.id,
-                interaction.user.display_name,
-                role,
-                time.time(),
+            intro = (
+                f"You're already {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}** — "
+                "pick the character you're bringing:"
+                if already_in_this_role
+                else f"Signing up as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**. "
+                "Which character are you bringing?"
             )
+            await interaction.response.send_message(
+                intro, view=picker, ephemeral=True
+            )
+            return
 
-            signups = await self._refresh(interaction, event)
-            party, waitlist = assign(event["compo"], event["size"], signups)
-            if any(s["user_id"] == interaction.user.id for s in party):
-                message = f"You're in as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**! ✅"
-            else:
-                position = next(
-                    i for i, s in enumerate(waitlist, start=1)
-                    if s["user_id"] == interaction.user.id
-                )
-                message = (
-                    f"It's full for now: you're on the **waitlist** "
-                    f"(position {position}) as {ROLE_EMOJI[role]} {ROLE_LABEL[role]}. "
-                    f"You'll be moved in automatically if a spot opens up. ⏳"
-                )
-            await interaction.followup.send(message, ephemeral=True)
-            await self._announce_promoted(interaction, event, party_before)
+        async with self._locks[event["message_id"]]:
+            message, party_before = await self.perform_join(
+                interaction, event, role, characters[0] if characters else None
+            )
+            await interaction.response.send_message(message, ephemeral=True)
+            await refresh_event_message(interaction.client, event)
+            await self.announce_promoted(interaction, event, party_before)
+
+    async def perform_join(self, interaction: discord.Interaction, event, role: str,
+                           character) -> tuple[str, list]:
+        """Signs the member up and redraws the event.
+
+        Returns the reply to show them and the party as it stood beforehand,
+        which the caller passes to announce_promoted. Callers hold the event's
+        lock around this, answer the interaction with the returned message and
+        only then redraw the event: an interaction left unanswered for three
+        seconds is dropped by Discord, so the HTTP edit must come after.
+        """
+        db = interaction.client.db
+        party_before, _ = assign(
+            event["compo"], event["size"],
+            await db.get_signups(event["message_id"]),
+        )
+        await db.upsert_signup(
+            event["message_id"],
+            interaction.user.id,
+            interaction.user.display_name,
+            role,
+            time.time(),
+            character["id"] if character else None,
+        )
+
+        signups = await db.get_signups(event["message_id"])
+        party, waitlist = assign(event["compo"], event["size"], signups)
+        who = f" with **{character['char_name']}**" if character else ""
+        if any(s["user_id"] == interaction.user.id for s in party):
+            message = (
+                f"You're in as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**{who}! ✅"
+            )
+        else:
+            position = next(
+                i for i, s in enumerate(waitlist, start=1)
+                if s["user_id"] == interaction.user.id
+            )
+            message = (
+                f"It's full for now: you're on the **waitlist** "
+                f"(position {position}) as {ROLE_EMOJI[role]} {ROLE_LABEL[role]}"
+                f"{who}. You'll be moved in automatically if a spot opens up. ⏳"
+            )
+        return message, party_before
 
     async def _open_event(self, interaction: discord.Interaction):
         """Finds the event tied to the clicked message, if it's still open."""
@@ -224,7 +367,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
         return signups
 
-    async def _announce_promoted(self, interaction, event, party_before: list):
+    async def announce_promoted(self, interaction, event, party_before: list):
         """Publicly notifies players promoted from the waitlist to the party."""
         signups = await interaction.client.db.get_signups(event["message_id"])
         party, _ = assign(event["compo"], event["size"], signups)

@@ -15,6 +15,7 @@ from discord.ext import commands
 
 from .. import config
 from ..errors import ModalErrorMixin, ViewErrorMixin
+from ..logic import MAX_CHARACTERS
 from ..utils.onboarding import onboard_custom_id, role_just_added, should_onboard
 from .profiles import AION_CLASSES
 
@@ -28,14 +29,15 @@ ROLE_OPTIONS = (
 )
 ROLE_LABELS = {value: label for value, label, _ in ROLE_OPTIONS}
 
-# The two character slots a member can register (bilingual labels).
+# The form is the same whether it registers the first character or another
+# one; only the wording changes (bilingual labels).
 SLOT_SETUP_TITLE = {
     "main": "📝 Set up your profile / Configurer ton profil",
-    "alt": "📝 Add an alt / Ajouter un reroll",
+    "alt": "📝 Add a character / Ajouter un personnage",
 }
 SLOT_MODAL_TITLE = {
     "main": "Main character / Personnage principal",
-    "alt": "Alt character / Reroll",
+    "alt": "Another character / Autre personnage",
 }
 
 
@@ -167,30 +169,49 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         name = self.char_name.value.strip()
-        await interaction.client.db.set_profile(
-            self.guild_id, interaction.user.id, self.slot,
-            name, self.char_class, self.role,
+        db = interaction.client.db
+        characters = await db.get_profiles(self.guild_id, interaction.user.id)
+        known = {row["char_name"].lower() for row in characters}
+        if name.lower() not in known and len(characters) >= MAX_CHARACTERS:
+            await interaction.response.send_message(
+                f"You've reached {MAX_CHARACTERS} characters — remove one with "
+                "`/profile delete` first.\n*Tu as atteint "
+                f"{MAX_CHARACTERS} personnages — supprimes-en un avec "
+                "`/profile delete`.*",
+                ephemeral=self.ephemeral,
+            )
+            return
+
+        await db.add_character(
+            self.guild_id, interaction.user.id, name, self.char_class, self.role
         )
         emoji = config.CLASS_EMOJI.get(self.char_class, "")
         detail = f"**{name}** — {emoji} {self.char_class}, {ROLE_LABELS[self.role]}"
-        if self.slot == "main":
-            # Offer to register an alt right away; adding one later works too
-            # via /profile set character: Alt.
-            view = AddAltView(self.guild_id, self.guild_name, self.ephemeral)
-            await interaction.response.send_message(
-                f"✅ All set! Your main is {detail}. Want to add an alt?\n"
-                f"*C'est fait ! Ton perso principal est {detail}. Ajouter un reroll ?*",
-                view=view, ephemeral=self.ephemeral,
+        if characters:
+            text = (
+                f"✅ Character added: {detail}. Another one?\n"
+                f"*Personnage ajouté : {detail}. Un autre ?*"
             )
         else:
-            await interaction.response.send_message(
-                f"✅ Alt added: {detail}.\n*Reroll ajouté : {detail}.*",
-                ephemeral=self.ephemeral,
+            text = (
+                f"✅ All set! Your main is {detail}. Want to add another character?\n"
+                f"*C'est fait ! Ton perso principal est {detail}. "
+                "Ajouter un autre personnage ?*"
             )
+        # Keep offering the button until they hit the cap; /profile set adds
+        # more later just as well.
+        view = (
+            AddAltView(self.guild_id, self.guild_name, self.ephemeral)
+            if len(characters) + 1 < MAX_CHARACTERS
+            else discord.utils.MISSING
+        )
+        await interaction.response.send_message(
+            text, view=view, ephemeral=self.ephemeral
+        )
 
 
 class AddAltView(ViewErrorMixin, discord.ui.View):
-    """A single button, shown after the main is set, to register an alt too."""
+    """A single button, shown after each character, to register one more."""
 
     def __init__(self, guild_id: int, guild_name: str, ephemeral: bool):
         super().__init__(timeout=600)
@@ -199,7 +220,7 @@ class AddAltView(ViewErrorMixin, discord.ui.View):
         self.ephemeral = ephemeral
 
     @discord.ui.button(
-        label="Add an alt / Ajouter un reroll", emoji="➕",
+        label="Add a character / Ajouter un personnage", emoji="➕",
         style=discord.ButtonStyle.secondary,
     )
     async def add_alt(self, interaction: discord.Interaction, _):
