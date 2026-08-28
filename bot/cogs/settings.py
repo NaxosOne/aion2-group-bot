@@ -2,6 +2,7 @@
 
 import discord
 from discord import app_commands
+from discord.app_commands import locale_str
 from discord.ext import commands
 
 from .. import i18n
@@ -21,9 +22,16 @@ class Settings(commands.Cog):
 
     @app_commands.command(
         name="language",
-        description="Set the language Kisk uses on this server",
+        description=locale_str(
+            "Set the language Kisk uses on this server",
+            key="commands.language.description",
+        ),
     )
-    @app_commands.describe(choice="The language for this server")
+    @app_commands.describe(
+        choice=locale_str(
+            "The language for this server", key="commands.language.choice"
+        )
+    )
     @app_commands.choices(choice=[
         app_commands.Choice(name="Français", value="fr"),
         app_commands.Choice(name="English", value="en"),
