@@ -122,6 +122,11 @@ Clicking the same role again swaps character without losing your place in the
 queue. Players with a single character (or none) are signed up straight away,
 exactly as before.
 
+**Open seats are visible at a glance.** While a standard party still has room,
+each role field shows its empty seats as faded `◦ open` lines, and a short
+**Needs: 1 Tank, 2 DPS** summary sits under the header — so players can see
+what the group is missing and fill the right role.
+
 ### 🪑 Smart waitlist
 
 When an event is full, additional players are automatically placed on the waitlist.

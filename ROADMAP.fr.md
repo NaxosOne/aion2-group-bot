@@ -28,6 +28,7 @@ Les fondations sont en place :
 * Sélecteur de personnage à l'inscription — les joueurs ayant plusieurs personnages enregistrés choisissent celui qu'ils amènent après avoir choisi un rôle, chacun affiché avec son icône de classe Aion 2 ; `/profile set` restreint les personnages à la liste de classes connues
 * Réordonnancement de la file par les admins — un bouton « Gérer la file » (admins uniquement) permet de faire monter ou descendre les inscriptions pour promouvoir des joueurs en attente ; les places par rôle restent respectées et tout joueur poussé dans la party est notifié
 * Modifier un événement publié — un bouton « Modifier » (créateur ou modérateur) change le titre, l'heure ou la description ; replanifier ré-arme le rappel et l'invite RSVP et pingue la party
+* Visibilité des places libres — un événement standard en cours affiche ses places vides par rôle et un résumé « Manque : 1 Tank, 2 DPS » jusqu'à ce qu'il soit complet
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 
