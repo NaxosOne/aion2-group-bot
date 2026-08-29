@@ -8,6 +8,11 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Temporary voice channels** — opt in with `/channels voice: <category>` and
+  each scheduled event gets a "🔊 <title>" voice channel around its reminder
+  window, cleaned up when the event is done/cancelled (or a few hours after it
+  starts). Needs Manage Channels. First step of the Phase 2 *Legion scheduling*
+  work.
 - **Configurable Kisk admin role** — `/admin-role` lets a server appoint a role
   that Kisk treats as an admin (and therefore moderator), so trusted members get
   admin powers without Discord's Manage Server. Setting it still requires Manage

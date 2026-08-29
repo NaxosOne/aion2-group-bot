@@ -338,6 +338,21 @@ message, so the party can coordinate without flooding the channel. It works for
 both `/event` and the panel. If the bot lacks the **Create Public Threads**
 permission, Kisk simply skips it — the event is still created.
 
+### 🔊 Temporary voice channels
+
+Point Kisk at a category once and every **scheduled** event gets its own
+temporary voice channel:
+
+```text
+/channels voice: <category>
+```
+
+The channel (**🔊 <event title>**) is created around the reminder window before
+the event so the party can gather early, and removed when the event is marked
+**Done** or **cancelled** — with a safety cleanup a few hours after the start in
+case nobody presses Done. It needs the **Manage Channels** permission; without a
+configured category the feature stays off.
+
 ### 🎛️ No-command panel
 
 Moderators can use:

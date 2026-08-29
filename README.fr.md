@@ -344,6 +344,22 @@ attaché à son message, pour que le groupe se coordonne sans polluer le salon.
 **Create Public Threads**, Kisk saute simplement cette étape — l'événement est
 quand même créé.
 
+### 🔊 Salons vocaux temporaires
+
+Désigne une catégorie une fois et chaque événement **planifié** obtient son
+propre salon vocal temporaire :
+
+```text
+/channels voice: <catégorie>
+```
+
+Le salon (**🔊 <titre de l'événement>**) est créé autour de la fenêtre de rappel
+avant l'événement pour que le groupe se rassemble en avance, et supprimé quand
+l'événement est marqué **Terminé** ou **annulé** — avec un nettoyage de sécurité
+quelques heures après le début si personne ne clique Terminer. Il faut la
+permission **Gérer les salons** ; sans catégorie configurée, la fonction reste
+désactivée.
+
 ### 🎛️ Panneau sans commande
 
 Les modérateurs peuvent utiliser :
