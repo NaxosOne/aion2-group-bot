@@ -204,13 +204,22 @@ class Groups(commands.Cog):
             now, config.REMINDER_MINUTES * 60
         )
         for ev in events:
-            await self.bot.db.mark_reminded(ev["message_id"])
+            # Atomic claim: skip if it was cancelled/completed (or already
+            # reminded) between the due-query and now.
+            if not await self.bot.db.mark_reminded(ev["message_id"]):
+                continue
             if ev["starts_at"] < now - 600:
                 # The bot was offline and the event is long past: no point in
                 # sending a late reminder.
                 continue
+            # Re-read as late as possible: a moderator often cancels right
+            # before the start, exactly when this fires, so don't ping a party
+            # for an event that was cancelled after the claim.
+            event = await self.bot.db.get_event(ev["message_id"])
+            if event is None or event["status"] != "open":
+                continue
             try:
-                await self._send_reminder(ev)
+                await self._send_reminder(event)
             except discord.HTTPException:
                 pass  # channel deleted or permissions revoked: skip
 
@@ -251,8 +260,10 @@ class Groups(commands.Cog):
         now = int(time.time())
         events = await self.bot.db.events_to_rsvp(now, config.RSVP_MINUTES * 60)
         for ev in events:
-            # Claim first so the prompt is posted at most once, even on errors.
-            await self.bot.db.mark_rsvp_sent(ev["message_id"])
+            # Atomic claim (posted at most once): skip if cancelled/completed
+            # or already claimed between the due-query and now.
+            if not await self.bot.db.mark_rsvp_sent(ev["message_id"]):
+                continue
             if ev["starts_at"] < now:
                 continue  # already started: nothing to ask
             try:
@@ -260,8 +271,13 @@ class Groups(commands.Cog):
                 party, _ = assign(ev["compo"], ev["size"], signups)
                 if not party:
                     continue  # nobody signed up
-                prompt = await self._send_rsvp(ev, party)
-                await self.bot.db.set_rsvp_prompt_id(ev["message_id"], prompt.id)
+                # Re-read right before sending: a cancellation landing after the
+                # claim must not still ping the party for a cancelled event.
+                event = await self.bot.db.get_event(ev["message_id"])
+                if event is None or event["status"] != "open":
+                    continue
+                prompt = await self._send_rsvp(event, party)
+                await self.bot.db.set_rsvp_prompt_id(event["message_id"], prompt.id)
             except discord.HTTPException:
                 pass  # channel deleted or permissions revoked: skip
 
