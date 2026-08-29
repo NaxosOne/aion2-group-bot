@@ -28,6 +28,26 @@ def standard_slots(size: int) -> dict:
     return {role: n * groups for role, n in STANDARD_RATIO.items()}
 
 
+MOVE_UP = "up"
+MOVE_DOWN = "down"
+
+
+def reorder_priorities(ordered_ids: list, user_id, direction: str) -> dict:
+    """Swap a sign-up with its neighbour and return the new priority map.
+
+    `ordered_ids`: the sign-ups' user ids in their current ranking (highest
+    first). Returns `{user_id: priority}` with dense, strictly descending
+    priorities so the swapped ranking is unambiguous. Moving the top entry up
+    or the bottom entry down leaves the order untouched.
+    """
+    ranking = list(ordered_ids)
+    index = ranking.index(user_id)
+    neighbour = index - 1 if direction == MOVE_UP else index + 1
+    if 0 <= neighbour < len(ranking):
+        ranking[index], ranking[neighbour] = ranking[neighbour], ranking[index]
+    return {uid: len(ranking) - position for position, uid in enumerate(ranking)}
+
+
 def signup_priority(signup) -> int:
     """Manual ordering override for a sign-up, defaulting to 0.
 
