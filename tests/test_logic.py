@@ -1,6 +1,14 @@
 """Tests for the party/waitlist split. Run: pytest"""
 
-from bot.logic import COMPO_OPEN, COMPO_STANDARD, assign, standard_slots
+from bot.logic import (
+    MOVE_DOWN,
+    MOVE_UP,
+    COMPO_OPEN,
+    COMPO_STANDARD,
+    assign,
+    reorder_priorities,
+    standard_slots,
+)
 
 
 def s(user_id, role):
@@ -112,3 +120,36 @@ def test_priority_missing_key_defaults_to_zero():
     party, waitlist = assign(COMPO_OPEN, 2, signups)
     assert ids(party) == [3, 1]
     assert ids(waitlist) == [2]
+
+
+def order_of(priorities):
+    """The ranking implied by a {user_id: priority} map (highest first)."""
+    return sorted(priorities, key=lambda uid: priorities[uid], reverse=True)
+
+
+def test_move_up_swaps_with_predecessor():
+    # 3 climbs one rank, over 2.
+    result = reorder_priorities([1, 2, 3, 4], 3, MOVE_UP)
+    assert order_of(result) == [1, 3, 2, 4]
+
+
+def test_move_down_swaps_with_successor():
+    # 2 drops one rank, under 3 (mirror of moving 3 up).
+    result = reorder_priorities([1, 2, 3, 4], 2, MOVE_DOWN)
+    assert order_of(result) == [1, 3, 2, 4]
+
+
+def test_move_up_at_top_is_noop():
+    result = reorder_priorities([1, 2, 3], 1, MOVE_UP)
+    assert order_of(result) == [1, 2, 3]
+
+
+def test_move_down_at_bottom_is_noop():
+    result = reorder_priorities([1, 2, 3], 3, MOVE_DOWN)
+    assert order_of(result) == [1, 2, 3]
+
+
+def test_reorder_priorities_are_strictly_descending():
+    # Dense, distinct ranks let a later swap stay unambiguous.
+    result = reorder_priorities([1, 2, 3], 3, MOVE_UP)
+    assert result == {1: 3, 3: 2, 2: 1}
