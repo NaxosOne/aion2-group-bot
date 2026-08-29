@@ -674,9 +674,17 @@ Le ping `@everyone` est réservé aux modérateurs.
 ## Panneau & salons
 
 ```text
-/panel                                          → publier le panneau à boutons
+/panel                                          → publier le panneau, ou rafraîchir l'existant
 /channels events: #events absences: #absences rsvp: #rsvp   → où sont postés les résultats
+/redeploy                                       → rafraîchir le panneau + les events ouverts (admins)
 ```
+
+Relancer **`/panel`** édite le panneau déjà posté (pas de doublon).
+**`/redeploy`** (admins) ré-affiche chaque événement ouvert avec les derniers
+boutons et embed et rafraîchit le panneau — à lancer une fois après une mise à
+jour du bot pour que les messages déjà postés récupèrent les nouveautés. Un
+panneau posté avant l'existence de cette fonction n'est pas encore suivi :
+relance `/panel` une fois pour l'enregistrer.
 
 ## Langue
 
