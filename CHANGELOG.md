@@ -8,6 +8,9 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Recurring events** — `/event … repeat: Weekly` (moderators) makes an event
+  repeat every week; Kisk posts each instance a day ahead. Manage them with
+  `/recurring list` and `/recurring stop`.
 - **Calendar export** — a Calendar button on any event returns an `.ics` file of
   the server's upcoming scheduled events, to import into a personal calendar.
 - **Temporary voice channels** — opt in with `/channels voice: <category>` and

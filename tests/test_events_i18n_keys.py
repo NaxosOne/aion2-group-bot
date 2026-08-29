@@ -34,6 +34,15 @@ EVENT_KEYS = {
         "size": 5,
     },
     "events.waitlist_suffix": {"n": 2},
+    # cogs/groups.py recurring events
+    "recurring.mod_only": {},
+    "recurring.needs_time": {},
+    "recurring.created": {"title": "Raid", "when": "<t:1:F>"},
+    "recurring.list_empty": {},
+    "recurring.list_header": {},
+    "recurring.list_line": {"id": 3, "title": "Raid", "when": "<t:1:F>"},
+    "recurring.stopped": {"id": 3},
+    "recurring.not_found": {"id": 3},
     # embeds.py "still needed" summary
     "event.needs": {"roles": "1 🛡️ Tank"},
     "event.needs_role": {"n": 1, "emoji": "🛡️", "label": "Tank"},

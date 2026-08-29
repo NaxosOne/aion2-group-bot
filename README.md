@@ -204,6 +204,23 @@ form (type, composition and size stay fixed). Rescheduling re-arms the reminder
 and the "are you coming?" prompt against the new time and pings the party;
 clearing the time field drops the schedule.
 
+### 🔁 Recurring events
+
+Moderators can make an event repeat every week. Add `repeat: Weekly` to `/event`
+(a time is required):
+
+```text
+/event title: Legion Raid type: Raid comp: Party of 10 when: tuesday 21:00 repeat: Weekly
+```
+
+Kisk posts each week's event **a day ahead** so players have time to sign up.
+Manage them with:
+
+```text
+/recurring list          → the server's recurring events, with their ids
+/recurring stop id: 3    → stop one (moderators)
+```
+
 ### ❌ Cancellation
 
 The event creator or a moderator can cancel an event.

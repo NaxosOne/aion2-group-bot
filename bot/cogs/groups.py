@@ -8,10 +8,13 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config, i18n
-from ..actions import publish_event
+from ..actions import post_event, publish_event, resolve_channel
 from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
+from ..utils.mentions import ping_permitted
 from ..utils.messages import parse_message_id
+from ..utils.permissions import member_is_moderator
+from ..utils.recurrence import next_weekly, recurrence_due
 from ..utils.time_parse import ParseError, parse_when
 from ..utils.voice import voice_channel_name, voice_due, voice_is_stale
 from ..views import RSVPView
@@ -19,6 +22,10 @@ from ..views import RSVPView
 # A temporary voice channel is cleaned up this long after the event's start
 # even if nobody pressed Done.
 VOICE_CLEANUP_GRACE = 3 * 60 * 60
+
+# A recurring event's instance is posted this long before its occurrence, so
+# players have time to sign up.
+RECURRENCE_LEAD = 24 * 60 * 60
 
 
 @app_commands.guild_only()
@@ -32,12 +39,14 @@ class Groups(commands.Cog):
         self.reminders.start()
         self.rsvp_prompts.start()
         self.voice_channels.start()
+        self.recurring_events.start()
         self.status.start()
 
     async def cog_unload(self):
         self.reminders.cancel()
         self.rsvp_prompts.cancel()
         self.voice_channels.cancel()
+        self.recurring_events.cancel()
         self.status.cancel()
 
     # ----- /event -----
@@ -52,8 +61,12 @@ class Groups(commands.Cog):
         size="Number of slots in open mode (default: 5). Ignored for standard parties.",
         description="Extra info: required level, voice channel, etc.",
         ping="Optional: a role to notify (e.g. @Aion2). @everyone is moderators only.",
+        repeat="Repeat this event automatically (moderators). Needs a time.",
     )
     @app_commands.choices(
+        repeat=[
+            app_commands.Choice(name="Weekly", value="weekly"),
+        ],
         activity=[
             app_commands.Choice(name="🏰 Dungeon", value="Dungeon"),
             app_commands.Choice(name="🐉 Raid", value="Raid"),
@@ -84,10 +97,11 @@ class Groups(commands.Cog):
         size: app_commands.Range[int, 2, 25] | None = None,
         description: app_commands.Range[str, 1, 500] | None = None,
         ping: discord.Role | None = None,
+        repeat: app_commands.Choice[str] | None = None,
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         starts_at = None
         if when:
-            lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
             try:
                 starts_at = int(
                     parse_when(when, config.TIMEZONE, lang=lang).timestamp()
@@ -102,6 +116,15 @@ class Groups(commands.Cog):
         else:
             comp_mode, party_size = COMPO_STANDARD, 10 if comp.value == "standard10" else 5
 
+        if repeat is not None:
+            await self._create_recurrence(
+                interaction, lang,
+                title=title, activity=activity.value, comp_mode=comp_mode,
+                size=party_size, starts_at=starts_at, description=description,
+                ping=ping,
+            )
+            return
+
         await publish_event(
             interaction,
             title=title,
@@ -111,6 +134,88 @@ class Groups(commands.Cog):
             starts_at=starts_at,
             description=description,
             ping_role=ping,
+        )
+
+    async def _create_recurrence(
+        self, interaction, lang, *, title, activity, comp_mode, size,
+        starts_at, description, ping,
+    ):
+        """Stores a weekly recurrence; the loop posts each instance in advance."""
+        if not await member_is_moderator(self.bot.db, interaction.user):
+            await interaction.response.send_message(
+                i18n.t("recurring.mod_only", lang), ephemeral=True
+            )
+            return
+        if starts_at is None:
+            await interaction.response.send_message(
+                i18n.t("recurring.needs_time", lang), ephemeral=True
+            )
+            return
+        if ping is not None and not ping_permitted(
+            is_default_role=ping.is_default(),
+            is_moderator=True,  # already a moderator by the check above
+        ):
+            await interaction.response.send_message(
+                i18n.t("event.mod_only_everyone", lang), ephemeral=True
+            )
+            return
+        channel = await resolve_channel(interaction, "event_channel_id")
+        await self.bot.db.create_recurrence(
+            guild_id=interaction.guild_id,
+            channel_id=channel.id,
+            creator_id=interaction.user.id,
+            creator_name=interaction.user.display_name,
+            title=title,
+            activity=activity,
+            description=description,
+            compo=comp_mode,
+            size=size,
+            ping_role_id=ping.id if ping else None,
+            next_at=starts_at,
+        )
+        await interaction.response.send_message(
+            i18n.t("recurring.created", lang, title=title, when=f"<t:{starts_at}:F>"),
+            ephemeral=True,
+        )
+
+    # ----- /recurring: manage recurring events -----
+
+    recurring = app_commands.Group(
+        name="recurring", description="Manage recurring events (moderators)"
+    )
+
+    @recurring.command(name="list", description="List this server's recurring events")
+    async def recurring_list(self, interaction: discord.Interaction):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
+        recs = await self.bot.db.list_recurrences(interaction.guild_id)
+        if not recs:
+            await interaction.response.send_message(
+                i18n.t("recurring.list_empty", lang), ephemeral=True
+            )
+            return
+        lines = [
+            i18n.t("recurring.list_line", lang,
+                   id=r["id"], title=r["title"], when=f"<t:{r['next_at']}:F>")
+            for r in recs
+        ]
+        await interaction.response.send_message(
+            i18n.t("recurring.list_header", lang) + "\n" + "\n".join(lines),
+            ephemeral=True,
+        )
+
+    @recurring.command(name="stop", description="Stop a recurring event by id")
+    @app_commands.describe(id="The recurrence id (from /recurring list)")
+    async def recurring_stop(self, interaction: discord.Interaction, id: int):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
+        if not await member_is_moderator(self.bot.db, interaction.user):
+            await interaction.response.send_message(
+                i18n.t("recurring.mod_only", lang), ephemeral=True
+            )
+            return
+        stopped = await self.bot.db.deactivate_recurrence(id, interaction.guild_id)
+        key = "recurring.stopped" if stopped else "recurring.not_found"
+        await interaction.response.send_message(
+            i18n.t(key, lang, id=id), ephemeral=True
         )
 
     # ----- /events -----
@@ -388,6 +493,56 @@ class Groups(commands.Cog):
             except discord.HTTPException:
                 pass  # already gone or no permission
         await self.bot.db.clear_voice_channel(message_id)
+
+    # ----- Recurring events -----
+
+    @tasks.loop(seconds=60)
+    async def recurring_events(self):
+        now = int(time.time())
+        for rec in await self.bot.db.recurrences_due(now, RECURRENCE_LEAD):
+            if not recurrence_due(rec["next_at"], now, RECURRENCE_LEAD):
+                continue
+            occurrence = rec["next_at"]
+            # Claim atomically: advance to the next occurrence so only the
+            # winning tick posts this instance.
+            if not await self.bot.db.advance_recurrence(
+                rec["id"], occurrence, next_weekly(occurrence, now)
+            ):
+                continue
+            try:
+                await self._post_recurring_instance(rec, occurrence)
+            except Exception:
+                continue  # channel gone/permissions/persist: skip this instance
+
+    @recurring_events.before_loop
+    async def _wait_ready_recurring(self):
+        await self.bot.wait_until_ready()
+
+    async def _post_recurring_instance(self, rec, occurrence: int):
+        guild = self.bot.get_guild(rec["guild_id"])
+        if guild is None:
+            return
+        channel = guild.get_channel(rec["channel_id"])
+        if channel is None or not hasattr(channel, "send"):
+            return
+        lang = await i18n.resolve_lang(self.bot.db, guild)
+        ping_role = (
+            guild.get_role(rec["ping_role_id"]) if rec["ping_role_id"] else None
+        )
+        event = {
+            "channel_id": channel.id,
+            "guild_id": rec["guild_id"],
+            "creator_id": rec["creator_id"],
+            "creator_name": rec["creator_name"],
+            "title": rec["title"],
+            "activity": rec["activity"],
+            "description": rec["description"],
+            "compo": rec["compo"],
+            "size": rec["size"],
+            "starts_at": occurrence,
+            "status": "open",
+        }
+        await post_event(self.bot, channel, event, lang, ping_role)
 
     # ----- Bot status: the next event -----
 

@@ -209,6 +209,23 @@ via le bouton **Modifier** : changer le **titre**, l'**heure** ou la
 restent fixes). Replanifier ré-arme le rappel et l'invite « tu viens ? » sur la
 nouvelle heure et pingue la party ; vider le champ heure retire l'horaire.
 
+### 🔁 Événements récurrents
+
+Les modérateurs peuvent faire répéter un événement chaque semaine. Ajoute
+`repeat: Weekly` à `/event` (une heure est requise) :
+
+```text
+/event title: Raid de légion type: Raid comp: Groupe de 10 when: mardi 21:00 repeat: Weekly
+```
+
+Kisk poste l'événement de chaque semaine **un jour à l'avance** pour laisser le
+temps de s'inscrire. Gère-les avec :
+
+```text
+/recurring list          → les événements récurrents du serveur, avec leurs ids
+/recurring stop id: 3    → en arrêter un (modérateurs)
+```
+
 ### ❌ Annulation
 
 Le créateur de l'événement ou un modérateur peut annuler un événement.
