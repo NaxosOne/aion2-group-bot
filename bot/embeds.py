@@ -3,7 +3,7 @@
 import discord
 
 from . import config, i18n
-from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
+from .logic import COMPO_STANDARD, ROLES, assign, missing_slots, standard_slots
 from .utils.rsvp import rsvp_summary
 
 def _with_legacy_labels(mapping: dict) -> dict:
@@ -79,6 +79,19 @@ def _names(members: list, classes: dict) -> str:
     )
 
 
+def _role_field_value(
+    members: list, classes: dict, open_count: int, lang: str
+) -> str:
+    """A role field: its members, then one faded line per still-open seat."""
+    parts = []
+    if members:
+        parts.append(_names(members, classes))
+    if open_count > 0:
+        slot = i18n.t("event.open_slot", lang)
+        parts.extend([f"◦ *{slot}*"] * open_count)
+    return "\n".join(parts) if parts else "*—*"
+
+
 def build_event_embed(
     event, signups: list, classes: dict | None = None, lang: str = "en"
 ) -> discord.Embed:
@@ -111,6 +124,22 @@ def build_event_embed(
     if event["description"]:
         lines.append(event["description"])
 
+    # A "still needed" summary nudges players to fill the right roles. Only for
+    # a live standard event that isn't full yet (open mode already shows n/size).
+    open_event = not cancelled and not completed
+    missing = (
+        missing_slots(event["compo"], event["size"], signups) if open_event else {}
+    )
+    if missing:
+        roles_txt = ", ".join(
+            i18n.t(
+                "event.needs_role", lang,
+                n=missing[role], emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role],
+            )
+            for role in ROLES if role in missing
+        )
+        lines.append(i18n.t("event.needs", lang, roles=roles_txt))
+
     if cancelled:
         colour = COLOUR_CANCELLED
     elif completed:
@@ -131,7 +160,9 @@ def build_event_embed(
                     f"{ROLE_EMOJI[role]} {ROLE_LABEL[role]} "
                     f"({len(by_role[role])}/{slots[role]})"
                 ),
-                value=_names(by_role[role], classes),
+                value=_role_field_value(
+                    by_role[role], classes, missing.get(role, 0), lang
+                ),
                 inline=True,
             )
     else:

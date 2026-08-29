@@ -24,6 +24,31 @@ def party_text(embed) -> str:
     return "\n".join(field.value for field in embed.fields)
 
 
+def test_needs_summary_lists_the_open_roles():
+    embed = build_event_embed(EVENT, [signup(10, "tank")])
+    assert "Needs:" in (embed.description or "")
+
+
+def test_open_seats_are_shown_in_role_fields():
+    embed = build_event_embed(EVENT, [signup(10, "tank")])
+    assert "◦ *open*" in party_text(embed)
+
+
+def test_full_standard_party_has_no_needs_summary():
+    full = [
+        signup(1, "tank"), signup(2, "heal"),
+        signup(3, "dps"), signup(4, "dps"), signup(5, "dps"),
+    ]
+    embed = build_event_embed(EVENT, full)
+    assert "Needs" not in (embed.description or "")
+    assert "open" not in party_text(embed)
+
+
+def test_cancelled_event_has_no_needs_summary():
+    embed = build_event_embed({**EVENT, "status": "cancelled"}, [signup(10, "tank")])
+    assert "Needs" not in (embed.description or "")
+
+
 def test_the_chosen_character_is_named():
     embed = build_event_embed(EVENT, [signup(10, "tank", "Kratos", "Templar")])
     assert "*Kratos (Templar)*" in party_text(embed)
