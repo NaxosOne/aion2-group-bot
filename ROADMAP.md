@@ -30,12 +30,12 @@ The foundations are in place:
 * Edit a posted event — an "Edit" button (creator or moderator) changes the title, time or description; rescheduling re-arms the reminder and RSVP prompt and pings the party
 * Open-seat visibility — a live standard event shows its empty seats per role and a "Needs: 1 Tank, 2 DPS" summary until it fills up
 
-## 🟢 Phase 1 — Better group organisation
+## ✅ Phase 1 — Better group organisation *(complete)*
 
-Make creating and managing groups as frictionless as possible.
-
-* [ ] Improved event and party UX
-* [ ] More flexible party compositions (custom ratios)
+Creating and managing groups is now frictionless: timezone-aware schedules,
+role-aware parties, character sign-up, automatic waitlist promotion, admin
+queue reordering, open-seat visibility and event editing are all in place. See
+**Already shipped** above for the details.
 
 ## 🔵 Phase 2 — Legion scheduling
 
@@ -71,6 +71,7 @@ Give organisers a clearer view of what's happening.
 
 Some ideas are interesting, but aren't currently priorities:
 
+* More flexible party compositions (custom role ratios)
 * Loot rolls
 * Birthdays
 * Screenshot hall of fame

@@ -30,12 +30,12 @@ Les fondations sont en place :
 * Modifier un événement publié — un bouton « Modifier » (créateur ou modérateur) change le titre, l'heure ou la description ; replanifier ré-arme le rappel et l'invite RSVP et pingue la party
 * Visibilité des places libres — un événement standard en cours affiche ses places vides par rôle et un résumé « Manque : 1 Tank, 2 DPS » jusqu'à ce qu'il soit complet
 
-## 🟢 Phase 1 — Meilleure organisation des groupes
+## ✅ Phase 1 — Meilleure organisation des groupes *(terminée)*
 
-Rendre la création et la gestion des groupes aussi fluides que possible.
-
-* [ ] UX améliorée des événements et des groupes
-* [ ] Compositions de groupe plus flexibles (ratios personnalisés)
+La création et la gestion des groupes sont désormais fluides : horaires
+localisés, groupes par rôle, inscription par personnage, promotion automatique
+de la file, réordonnancement admin, visibilité des places libres et édition
+d'événement sont en place. Voir **Déjà livré** ci-dessus pour le détail.
 
 ## 🔵 Phase 2 — Planification de légion
 
@@ -71,6 +71,7 @@ Donner aux organisateurs une vision plus claire de ce qui se passe.
 
 Certaines idées sont intéressantes, mais ne sont pas prioritaires actuellement :
 
+* Compositions de groupe plus flexibles (ratios de rôles personnalisés)
 * Jets de butin (loot rolls)
 * Anniversaires
 * Hall of fame de screenshots
