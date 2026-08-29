@@ -6,6 +6,7 @@ from bot.logic import (
     COMPO_OPEN,
     COMPO_STANDARD,
     assign,
+    missing_slots,
     reorder_priorities,
     standard_slots,
 )
@@ -120,6 +121,35 @@ def test_priority_missing_key_defaults_to_zero():
     party, waitlist = assign(COMPO_OPEN, 2, signups)
     assert ids(party) == [3, 1]
     assert ids(waitlist) == [2]
+
+
+def test_missing_slots_partial_standard():
+    # 1 tank / 1 heal / 3 dps, only the tank filled: heal and all DPS open.
+    signups = [s(1, "tank")]
+    assert missing_slots(COMPO_STANDARD, 5, signups) == {"heal": 1, "dps": 3}
+
+
+def test_missing_slots_omits_filled_roles():
+    # A filled role drops out; only the two open DPS remain.
+    signups = [s(1, "tank"), s(2, "heal"), s(3, "dps")]
+    assert missing_slots(COMPO_STANDARD, 5, signups) == {"dps": 2}
+
+
+def test_missing_slots_empty_when_full():
+    signups = [s(1, "tank"), s(2, "heal"), s(3, "dps"), s(4, "dps"), s(5, "dps")]
+    assert missing_slots(COMPO_STANDARD, 5, signups) == {}
+
+
+def test_missing_slots_ignores_waitlisted_overflow():
+    # A second tank is waitlisted, not filling heal/dps: they stay open.
+    signups = [s(1, "tank"), s(2, "tank")]
+    assert missing_slots(COMPO_STANDARD, 5, signups) == {"heal": 1, "dps": 3}
+
+
+def test_missing_slots_open_mode_is_empty():
+    # Open mode has no per-role slots, so nothing to report.
+    signups = [s(1, "dps")]
+    assert missing_slots(COMPO_OPEN, 5, signups) == {}
 
 
 def order_of(priorities):
