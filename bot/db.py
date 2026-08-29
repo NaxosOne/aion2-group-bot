@@ -259,11 +259,21 @@ class Database:
         ) as cur:
             return await cur.fetchall()
 
-    async def mark_reminded(self, message_id: int) -> None:
-        await self.conn.execute(
-            "UPDATE events SET reminder_sent = 1 WHERE message_id = ?", (message_id,)
+    async def mark_reminded(self, message_id: int) -> bool:
+        """Atomically claims the reminder for a still-open event.
+
+        Returns True only if this call is the one that claimed it (the event was
+        open and not yet reminded). A cancelled/completed event — or one already
+        claimed — returns False, so the loop skips it rather than pinging the
+        party for an event that was cancelled between the due-query and the send.
+        """
+        cur = await self.conn.execute(
+            "UPDATE events SET reminder_sent = 1 "
+            "WHERE message_id = ? AND status = 'open' AND reminder_sent = 0",
+            (message_id,),
         )
         await self.conn.commit()
+        return cur.rowcount > 0
 
     # ----- RSVP ("are you coming?" before the event) -----
 
@@ -277,12 +287,21 @@ class Database:
         ) as cur:
             return await cur.fetchall()
 
-    async def mark_rsvp_sent(self, message_id: int) -> None:
-        """Claim the event so the RSVP prompt is posted at most once."""
-        await self.conn.execute(
-            "UPDATE events SET rsvp_sent = 1 WHERE message_id = ?", (message_id,)
+    async def mark_rsvp_sent(self, message_id: int) -> bool:
+        """Atomically claims the RSVP prompt for a still-open event.
+
+        Returns True only if this call claimed it (open and not yet sent); a
+        cancelled/completed or already-claimed event returns False, so the loop
+        posts the 'are you coming?' prompt at most once and never for an event
+        that was cancelled between the due-query and the send.
+        """
+        cur = await self.conn.execute(
+            "UPDATE events SET rsvp_sent = 1 "
+            "WHERE message_id = ? AND status = 'open' AND rsvp_sent = 0",
+            (message_id,),
         )
         await self.conn.commit()
+        return cur.rowcount > 0
 
     async def set_rsvp_prompt_id(self, message_id: int, prompt_id: int) -> None:
         await self.conn.execute(
