@@ -205,6 +205,7 @@
   "channels.reset_done": "Reset: events, absences and RSVPs are now posted wherever the command or the button is used.",
   "channels.destinations": "📍 Current destinations:\n• Events → {events}\n• Absences → {absences}\n• RSVPs → {rsvp}\n\nSet them with `/channels events: #… absences: #… rsvp: #…`, or clear them with `/channels reset: True`.",
   "channels.where_used": "*where the command is used*",
+  "channels.voice_on": "🔊 Temporary voice channels are on, created under {category}.",
   "panel.target_events": "events go to {channel}",
   "panel.target_absences": "absences go to {channel}",
   "panel.title": "⚡ Kisk — quick actions",
