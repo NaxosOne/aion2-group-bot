@@ -38,6 +38,43 @@ async def resolve_channel(interaction: discord.Interaction, setting: str):
     return interaction.channel
 
 
+async def post_event(
+    client, channel, event: dict, lang: str, ping_role=None
+) -> "discord.Message":
+    """Sends the event message, persists it and opens its discussion thread.
+
+    `event` holds the DB row fields (no message_id). Shared by the /event
+    command and the recurring-events loop. Raises on failure; on a persistence
+    failure the just-sent message is deleted so no orphan buttons remain.
+    """
+    embed = build_event_embed(event, [], lang=lang)
+    if ping_role is not None:
+        content = ping_role.mention
+        mentions = discord.AllowedMentions(
+            roles=[ping_role], everyone=ping_role.is_default()
+        )
+    else:
+        content = None
+        mentions = discord.AllowedMentions.none()
+    # Send the message first so we know its ID, which is our key.
+    message = await channel.send(
+        content=content, embed=embed, view=SignupView(lang), allowed_mentions=mentions
+    )
+    try:
+        await client.db.create_event(message_id=message.id, **event)
+    except Exception:
+        # The message (with live buttons) exists but has no backing row; delete
+        # it so players don't click a dead event.
+        log.exception("Failed to persist event for message %s", message.id)
+        try:
+            await message.delete()
+        except discord.HTTPException:
+            pass
+        raise
+    await _open_event_thread(message, event["title"], lang)
+    return message
+
+
 async def publish_event(
     interaction: discord.Interaction, *,
     title: str, activity: str, comp_mode: str, size: int,
@@ -78,21 +115,9 @@ async def publish_event(
         "starts_at": starts_at,
         "status": "open",
     }
-    # Send the message first so we know its ID, which is our key.
-    embed = build_event_embed(event, [], lang=lang)
-    if ping_role is not None:
-        content = ping_role.mention
-        mentions = discord.AllowedMentions(
-            roles=[ping_role], everyone=ping_role.is_default()
-        )
-    else:
-        content = None
-        mentions = discord.AllowedMentions.none()
     await interaction.response.defer(ephemeral=True)
     try:
-        message = await channel.send(
-            content=content, embed=embed, view=SignupView(lang), allowed_mentions=mentions
-        )
+        message = await post_event(interaction.client, channel, event, lang, ping_role)
     except discord.Forbidden:
         await interaction.followup.send(
             i18n.t("event.post_forbidden", lang, channel=channel.mention),
@@ -102,35 +127,18 @@ async def publish_event(
     except discord.HTTPException as err:
         log.exception("Could not post the event in channel %s", channel.id)
         await interaction.followup.send(
-            i18n.t(
-                "event.post_failed",
-                lang,
-                channel=channel.mention,
-                error=(err.text or err),
-            ),
+            i18n.t("event.post_failed", lang,
+                   channel=channel.mention, error=(err.text or err)),
             ephemeral=True,
         )
         return
-    try:
-        await interaction.client.db.create_event(message_id=message.id, **event)
     except Exception:
-        # The message (with live buttons) exists but has no backing row; delete
-        # it so players don't click a dead event, and tell the creator.
-        log.exception("Failed to persist event for message %s", message.id)
-        try:
-            await message.delete()
-        except discord.HTTPException:
-            pass
         await interaction.followup.send(
-            i18n.t("event.save_failed", lang),
-            ephemeral=True,
+            i18n.t("event.save_failed", lang), ephemeral=True
         )
         return
-    await _open_event_thread(message, title, lang)
     await interaction.followup.send(
-        i18n.t(
-            "event.created", lang, channel=channel.mention, link=message.jump_url
-        ),
+        i18n.t("event.created", lang, channel=channel.mention, link=message.jump_url),
         ephemeral=True,
     )
 

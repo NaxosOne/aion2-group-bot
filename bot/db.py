@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS rsvp (
     status     TEXT    NOT NULL,                  -- 'yes' or 'no'
     PRIMARY KEY (message_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS recurrences (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id      INTEGER NOT NULL,
+    channel_id    INTEGER NOT NULL,
+    creator_id    INTEGER NOT NULL,
+    creator_name  TEXT    NOT NULL,
+    title         TEXT    NOT NULL,
+    activity      TEXT    NOT NULL,
+    description   TEXT,
+    compo         TEXT    NOT NULL,
+    size          INTEGER NOT NULL,
+    ping_role_id  INTEGER,
+    next_at       INTEGER NOT NULL,               -- next occurrence (UTC)
+    active        INTEGER NOT NULL DEFAULT 1
+);
 """
 
 
@@ -401,6 +417,58 @@ class Database:
             (now_ts - grace_s,),
         ) as cur:
             return await cur.fetchall()
+
+    # ----- Recurring events -----
+
+    async def create_recurrence(self, **fields) -> int:
+        columns = ", ".join(fields)
+        placeholders = ", ".join("?" for _ in fields)
+        cur = await self.conn.execute(
+            f"INSERT INTO recurrences ({columns}) VALUES ({placeholders})",
+            tuple(fields.values()),
+        )
+        await self.conn.commit()
+        return cur.lastrowid
+
+    async def recurrences_due(self, now_ts: int, lead_s: int):
+        """Active recurrences whose next occurrence is within the lead window."""
+        async with self.conn.execute(
+            "SELECT * FROM recurrences WHERE active = 1 AND next_at <= ?",
+            (now_ts + lead_s,),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def advance_recurrence(
+        self, recurrence_id: int, old_next_at: int, new_next_at: int
+    ) -> bool:
+        """Atomically moves a recurrence to its next occurrence.
+
+        Returns True only for the caller that claimed this occurrence, so two
+        ticks can't post the same instance twice.
+        """
+        cur = await self.conn.execute(
+            "UPDATE recurrences SET next_at = ? "
+            "WHERE id = ? AND next_at = ? AND active = 1",
+            (new_next_at, recurrence_id, old_next_at),
+        )
+        await self.conn.commit()
+        return cur.rowcount > 0
+
+    async def list_recurrences(self, guild_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM recurrences WHERE guild_id = ? AND active = 1 "
+            "ORDER BY next_at",
+            (guild_id,),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def deactivate_recurrence(self, recurrence_id: int, guild_id: int) -> bool:
+        cur = await self.conn.execute(
+            "UPDATE recurrences SET active = 0 WHERE id = ? AND guild_id = ?",
+            (recurrence_id, guild_id),
+        )
+        await self.conn.commit()
+        return cur.rowcount > 0
 
     # ----- RSVP ("are you coming?" before the event) -----
 
