@@ -16,6 +16,9 @@ from datetime import date, datetime, timedelta
 
 from .. import i18n
 
+# The format the edit modal prefills and parse_when reads back: "30/08 21:00".
+_EDIT_WHEN_FORMAT = "%d/%m %H:%M"
+
 # English first, French kept as aliases.
 DAY_KEYWORDS = {
     "today": 0,
@@ -54,6 +57,31 @@ def _parse_time(s: str, lang: str = "en") -> tuple[int, int]:
             i18n.t("time.invalid_time", lang, value=f"{hour:02d}:{minute:02d}")
         )
     return hour, minute
+
+
+def format_when_for_edit(starts_at: int | None, tz) -> str:
+    """Renders a stored schedule as editable "30/08 21:00" text, "" if unset.
+
+    The result is what the edit modal prefills; it round-trips through
+    parse_when so submitting the field unchanged keeps the same instant.
+    """
+    if starts_at is None:
+        return ""
+    return datetime.fromtimestamp(starts_at, tz).strftime(_EDIT_WHEN_FORMAT)
+
+
+def should_rearm_after_reschedule(
+    old_starts_at: int | None, new_starts_at: int | None, now_ts: int
+) -> bool:
+    """Whether an edited event must re-fire its reminder and RSVP prompt.
+
+    True only when the schedule actually changed to a still-future instant:
+    pulling an event forward or pushing it back both need the notifications
+    recomputed, while an unchanged, cleared or already-past time does not.
+    """
+    if new_starts_at is None or new_starts_at == old_starts_at:
+        return False
+    return new_starts_at > now_ts
 
 
 def parse_when(text: str, tz, now: datetime | None = None, lang: str = "en") -> datetime:

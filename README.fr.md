@@ -192,6 +192,14 @@ Utilisez :
 
 pour voir les activités à venir avec des liens cliquables vers leurs messages Discord.
 
+### ✏️ Modification
+
+Le créateur de l'événement ou un modérateur peut modifier un événement publié
+via le bouton **Modifier** : changer le **titre**, l'**heure** ou la
+**description** dans un formulaire rapide (le type, la composition et la taille
+restent fixes). Replanifier ré-arme le rappel et l'invite « tu viens ? » sur la
+nouvelle heure et pingue la party ; vider le champ heure retire l'horaire.
+
 ### ❌ Annulation
 
 Le créateur de l'événement ou un modérateur peut annuler un événement.

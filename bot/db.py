@@ -224,6 +224,32 @@ class Database:
         ) as cur:
             return await cur.fetchone()
 
+    async def update_event_details(
+        self, message_id: int, *, title: str, starts_at: int | None,
+        description: str | None, rearm_notifications: bool = False,
+    ) -> None:
+        """Edits a posted event's text fields (title, schedule, description).
+
+        When the schedule moved to a future time the caller sets
+        `rearm_notifications`, which clears the reminder / RSVP "sent" flags so
+        the loop fires them again against the new time.
+        """
+        if rearm_notifications:
+            await self.conn.execute(
+                """UPDATE events
+                   SET title = ?, starts_at = ?, description = ?,
+                       reminder_sent = 0, rsvp_sent = 0
+                   WHERE message_id = ?""",
+                (title, starts_at, description, message_id),
+            )
+        else:
+            await self.conn.execute(
+                """UPDATE events SET title = ?, starts_at = ?, description = ?
+                   WHERE message_id = ?""",
+                (title, starts_at, description, message_id),
+            )
+        await self.conn.commit()
+
     async def set_status(self, message_id: int, status: str) -> None:
         await self.conn.execute(
             "UPDATE events SET status = ? WHERE message_id = ?", (status, message_id)
