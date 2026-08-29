@@ -22,6 +22,7 @@ from ..actions import publish_event, register_absence
 from ..embeds import build_event_embed
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import COMPO_OPEN, COMPO_STANDARD
+from ..utils.permissions import member_is_admin
 from ..utils.time_parse import ParseError, parse_when
 from ..views import SignupView
 
@@ -430,7 +431,7 @@ class Panel(commands.Cog):
     async def redeploy(self, interaction: discord.Interaction):
         db = self.bot.db
         lang = await i18n.resolve_lang(db, interaction.guild)
-        if not interaction.user.guild_permissions.manage_guild:
+        if not await member_is_admin(db, interaction.user):
             await interaction.response.send_message(
                 i18n.t("redeploy.admin_only", lang), ephemeral=True
             )

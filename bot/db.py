@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     event_channel_id   INTEGER,                   -- where events are posted
     absence_channel_id INTEGER,                   -- where absences are posted
     panel_channel_id   INTEGER,                   -- channel of the quick-actions panel
-    panel_message_id   INTEGER                    -- its message, so /panel can refresh it
+    panel_message_id   INTEGER,                   -- its message, so /panel can refresh it
+    admin_role_id      INTEGER                    -- role treated as a Kisk admin
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -147,6 +148,7 @@ class Database:
                 "language": "TEXT",             # 'fr' | 'en' | NULL = auto
                 "panel_channel_id": "INTEGER",  # quick-actions panel location
                 "panel_message_id": "INTEGER",  # so /panel refreshes it in place
+                "admin_role_id": "INTEGER",     # role treated as a Kisk admin
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings

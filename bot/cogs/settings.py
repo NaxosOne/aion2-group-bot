@@ -52,6 +52,55 @@ class Settings(commands.Cog):
             )
         await interaction.response.send_message(text, ephemeral=True)
 
+    @app_commands.command(
+        name="admin-role",
+        description="Set a role Kisk treats as an admin (Manage Server only)",
+    )
+    @app_commands.describe(
+        role="The role to grant Kisk-admin powers (leave empty to see the current one)",
+        clear="Remove the configured admin role",
+    )
+    @app_commands.default_permissions(manage_guild=True)
+    async def admin_role(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role | None = None,
+        clear: bool = False,
+    ):
+        db = self.bot.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        # Appointing the admin role stays gated on real Manage Server, so a Kisk
+        # admin can never widen their own reach.
+        if not interaction.user.guild_permissions.manage_guild:
+            await interaction.response.send_message(
+                i18n.t("adminrole.forbidden", lang), ephemeral=True
+            )
+            return
+
+        if clear:
+            await db.set_setting(interaction.guild_id, "admin_role_id", None)
+            await interaction.response.send_message(
+                i18n.t("adminrole.cleared", lang), ephemeral=True
+            )
+            return
+
+        if role is not None:
+            await db.set_setting(interaction.guild_id, "admin_role_id", role.id)
+            await interaction.response.send_message(
+                i18n.t("adminrole.set_confirm", lang, role=role.mention),
+                ephemeral=True,
+            )
+            return
+
+        settings = await db.get_settings(interaction.guild_id)
+        current = settings["admin_role_id"] if settings else None
+        text = (
+            i18n.t("adminrole.current", lang, role=f"<@&{current}>")
+            if current
+            else i18n.t("adminrole.none", lang)
+        )
+        await interaction.response.send_message(text, ephemeral=True)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Settings(bot))

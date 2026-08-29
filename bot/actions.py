@@ -13,6 +13,7 @@ import discord
 from . import config, i18n
 from .embeds import build_event_embed
 from .utils.mentions import ping_permitted
+from .utils.permissions import member_is_moderator
 from .utils.threads import event_thread_name
 from .utils.time_parse import ParseError, parse_when_or_date
 from .views import SignupView
@@ -51,7 +52,9 @@ async def publish_event(
     """
     lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     if ping_role is not None:
-        is_moderator = interaction.user.guild_permissions.manage_messages
+        is_moderator = await member_is_moderator(
+            interaction.client.db, interaction.user
+        )
         if not ping_permitted(
             is_default_role=ping_role.is_default(), is_moderator=is_moderator
         ):

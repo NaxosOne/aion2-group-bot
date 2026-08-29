@@ -8,6 +8,10 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Configurable Kisk admin role** — `/admin-role` lets a server appoint a role
+  that Kisk treats as an admin (and therefore moderator), so trusted members get
+  admin powers without Discord's Manage Server. Setting it still requires Manage
+  Server. Button actions honour it immediately.
 - **Edit a posted event** — an **Edit** button (creator or moderator) changes an
   event's title, time or description from a prefilled form. Rescheduling
   re-arms the reminder and the "are you coming?" prompt against the new time and

@@ -14,6 +14,7 @@ from discord.ext import commands, tasks
 from .. import config, i18n
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..logic import MAX_CHARACTERS, ROLES
+from ..utils.permissions import member_is_admin
 
 # The playable classes, taken from the emoji configuration so that adding one
 # (Fist Fighter, on release) is a single line in config.py. This is the whole
@@ -247,7 +248,7 @@ class Profile(commands.GroupCog, name="profile"):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         target = member or interaction.user
         is_self = target == interaction.user
-        if not is_self and not interaction.user.guild_permissions.manage_guild:
+        if not is_self and not await member_is_admin(self.bot.db, interaction.user):
             await interaction.response.send_message(
                 i18n.t("profile.delete_mod_only", lang), ephemeral=True
             )
