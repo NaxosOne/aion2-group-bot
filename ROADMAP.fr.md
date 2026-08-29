@@ -27,6 +27,7 @@ Les fondations sont en place :
 * Invite RSVP avant un événement — un message « tu viens ? » avec boutons confirmer/décliner et un décompte en direct (timing configurable)
 * Sélecteur de personnage à l'inscription — les joueurs ayant plusieurs personnages enregistrés choisissent celui qu'ils amènent après avoir choisi un rôle, chacun affiché avec son icône de classe Aion 2 ; `/profile set` restreint les personnages à la liste de classes connues
 * Réordonnancement de la file par les admins — un bouton « Gérer la file » (admins uniquement) permet de faire monter ou descendre les inscriptions pour promouvoir des joueurs en attente ; les places par rôle restent respectées et tout joueur poussé dans la party est notifié
+* Modifier un événement publié — un bouton « Modifier » (créateur ou modérateur) change le titre, l'heure ou la description ; replanifier ré-arme le rappel et l'invite RSVP et pingue la party
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 

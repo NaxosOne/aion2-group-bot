@@ -188,6 +188,14 @@ Use:
 
 to see upcoming activities with clickable links to their Discord messages.
 
+### ✏️ Editing
+
+The event creator or a moderator can edit a posted event with the **Edit**
+button: change the **title**, the **time** or the **description** in a quick
+form (type, composition and size stay fixed). Rescheduling re-arms the reminder
+and the "are you coming?" prompt against the new time and pings the party;
+clearing the time field drops the schedule.
+
 ### ❌ Cancellation
 
 The event creator or a moderator can cancel an event.

@@ -27,6 +27,7 @@ The foundations are in place:
 * RSVP prompt before an event — an "are you coming?" message with confirm/decline buttons and a live tally (configurable timing)
 * Character picker at sign-up — players with several registered characters pick which one they bring after choosing a role, each shown with its Aion 2 class icon; `/profile set` restricts characters to the known class list
 * Admin queue reordering — a "Manage queue" button (admins only) lets an admin move sign-ups up or down the queue to promote waitlisted players; per-role slots are still respected and anyone pushed into the party is pinged
+* Edit a posted event — an "Edit" button (creator or moderator) changes the title, time or description; rescheduling re-arms the reminder and RSVP prompt and pings the party
 
 ## 🟢 Phase 1 — Better group organisation
 
