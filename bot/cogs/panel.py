@@ -19,9 +19,11 @@ from discord.ext import commands
 
 from .. import config, i18n
 from ..actions import publish_event, register_absence
+from ..embeds import build_event_embed
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import COMPO_OPEN, COMPO_STANDARD
 from ..utils.time_parse import ParseError, parse_when
+from ..views import SignupView
 
 # The event types offered by the dropdown, in the order they appear.
 ACTIVITIES = ("Dungeon", "Raid", "Battleground", "PvP", "Rift", "Abyss", "Other")
@@ -282,6 +284,33 @@ class PanelView(ViewErrorMixin, discord.ui.View):
 
 
 @app_commands.guild_only()
+def _panel_embed(settings, lang: str) -> discord.Embed:
+    """The quick-actions panel embed, with a note of the configured channels."""
+    event_channel = settings["event_channel_id"] if settings else None
+    absence_channel = settings["absence_channel_id"] if settings else None
+    where = ""
+    if event_channel or absence_channel:
+        targets = []
+        if event_channel:
+            targets.append(
+                i18n.t("panel.target_events", lang, channel=f"<#{event_channel}>")
+            )
+        if absence_channel:
+            targets.append(
+                i18n.t("panel.target_absences", lang, channel=f"<#{absence_channel}>")
+            )
+        where = "\n\n*" + ", ".join(targets) + ".*"
+    return discord.Embed(
+        title=i18n.t("panel.title", lang),
+        description=i18n.t(
+            "panel.body", lang,
+            tank=config.EMOJI_TANK, heal=config.EMOJI_HEAL,
+            dps=config.EMOJI_DPS, where=where,
+        ),
+        colour=discord.Colour.blurple(),
+    )
+
+
 class Panel(commands.Cog):
     """The /panel command that posts the quick-actions message."""
 
@@ -349,46 +378,109 @@ class Panel(commands.Cog):
 
     @app_commands.command(
         name="panel",
-        description="Post the quick-actions panel in this channel (moderators)",
+        description="Post the quick-actions panel here, or refresh the existing one (moderators)",
     )
     @app_commands.default_permissions(manage_messages=True)
     async def panel(self, interaction: discord.Interaction):
-        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
-        settings = await self.bot.db.get_settings(interaction.guild_id)
-        event_channel = settings["event_channel_id"] if settings else None
-        absence_channel = settings["absence_channel_id"] if settings else None
+        db = self.bot.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        settings = await db.get_settings(interaction.guild_id)
+        embed = _panel_embed(settings, lang)
 
-        where = ""
-        if event_channel or absence_channel:
-            targets = []
-            if event_channel:
-                targets.append(
-                    i18n.t("panel.target_events", lang, channel=f"<#{event_channel}>")
-                )
-            if absence_channel:
-                targets.append(
-                    i18n.t(
-                        "panel.target_absences", lang,
-                        channel=f"<#{absence_channel}>",
+        # Refresh the remembered panel in place so re-running /panel after an
+        # update never leaves a stale duplicate behind.
+        stored = await db.get_panel(interaction.guild_id)
+        if stored is not None:
+            channel_id, message_id = stored
+            channel = self.bot.get_channel(channel_id)
+            if channel is not None:
+                try:
+                    message = await channel.fetch_message(message_id)
+                    await message.edit(embed=embed, view=PanelView(lang))
+                    await interaction.response.send_message(
+                        i18n.t("panel.refreshed", lang, link=message.jump_url),
+                        ephemeral=True,
                     )
-                )
-            where = "\n\n*" + ", ".join(targets) + ".*"
+                    return
+                except discord.NotFound:
+                    pass  # deleted: fall through and post a fresh one
+                except discord.Forbidden:
+                    await interaction.response.send_message(
+                        i18n.t("panel.refresh_forbidden", lang), ephemeral=True
+                    )
+                    return
 
-        embed = discord.Embed(
-            title=i18n.t("panel.title", lang),
-            description=i18n.t(
-                "panel.body", lang,
-                tank=config.EMOJI_TANK, heal=config.EMOJI_HEAL,
-                dps=config.EMOJI_DPS, where=where,
-            ),
-            colour=discord.Colour.blurple(),
+        # Post a new panel in the current channel and remember where it lives.
+        message = await interaction.channel.send(embed=embed, view=PanelView(lang))
+        await db.set_panel(interaction.guild_id, interaction.channel_id, message.id)
+        configured = (
+            settings and settings["event_channel_id"] and settings["absence_channel_id"]
         )
-        await interaction.response.send_message(embed=embed, view=PanelView(lang))
-        if not (event_channel and absence_channel):
-            await interaction.followup.send(
-                i18n.t("panel.pin_tip", lang),
-                ephemeral=True,
+        note = "" if configured else "\n" + i18n.t("panel.pin_tip", lang)
+        await interaction.response.send_message(
+            i18n.t("panel.posted", lang, link=message.jump_url) + note,
+            ephemeral=True,
+        )
+
+    @app_commands.command(
+        name="redeploy",
+        description="Refresh the panel and re-render open events with the latest buttons (admins)",
+    )
+    @app_commands.default_permissions(manage_guild=True)
+    async def redeploy(self, interaction: discord.Interaction):
+        db = self.bot.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        if not interaction.user.guild_permissions.manage_guild:
+            await interaction.response.send_message(
+                i18n.t("redeploy.admin_only", lang), ephemeral=True
             )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        # Re-render every open event so already-posted messages gain the
+        # current buttons and embed.
+        events_done = 0
+        for event in await db.get_open_events(interaction.guild_id):
+            channel = self.bot.get_channel(event["channel_id"])
+            if channel is None:
+                continue
+            try:
+                signups = await db.get_signups(event["message_id"])
+                classes = await db.get_main_classes(
+                    event["guild_id"], [s["user_id"] for s in signups]
+                )
+                embed = build_event_embed(event, signups, classes, lang)
+                await channel.get_partial_message(event["message_id"]).edit(
+                    embed=embed, view=SignupView(lang)
+                )
+                events_done += 1
+            except discord.HTTPException:
+                continue
+
+        # Refresh the panel in place when we know where it is.
+        panel_done = False
+        stored = await db.get_panel(interaction.guild_id)
+        if stored is not None:
+            channel_id, message_id = stored
+            channel = self.bot.get_channel(channel_id)
+            if channel is not None:
+                settings = await db.get_settings(interaction.guild_id)
+                try:
+                    await channel.get_partial_message(message_id).edit(
+                        embed=_panel_embed(settings, lang), view=PanelView(lang)
+                    )
+                    panel_done = True
+                except discord.HTTPException:
+                    pass
+
+        panel_state = i18n.t(
+            "redeploy.panel_yes" if panel_done else "redeploy.panel_no", lang
+        )
+        await interaction.followup.send(
+            i18n.t("redeploy.done", lang, events=events_done, panel=panel_state),
+            ephemeral=True,
+        )
 
 
 async def setup(bot: commands.Bot):

@@ -57,6 +57,13 @@ PANEL_KEYS = {
     "panel.title": {},
     "panel.body": {"tank": "🛡️", "heal": "💚", "dps": "🗡️", "where": ""},
     "panel.pin_tip": {},
+    "panel.posted": {"link": "https://x/1"},
+    "panel.refreshed": {"link": "https://x/1"},
+    "panel.refresh_forbidden": {},
+    "redeploy.admin_only": {},
+    "redeploy.done": {"events": 3, "panel": "refreshed"},
+    "redeploy.panel_yes": {},
+    "redeploy.panel_no": {},
 }
 
 # Discord hard limits the event-setup surfaces must respect in every language.
