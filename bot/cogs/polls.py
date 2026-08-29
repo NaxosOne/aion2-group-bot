@@ -16,6 +16,7 @@ from discord.ext import commands, tasks
 
 from .. import config, i18n
 from ..errors import ViewErrorMixin
+from ..utils.permissions import member_is_moderator
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class VoteView(ViewErrorMixin, discord.ui.View):
             )
             return
         is_creator = interaction.user.id == poll["creator_id"]
-        is_mod = interaction.user.guild_permissions.manage_messages
+        is_mod = await member_is_moderator(db, interaction.user)
         if not (is_creator or is_mod):
             await interaction.response.send_message(
                 i18n.t("poll.only_author_close", lang),

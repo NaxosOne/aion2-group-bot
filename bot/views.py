@@ -16,6 +16,7 @@ from . import config, i18n
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ModalErrorMixin, ViewErrorMixin
 from .logic import MOVE_DOWN, MOVE_UP, assign, reorder_priorities, signup_priority
+from .utils.permissions import member_is_admin, member_is_moderator
 from .utils.time_parse import (
     ParseError,
     format_when_for_edit,
@@ -314,7 +315,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             return
 
         is_creator = interaction.user.id == event["creator_id"]
-        is_mod = interaction.user.guild_permissions.manage_messages
+        is_mod = await member_is_moderator(db, interaction.user)
         if not (is_creator or is_mod):
             await interaction.response.send_message(
                 i18n.t("signup.only_creator_close", lang),
@@ -350,7 +351,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             return
 
         is_creator = interaction.user.id == event["creator_id"]
-        is_mod = interaction.user.guild_permissions.manage_messages
+        is_mod = await member_is_moderator(db, interaction.user)
         if not (is_creator or is_mod):
             await interaction.response.send_message(
                 i18n.t("signup.only_creator_cancel", lang),
@@ -387,7 +388,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             return
 
         is_creator = interaction.user.id == event["creator_id"]
-        is_mod = interaction.user.guild_permissions.manage_messages
+        is_mod = await member_is_moderator(db, interaction.user)
         if not (is_creator or is_mod):
             await interaction.response.send_message(
                 i18n.t("signup.only_creator_edit", lang), ephemeral=True
@@ -407,8 +408,8 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         if event is None:
             return
 
-        # Reordering the queue is an admin-only action (Manage Server).
-        if not interaction.user.guild_permissions.manage_guild:
+        # Reordering the queue is a Kisk-admin action.
+        if not await member_is_admin(db, interaction.user):
             await interaction.response.send_message(
                 i18n.t("signup.only_admin_manage", lang), ephemeral=True
             )

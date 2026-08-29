@@ -18,6 +18,24 @@ def test_rsvp_channel_setting_round_trips(tmp_path):
     assert asyncio.run(go()) == 999
 
 
+def test_admin_role_setting_round_trips(tmp_path):
+    async def go():
+        db = Database(str(tmp_path / "admin.db"))
+        await db.connect()  # the admin_role_id column is applied here
+        before = (await db.get_settings(1))
+        await db.set_setting(1, "admin_role_id", 4242)
+        after = (await db.get_settings(1))["admin_role_id"]
+        await db.set_setting(1, "admin_role_id", None)  # clear
+        cleared = (await db.get_settings(1))["admin_role_id"]
+        await db.close()
+        return (before is None or before["admin_role_id"] is None), after, cleared
+
+    unset_first, after, cleared = asyncio.run(go())
+    assert unset_first is True
+    assert after == 4242
+    assert cleared is None
+
+
 def test_language_setting_round_trips(tmp_path):
     async def go():
         db = Database(str(tmp_path / "lang.db"))
