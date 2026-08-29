@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     dispo_channel_id   INTEGER,                   -- weekly availability channel
     dispo_last_posted  INTEGER NOT NULL DEFAULT 0,
     event_channel_id   INTEGER,                   -- where events are posted
-    absence_channel_id INTEGER                    -- where absences are posted
+    absence_channel_id INTEGER,                   -- where absences are posted
+    panel_channel_id   INTEGER,                   -- channel of the quick-actions panel
+    panel_message_id   INTEGER                    -- its message, so /panel can refresh it
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -143,6 +145,8 @@ class Database:
                 "member_role_id": "INTEGER",    # role that means "validated member"
                 "rsvp_channel_id": "INTEGER",   # where RSVP prompts are posted
                 "language": "TEXT",             # 'fr' | 'en' | NULL = auto
+                "panel_channel_id": "INTEGER",  # quick-actions panel location
+                "panel_message_id": "INTEGER",  # so /panel refreshes it in place
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings
@@ -253,6 +257,41 @@ class Database:
     async def set_status(self, message_id: int, status: str) -> None:
         await self.conn.execute(
             "UPDATE events SET status = ? WHERE message_id = ?", (status, message_id)
+        )
+        await self.conn.commit()
+
+    async def get_open_events(self, guild_id: int):
+        """Every still-open event of the guild, for redeploying their messages."""
+        async with self.conn.execute(
+            "SELECT * FROM events WHERE guild_id = ? AND status = 'open'",
+            (guild_id,),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def get_panel(self, guild_id: int) -> "tuple[int, int] | None":
+        """The (channel_id, message_id) of the guild's panel, or None if unset."""
+        async with self.conn.execute(
+            "SELECT panel_channel_id, panel_message_id FROM guild_settings "
+            "WHERE guild_id = ?",
+            (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None or row["panel_channel_id"] is None:
+            return None
+        return row["panel_channel_id"], row["panel_message_id"]
+
+    async def set_panel(
+        self, guild_id: int, channel_id: int | None, message_id: int | None
+    ) -> None:
+        """Remembers where the quick-actions panel lives so /panel can edit it."""
+        await self.conn.execute(
+            """INSERT INTO guild_settings
+                   (guild_id, panel_channel_id, panel_message_id)
+               VALUES (?, ?, ?)
+               ON CONFLICT(guild_id) DO UPDATE SET
+                   panel_channel_id = excluded.panel_channel_id,
+                   panel_message_id = excluded.panel_message_id""",
+            (guild_id, channel_id, message_id),
         )
         await self.conn.commit()
 

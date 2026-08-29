@@ -665,9 +665,16 @@ posted. Pinging `@everyone` is reserved to moderators.
 ## Panel & channels
 
 ```text
-/panel                                          → post the click-only panel
+/panel                                          → post the panel, or refresh the existing one
 /channels events: #events absences: #absences rsvp: #rsvp   → where results are posted
+/redeploy                                       → refresh the panel + open events (admins)
 ```
+
+Re-running **`/panel`** edits the panel it already posted (no duplicate).
+**`/redeploy`** (admins) re-renders every open event with the latest buttons and
+embed and refreshes the panel — run it once after a bot update so already-posted
+messages pick up new features. A panel first posted before this existed isn't
+tracked yet: run `/panel` once to register it.
 
 ## Language
 
