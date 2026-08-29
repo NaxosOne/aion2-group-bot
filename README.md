@@ -193,6 +193,9 @@ Use:
 
 to see upcoming activities with clickable links to their Discord messages.
 
+The **Calendar** button on any event hands you an `.ics` file of the server's
+upcoming scheduled events (privately) — import it into your own calendar app.
+
 ### ✏️ Editing
 
 The event creator or a moderator can edit a posted event with the **Edit**

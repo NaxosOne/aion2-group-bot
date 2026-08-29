@@ -11,6 +11,8 @@ versioned, so entries are grouped by date.
 - **Recurring events** — `/event … repeat: Weekly` (moderators) makes an event
   repeat every week; Kisk posts each instance a day ahead. Manage them with
   `/recurring list` and `/recurring stop`.
+- **Calendar export** — a Calendar button on any event returns an `.ics` file of
+  the server's upcoming scheduled events, to import into a personal calendar.
 - **Temporary voice channels** — opt in with `/channels voice: <category>` and
   each scheduled event gets a "🔊 <title>" voice channel around its reminder
   window, cleaned up when the event is done/cancelled (or a few hours after it

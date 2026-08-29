@@ -21,6 +21,7 @@ BUTTON_KEYS = [
     "signup.btn_up",
     "signup.btn_down",
     "signup.btn_edit",
+    "signup.btn_calendar",
     "rsvp.btn_coming",
     "rsvp.btn_not_coming",
     "poll.btn_close",

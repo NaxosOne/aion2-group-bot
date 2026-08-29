@@ -197,6 +197,10 @@ Utilisez :
 
 pour voir les activités à venir avec des liens cliquables vers leurs messages Discord.
 
+Le bouton **Calendrier** sur n'importe quel événement te remet (en privé) un
+fichier `.ics` des événements planifiés à venir du serveur — importe-le dans ton
+agenda.
+
 ### ✏️ Modification
 
 Le créateur de l'événement ou un modérateur peut modifier un événement publié
