@@ -28,12 +28,31 @@ def standard_slots(size: int) -> dict:
     return {role: n * groups for role, n in STANDARD_RATIO.items()}
 
 
+def signup_priority(signup) -> int:
+    """Manual ordering override for a sign-up, defaulting to 0.
+
+    Admins can boost a waitlisted player so they jump the queue. Rows from
+    before the column existed (and plain dicts without the key) rank as 0,
+    which reproduces the first-come-first-served behaviour.
+    """
+    try:
+        value = signup["priority"]
+    except (KeyError, IndexError):
+        return 0
+    return value if value is not None else 0
+
+
 def assign(compo: str, size: int, signups: list) -> tuple[list, list]:
     """Splits the sign-ups between the party and the waitlist.
 
     `signups`: list of dicts (or SQLite rows) with at least a "role" key,
-    sorted by join order. Returns (party, waitlist).
+    sorted by join order. A higher "priority" floats a sign-up towards the
+    front (admin reordering); equal priority keeps join order. Returns
+    (party, waitlist).
     """
+    # Stable sort keeps join order within an equal priority.
+    signups = sorted(signups, key=signup_priority, reverse=True)
+
     party: list = []
     waitlist: list = []
 
