@@ -682,6 +682,29 @@ tracked yet: run `/panel` once to register it.
 /language choice: Français     → set the server language: Français / English / Auto (moderators)
 ```
 
+## Roles & permissions
+
+Kisk has two permission tiers, both based on Discord permissions by default:
+
+- **Moderator** (Manage Messages) — close a poll, complete/cancel/edit an event.
+- **Admin** (Manage Server) — reorder the queue, `/redeploy`, delete another
+  member's profile.
+
+You can also appoint a **Kisk admin role** so trusted members get admin (and
+therefore moderator) powers without granting them Discord's Manage Server:
+
+```text
+/admin-role role: @Officers    → treat @Officers as Kisk admins (Manage Server only)
+/admin-role clear: true        → remove the configured role
+/admin-role                    → show the current one
+```
+
+Only a member with real Manage Server can set this, so the role can't widen its
+own reach. The role takes effect immediately on **button** actions (Edit, Manage
+queue, …). Slash commands like `/redeploy` stay hidden by Discord's own
+permission gate; to expose them to the role, allow the command for it under
+**Server Settings → Integrations** in Discord.
+
 **Tip for a smooth server**: post `/panel` in a channel of its own and pin it,
 then run `/channels events: #events absences: #absences` so the panel never
 gets buried under its own results. Members who dislike typing commands just

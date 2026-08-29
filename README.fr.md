@@ -692,6 +692,32 @@ relance `/panel` une fois pour l'enregistrer.
 /language choice: Français     → langue du serveur : Français / English / Auto (modérateurs)
 ```
 
+## Rôles & permissions
+
+Kisk a deux niveaux de permission, basés par défaut sur les permissions Discord :
+
+- **Modérateur** (Gérer les messages) — fermer un sondage, terminer/annuler/
+  modifier un événement.
+- **Admin** (Gérer le serveur) — réordonner la file, `/redeploy`, supprimer le
+  profil d'un autre membre.
+
+Tu peux aussi désigner un **rôle admin Kisk** pour donner les pouvoirs admin (et
+donc modérateur) à des membres de confiance sans leur accorder « Gérer le
+serveur » :
+
+```text
+/admin-role role: @Officiers   → traite @Officiers comme admins Kisk (Gérer le serveur requis)
+/admin-role clear: true        → retire le rôle configuré
+/admin-role                    → affiche le rôle actuel
+```
+
+Seul un membre avec « Gérer le serveur » réel peut le définir, donc le rôle ne
+peut pas étendre sa propre portée. Le rôle prend effet immédiatement sur les
+actions **à boutons** (Modifier, Gérer la file, …). Les slash-commands comme
+`/redeploy` restent cachées par la barrière de permission Discord ; pour les
+exposer au rôle, autorise la commande pour lui dans **Paramètres du serveur →
+Intégrations**.
+
 **Astuce pour un serveur bien rangé** : publiez `/panel` dans un salon dédié et
 épinglez-le, puis lancez `/channels events: #events absences: #absences` pour
 que le panneau ne soit jamais enterré sous ses propres résultats. Les membres
