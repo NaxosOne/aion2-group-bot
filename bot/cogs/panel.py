@@ -326,6 +326,7 @@ class Panel(commands.Cog):
         events="Channel for event calls (leave empty to keep the current setting)",
         absences="Channel for absence notices",
         rsvp="Channel for the 'are you coming?' RSVP prompts",
+        voice="Category for temporary event voice channels (enables them)",
         reset="Post everything back in the channel the command is used in",
     )
     @app_commands.default_permissions(manage_messages=True)
@@ -335,6 +336,7 @@ class Panel(commands.Cog):
         events: discord.TextChannel | None = None,
         absences: discord.TextChannel | None = None,
         rsvp: discord.TextChannel | None = None,
+        voice: discord.CategoryChannel | None = None,
         reset: bool = False,
     ):
         db = self.bot.db
@@ -343,6 +345,7 @@ class Panel(commands.Cog):
             await db.set_setting(interaction.guild_id, "event_channel_id", None)
             await db.set_setting(interaction.guild_id, "absence_channel_id", None)
             await db.set_setting(interaction.guild_id, "rsvp_channel_id", None)
+            await db.set_setting(interaction.guild_id, "voice_category_id", None)
             await interaction.response.send_message(
                 i18n.t("channels.reset_done", lang),
                 ephemeral=True,
@@ -357,6 +360,8 @@ class Panel(commands.Cog):
             )
         if rsvp is not None:
             await db.set_setting(interaction.guild_id, "rsvp_channel_id", rsvp.id)
+        if voice is not None:
+            await db.set_setting(interaction.guild_id, "voice_category_id", voice.id)
 
         settings = await db.get_settings(interaction.guild_id)
 
@@ -367,15 +372,18 @@ class Panel(commands.Cog):
                 else i18n.t("channels.where_used", lang)
             )
 
-        await interaction.response.send_message(
-            i18n.t(
-                "channels.destinations", lang,
-                events=describe("event_channel_id"),
-                absences=describe("absence_channel_id"),
-                rsvp=describe("rsvp_channel_id"),
-            ),
-            ephemeral=True,
+        message = i18n.t(
+            "channels.destinations", lang,
+            events=describe("event_channel_id"),
+            absences=describe("absence_channel_id"),
+            rsvp=describe("rsvp_channel_id"),
         )
+        voice_category = settings["voice_category_id"] if settings else None
+        if voice_category:
+            message += "\n" + i18n.t(
+                "channels.voice_on", lang, category=f"<#{voice_category}>"
+            )
+        await interaction.response.send_message(message, ephemeral=True)
 
     @app_commands.command(
         name="panel",

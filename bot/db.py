@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS events (
     status        TEXT    NOT NULL DEFAULT 'open',-- 'open', 'cancelled' or 'done'
     reminder_sent INTEGER NOT NULL DEFAULT 0,
     rsvp_sent     INTEGER NOT NULL DEFAULT 0,      -- 'are you coming?' prompt posted
-    rsvp_prompt_id INTEGER                         -- message id of that prompt
+    rsvp_prompt_id INTEGER,                        -- message id of that prompt
+    voice_created INTEGER NOT NULL DEFAULT 0,      -- temp voice channel claimed
+    voice_channel_id INTEGER                       -- its channel, NULL once cleaned up
 );
 
 CREATE TABLE IF NOT EXISTS signups (
@@ -73,7 +75,8 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     absence_channel_id INTEGER,                   -- where absences are posted
     panel_channel_id   INTEGER,                   -- channel of the quick-actions panel
     panel_message_id   INTEGER,                   -- its message, so /panel can refresh it
-    admin_role_id      INTEGER                    -- role treated as a Kisk admin
+    admin_role_id      INTEGER,                   -- role treated as a Kisk admin
+    voice_category_id  INTEGER                    -- category for temp event voice channels
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -149,6 +152,7 @@ class Database:
                 "panel_channel_id": "INTEGER",  # quick-actions panel location
                 "panel_message_id": "INTEGER",  # so /panel refreshes it in place
                 "admin_role_id": "INTEGER",     # role treated as a Kisk admin
+                "voice_category_id": "INTEGER", # category for temp voice channels
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings
@@ -157,6 +161,8 @@ class Database:
             "events": {
                 "rsvp_sent": "INTEGER NOT NULL DEFAULT 0",
                 "rsvp_prompt_id": "INTEGER",
+                "voice_created": "INTEGER NOT NULL DEFAULT 0",
+                "voice_channel_id": "INTEGER",
             },
         }
         for table, columns in added.items():
@@ -343,6 +349,58 @@ class Database:
         )
         await self.conn.commit()
         return cur.rowcount > 0
+
+    # ----- Temporary voice channels -----
+
+    async def events_due_for_voice(self, now_ts: int, lead_s: int, grace_s: int):
+        """Open scheduled events whose temp voice channel should be created now.
+
+        Within the lead window before the start, not yet claimed, and not so far
+        past the start that they are certainly over.
+        """
+        async with self.conn.execute(
+            """SELECT * FROM events
+               WHERE status = 'open' AND starts_at IS NOT NULL
+                 AND voice_created = 0
+                 AND starts_at <= ? AND starts_at > ?""",
+            (now_ts + lead_s, now_ts - grace_s),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def mark_voice_created(self, message_id: int) -> bool:
+        """Atomically claims the voice-channel creation for an open event."""
+        cur = await self.conn.execute(
+            "UPDATE events SET voice_created = 1 "
+            "WHERE message_id = ? AND status = 'open' AND voice_created = 0",
+            (message_id,),
+        )
+        await self.conn.commit()
+        return cur.rowcount > 0
+
+    async def set_voice_channel(self, message_id: int, channel_id: int) -> None:
+        await self.conn.execute(
+            "UPDATE events SET voice_channel_id = ? WHERE message_id = ?",
+            (channel_id, message_id),
+        )
+        await self.conn.commit()
+
+    async def clear_voice_channel(self, message_id: int) -> None:
+        """Forgets the channel (kept voice_created = 1 so it isn't recreated)."""
+        await self.conn.execute(
+            "UPDATE events SET voice_channel_id = NULL WHERE message_id = ?",
+            (message_id,),
+        )
+        await self.conn.commit()
+
+    async def events_with_stale_voice(self, now_ts: int, grace_s: int):
+        """Events whose temp voice channel should be cleaned up."""
+        async with self.conn.execute(
+            """SELECT * FROM events
+               WHERE voice_channel_id IS NOT NULL
+                 AND (status IN ('done', 'cancelled') OR starts_at < ?)""",
+            (now_ts - grace_s,),
+        ) as cur:
+            return await cur.fetchall()
 
     # ----- RSVP ("are you coming?" before the event) -----
 

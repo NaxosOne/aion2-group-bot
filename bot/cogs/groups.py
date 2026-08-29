@@ -13,7 +13,12 @@ from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.messages import parse_message_id
 from ..utils.time_parse import ParseError, parse_when
+from ..utils.voice import voice_channel_name, voice_due, voice_is_stale
 from ..views import RSVPView
+
+# A temporary voice channel is cleaned up this long after the event's start
+# even if nobody pressed Done.
+VOICE_CLEANUP_GRACE = 3 * 60 * 60
 
 
 @app_commands.guild_only()
@@ -26,11 +31,13 @@ class Groups(commands.Cog):
     async def cog_load(self):
         self.reminders.start()
         self.rsvp_prompts.start()
+        self.voice_channels.start()
         self.status.start()
 
     async def cog_unload(self):
         self.reminders.cancel()
         self.rsvp_prompts.cancel()
+        self.voice_channels.cancel()
         self.status.cancel()
 
     # ----- /event -----
@@ -320,6 +327,67 @@ class Groups(commands.Cog):
             view=RSVPView(lang),
             allowed_mentions=discord.AllowedMentions(users=True),
         )
+
+    # ----- Temporary voice channels -----
+
+    @tasks.loop(seconds=60)
+    async def voice_channels(self):
+        now = int(time.time())
+        lead = config.REMINDER_MINUTES * 60
+        await self._open_due_voice(now, lead)
+        await self._cleanup_stale_voice(now)
+
+    @voice_channels.before_loop
+    async def _wait_ready_voice(self):
+        await self.bot.wait_until_ready()
+
+    async def _open_due_voice(self, now: int, lead: int):
+        events = await self.bot.db.events_due_for_voice(
+            now, lead, VOICE_CLEANUP_GRACE
+        )
+        for ev in events:
+            if not voice_due(ev["starts_at"], now, lead):
+                continue
+            guild = self.bot.get_guild(ev["guild_id"])
+            if guild is None:
+                continue
+            settings = await self.bot.db.get_settings(ev["guild_id"])
+            category_id = settings["voice_category_id"] if settings else None
+            if not category_id:
+                continue  # temporary voice channels not enabled for this guild
+            category = guild.get_channel(category_id)
+            if not isinstance(category, discord.CategoryChannel):
+                continue
+            # Claim atomically so two ticks can't create the channel twice.
+            if not await self.bot.db.mark_voice_created(ev["message_id"]):
+                continue
+            try:
+                channel = await guild.create_voice_channel(
+                    voice_channel_name(ev["title"]), category=category
+                )
+            except discord.HTTPException:
+                continue  # missing Manage Channels or similar: skip
+            await self.bot.db.set_voice_channel(ev["message_id"], channel.id)
+
+    async def _cleanup_stale_voice(self, now: int):
+        events = await self.bot.db.events_with_stale_voice(
+            now, VOICE_CLEANUP_GRACE
+        )
+        for ev in events:
+            if not voice_is_stale(
+                ev["status"], ev["starts_at"], now, VOICE_CLEANUP_GRACE
+            ):
+                continue
+            await self._delete_voice(ev["message_id"], ev["voice_channel_id"])
+
+    async def _delete_voice(self, message_id: int, channel_id: int):
+        channel = self.bot.get_channel(channel_id)
+        if channel is not None:
+            try:
+                await channel.delete()
+            except discord.HTTPException:
+                pass  # already gone or no permission
+        await self.bot.db.clear_voice_channel(message_id)
 
     # ----- Bot status: the next event -----
 

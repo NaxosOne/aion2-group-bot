@@ -52,6 +52,7 @@ PANEL_KEYS = {
         "events": "<#1>", "absences": "<#2>", "rsvp": "<#3>",
     },
     "channels.where_used": {},
+    "channels.voice_on": {"category": "<#1>"},
     "panel.target_events": {"channel": "<#1>"},
     "panel.target_absences": {"channel": "<#2>"},
     "panel.title": {},

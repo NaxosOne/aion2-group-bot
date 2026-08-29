@@ -338,6 +338,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             i18n.t("signup.completed", lang, title=event["title"])
             + (f" GG {mentions}" if mentions else "")
         )
+        await self._delete_event_voice(interaction, event)
 
     @discord.ui.button(
         label="Cancel event", emoji="🗑️", style=discord.ButtonStyle.secondary,
@@ -375,6 +376,20 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                    who=interaction.user.mention)
             + (f"\n{mentions}" if mentions else "")
         )
+        await self._delete_event_voice(interaction, event)
+
+    async def _delete_event_voice(self, interaction, event):
+        """Removes the event's temporary voice channel, if it has one."""
+        channel_id = event["voice_channel_id"]
+        if not channel_id:
+            return
+        channel = interaction.client.get_channel(channel_id)
+        if channel is not None:
+            try:
+                await channel.delete()
+            except discord.HTTPException:
+                pass  # already gone or no permission
+        await interaction.client.db.clear_voice_channel(event["message_id"])
 
     @discord.ui.button(
         label="Edit", emoji="✏️", style=discord.ButtonStyle.secondary,
