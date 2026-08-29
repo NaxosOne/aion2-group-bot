@@ -15,7 +15,7 @@ import discord
 from . import config, i18n
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ViewErrorMixin
-from .logic import assign
+from .logic import MOVE_DOWN, MOVE_UP, assign, reorder_priorities, signup_priority
 
 
 async def refresh_event_message(client, event) -> list:
@@ -137,6 +137,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         "aion2:leave": "signup.btn_leave",
         "aion2:done": "signup.btn_done",
         "aion2:cancel": "signup.btn_cancel",
+        "aion2:queue": "signup.btn_manage",
     }
 
     def __init__(self, lang: str = "en"):
@@ -269,6 +270,37 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             i18n.t("signup.cancelled", lang, title=event["title"],
                    who=interaction.user.mention)
             + (f"\n{mentions}" if mentions else "")
+        )
+
+    @discord.ui.button(
+        label="Manage queue", emoji="🧮", style=discord.ButtonStyle.secondary,
+        custom_id="aion2:queue", row=2,
+    )
+    async def queue_button(self, interaction: discord.Interaction, _):
+        db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        event = await self._open_event(interaction)
+        if event is None:
+            return
+
+        # Reordering the queue is an admin-only action (Manage Server).
+        if not interaction.user.guild_permissions.manage_guild:
+            await interaction.response.send_message(
+                i18n.t("signup.only_admin_manage", lang), ephemeral=True
+            )
+            return
+
+        signups = await db.get_signups(event["message_id"])
+        if len(signups) < 2:
+            await interaction.response.send_message(
+                i18n.t("signup.manage_empty", lang), ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            i18n.t("signup.manage_intro", lang),
+            view=QueueManageView(event, signups, lang),
+            ephemeral=True,
         )
 
     # ----- Shared machinery -----
@@ -421,6 +453,131 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 i18n.t("signup.promoted", lang,
                        mentions=mentions, title=event["title"])
             )
+
+
+def _ranked_signups(signups: list) -> list:
+    """Sign-ups in queue order: highest admin priority first, then join order."""
+    return sorted(signups, key=signup_priority, reverse=True)
+
+
+class QueueSelect(discord.ui.Select):
+    """Picks which sign-up the admin is about to move up or down."""
+
+    def __init__(self, ranked: list, party_ids: set, selected: int | None,
+                 lang: str = "en"):
+        options = []
+        for position, s in enumerate(ranked[:25], start=1):
+            in_party = s["user_id"] in party_ids
+            tag = i18n.t(
+                "signup.in_party" if in_party else "signup.waitlisted_tag", lang
+            )
+            description = f"{tag} · {ROLE_LABEL[s['role']]}"
+            if s["char_name"]:
+                description += f" · {s['char_name']}"
+            options.append(discord.SelectOption(
+                label=f"{position}. {s['display_name']}"[:100],
+                value=str(s["user_id"]),
+                description=description[:100],
+                default=s["user_id"] == selected,
+            ))
+        super().__init__(
+            placeholder=i18n.t("signup.queue_placeholder", lang), options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected = int(self.values[0])
+        signups = await interaction.client.db.get_signups(
+            self.view.event["message_id"]
+        )
+        await interaction.response.edit_message(
+            view=QueueManageView(
+                self.view.event, signups, self.view.lang, selected=self.view.selected
+            )
+        )
+
+
+class QueueManageView(ViewErrorMixin, discord.ui.View):
+    """Admin-only ephemeral controls to reorder an event's sign-up queue.
+
+    Short-lived and private to one admin, so no persistence is needed. Moving a
+    sign-up up or down rewrites the stored priorities (see logic.reorder_priorities)
+    and redraws the public event message; anyone this pushes into the party is
+    pinged, exactly like an automatic promotion.
+    """
+
+    _BUTTONS = {"queue:up": "signup.btn_up", "queue:down": "signup.btn_down"}
+
+    def __init__(self, event, signups: list, lang: str = "en",
+                 selected: int | None = None):
+        super().__init__(timeout=180)
+        self.event = event
+        self.lang = lang
+        ranked = _ranked_signups(signups)
+        party, _waitlist = assign(event["compo"], event["size"], signups)
+        party_ids = {s["user_id"] for s in party}
+        if selected is None or all(s["user_id"] != selected for s in ranked):
+            selected = ranked[0]["user_id"] if ranked else None
+        self.selected = selected
+        for child in self.children:
+            key = self._BUTTONS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
+        self.add_item(QueueSelect(ranked, party_ids, selected, lang))
+
+    @discord.ui.button(emoji="⬆️", style=discord.ButtonStyle.primary,
+                       custom_id="queue:up", row=1)
+    async def up_button(self, interaction: discord.Interaction, _):
+        await self._move(interaction, MOVE_UP)
+
+    @discord.ui.button(emoji="⬇️", style=discord.ButtonStyle.primary,
+                       custom_id="queue:down", row=1)
+    async def down_button(self, interaction: discord.Interaction, _):
+        await self._move(interaction, MOVE_DOWN)
+
+    async def _move(self, interaction: discord.Interaction, direction: str):
+        db = interaction.client.db
+        async with SignupView._locks[self.event["message_id"]]:
+            signups = await db.get_signups(self.event["message_id"])
+            ordered_ids = [s["user_id"] for s in _ranked_signups(signups)]
+            if self.selected not in ordered_ids:
+                # The picked member left the event meanwhile: just redraw.
+                await interaction.response.edit_message(
+                    view=QueueManageView(self.event, signups, self.lang)
+                )
+                return
+
+            party_before, _ = assign(
+                self.event["compo"], self.event["size"], signups
+            )
+            priorities = reorder_priorities(ordered_ids, self.selected, direction)
+            await db.set_signup_priorities(self.event["message_id"], priorities)
+            signups = await db.get_signups(self.event["message_id"])
+
+            # Answer the interaction (redraw the ephemeral panel) before the
+            # slower HTTP edit of the public event message.
+            await interaction.response.edit_message(
+                view=QueueManageView(
+                    self.event, signups, self.lang, selected=self.selected
+                )
+            )
+            await refresh_event_message(interaction.client, self.event)
+            await self._announce_promoted(interaction, party_before, signups)
+
+    async def _announce_promoted(self, interaction, party_before: list,
+                                 signups: list):
+        party, _ = assign(self.event["compo"], self.event["size"], signups)
+        ids_before = {s["user_id"] for s in party_before}
+        promoted = [s for s in party if s["user_id"] not in ids_before]
+        if not promoted:
+            return
+        channel = interaction.client.get_channel(self.event["channel_id"])
+        if channel is None:
+            channel = await interaction.client.fetch_channel(self.event["channel_id"])
+        mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
+        await channel.send(
+            i18n.t("signup.promoted", self.lang,
+                   mentions=mentions, title=self.event["title"])
+        )
 
 
 class RSVPView(ViewErrorMixin, discord.ui.View):

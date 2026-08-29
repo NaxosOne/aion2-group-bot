@@ -1,10 +1,22 @@
 """Tests for the party/waitlist split. Run: pytest"""
 
-from bot.logic import COMPO_OPEN, COMPO_STANDARD, assign, standard_slots
+from bot.logic import (
+    MOVE_DOWN,
+    MOVE_UP,
+    COMPO_OPEN,
+    COMPO_STANDARD,
+    assign,
+    reorder_priorities,
+    standard_slots,
+)
 
 
 def s(user_id, role):
     return {"user_id": user_id, "role": role}
+
+
+def sp(user_id, role, priority):
+    return {"user_id": user_id, "role": role, "priority": priority}
 
 
 def ids(items):
@@ -74,3 +86,70 @@ def test_legacy_french_value():
     signups = [s(i, "dps") for i in range(1, 7)]
     party, waitlist = assign("libre", 5, signups)
     assert len(party) == 5 and ids(waitlist) == [6]
+
+
+def test_priority_bumps_within_role_standard():
+    # 3 DPS slots. A later-joined DPS given a higher priority jumps the
+    # queue for its own role, sending the lowest-priority DPS to the waitlist.
+    signups = [sp(1, "dps", 0), sp(2, "dps", 0), sp(3, "dps", 0), sp(4, "dps", 5)]
+    party, waitlist = assign(COMPO_STANDARD, 5, signups)
+    assert ids(party) == [4, 1, 2]
+    assert ids(waitlist) == [3]
+
+
+def test_priority_bumps_in_open():
+    # Open party of 2: the third sign-up, boosted, takes a party seat.
+    signups = [sp(1, "dps", 0), sp(2, "dps", 0), sp(3, "heal", 1)]
+    party, waitlist = assign(COMPO_OPEN, 2, signups)
+    assert ids(party) == [3, 1]
+    assert ids(waitlist) == [2]
+
+
+def test_priority_stable_within_same_value():
+    # Equal priority preserves join order (first come, first served).
+    signups = [sp(1, "dps", 2), sp(2, "dps", 2), sp(3, "dps", 2)]
+    party, waitlist = assign(COMPO_OPEN, 2, signups)
+    assert ids(party) == [1, 2]
+    assert ids(waitlist) == [3]
+
+
+def test_priority_missing_key_defaults_to_zero():
+    # A sign-up with no priority key ranks below an explicitly boosted one,
+    # so old rows created before the column existed still behave as FCFS.
+    signups = [s(1, "dps"), s(2, "dps"), sp(3, "dps", 4)]
+    party, waitlist = assign(COMPO_OPEN, 2, signups)
+    assert ids(party) == [3, 1]
+    assert ids(waitlist) == [2]
+
+
+def order_of(priorities):
+    """The ranking implied by a {user_id: priority} map (highest first)."""
+    return sorted(priorities, key=lambda uid: priorities[uid], reverse=True)
+
+
+def test_move_up_swaps_with_predecessor():
+    # 3 climbs one rank, over 2.
+    result = reorder_priorities([1, 2, 3, 4], 3, MOVE_UP)
+    assert order_of(result) == [1, 3, 2, 4]
+
+
+def test_move_down_swaps_with_successor():
+    # 2 drops one rank, under 3 (mirror of moving 3 up).
+    result = reorder_priorities([1, 2, 3, 4], 2, MOVE_DOWN)
+    assert order_of(result) == [1, 3, 2, 4]
+
+
+def test_move_up_at_top_is_noop():
+    result = reorder_priorities([1, 2, 3], 1, MOVE_UP)
+    assert order_of(result) == [1, 2, 3]
+
+
+def test_move_down_at_bottom_is_noop():
+    result = reorder_priorities([1, 2, 3], 3, MOVE_DOWN)
+    assert order_of(result) == [1, 2, 3]
+
+
+def test_reorder_priorities_are_strictly_descending():
+    # Dense, distinct ranks let a later swap stay unambiguous.
+    result = reorder_priorities([1, 2, 3], 3, MOVE_UP)
+    assert result == {1: 3, 3: 2, 2: 1}

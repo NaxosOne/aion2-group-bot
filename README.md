@@ -134,6 +134,12 @@ When a spot opens:
 
 No manual reshuffling required.
 
+**Admins can reorder the queue.** A **Manage queue** button on each event
+(admins only — Manage Server) opens a private panel listing every sign-up in
+order, marked ✅ *in the party* or ⏳ *waitlisted*. Pick a player and move them
+up or down; the party is recomputed live (per-role slots still respected) and
+anyone pushed into the party is pinged, exactly like an automatic promotion.
+
 ### ⏰ Smart schedules
 
 Kisk understands natural time expressions such as:

@@ -25,14 +25,14 @@ Les fondations sont en place :
 * Gestion des profils — `/profile delete` (le tien, ou celui d'un membre pour les modérateurs) et nettoyage automatique au départ d'un membre du serveur
 * Fil de discussion automatique sur chaque message d'événement (best-effort ; sauté si le bot n'a pas Create Public Threads)
 * Invite RSVP avant un événement — un message « tu viens ? » avec boutons confirmer/décliner et un décompte en direct (timing configurable)
+* Sélecteur de personnage à l'inscription — les joueurs ayant plusieurs personnages enregistrés choisissent celui qu'ils amènent après avoir choisi un rôle, chacun affiché avec son icône de classe Aion 2 ; `/profile set` restreint les personnages à la liste de classes connues
+* Réordonnancement de la file par les admins — un bouton « Gérer la file » (admins uniquement) permet de faire monter ou descendre les inscriptions pour promouvoir des joueurs en attente ; les places par rôle restent respectées et tout joueur poussé dans la party est notifié
 
 ## 🟢 Phase 1 — Meilleure organisation des groupes
 
 Rendre la création et la gestion des groupes aussi fluides que possible.
 
-* [ ] Sélecteur de classe Aion 2 lors de l'inscription
 * [ ] UX améliorée des événements et des groupes
-* [ ] Meilleure gestion de la liste d'attente (réorganisation manuelle, places par rôle)
 * [ ] Compositions de groupe plus flexibles (ratios personnalisés)
 
 ## 🔵 Phase 2 — Planification de légion

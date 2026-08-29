@@ -135,6 +135,13 @@ Quand une place se libère :
 
 Aucun réajustement manuel nécessaire.
 
+**Les admins peuvent réordonner la file.** Un bouton **Gérer la file** sur chaque
+événement (admins uniquement — Gérer le serveur) ouvre un panneau privé listant
+toutes les inscriptions dans l'ordre, marquées ✅ *dans la party* ou ⏳ *en
+attente*. Choisis un joueur et fais-le monter ou descendre ; la party est
+recalculée en direct (les places par rôle restent respectées) et tout joueur
+poussé dans la party est notifié, exactement comme une promotion automatique.
+
 ### ⏰ Horaires intelligents
 
 Kisk comprend les expressions de temps naturelles telles que :
