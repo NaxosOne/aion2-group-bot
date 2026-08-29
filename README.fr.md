@@ -123,6 +123,11 @@ Recliquer sur le même rôle change de personnage sans perdre sa place dans la
 file. Les joueurs avec un seul personnage (ou aucun) sont inscrits directement,
 exactement comme avant.
 
+**Les places libres sont visibles d'un coup d'œil.** Tant qu'un groupe standard
+a de la place, chaque champ de rôle affiche ses places vides en lignes discrètes
+`◦ libre`, et un court résumé **Manque : 1 Tank, 2 DPS** apparaît sous l'en-tête
+— pour voir ce qui manque et combler le bon rôle.
+
 ### 🪑 Liste d'attente intelligente
 
 Quand un événement est complet, les joueurs supplémentaires sont automatiquement placés sur la liste d'attente.

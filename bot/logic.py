@@ -96,6 +96,27 @@ def assign(compo: str, size: int, signups: list) -> tuple[list, list]:
     return party, waitlist
 
 
+def missing_slots(compo: str, size: int, signups: list) -> dict:
+    """Open seats per role that still need filling, for display.
+
+    Standard mode only: returns `{role: remaining}` for each role not yet full
+    (filled roles are omitted). Open mode has no per-role slots, so it returns
+    an empty dict; the party's own count already shows how many seats are left.
+    """
+    if compo != COMPO_STANDARD:
+        return {}
+    party, _waitlist = assign(compo, size, signups)
+    slots = standard_slots(size)
+    filled = {role: 0 for role in ROLES}
+    for s in party:
+        filled[s["role"]] += 1
+    return {
+        role: slots[role] - filled[role]
+        for role in ROLES
+        if slots[role] - filled[role] > 0
+    }
+
+
 def role_capacity(compo: str, size: int, role: str) -> int:
     """Number of slots for a given role (useful for display)."""
     if compo == COMPO_STANDARD:

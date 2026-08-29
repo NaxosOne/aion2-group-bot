@@ -34,6 +34,10 @@ EVENT_KEYS = {
         "size": 5,
     },
     "events.waitlist_suffix": {"n": 2},
+    # embeds.py "still needed" summary
+    "event.needs": {"roles": "1 🛡️ Tank"},
+    "event.needs_role": {"n": 1, "emoji": "🛡️", "label": "Tank"},
+    "event.open_slot": {},
     # cogs/groups.py /rsvp
     "rsvp.need_id": {},
     "rsvp.not_found_here": {},
