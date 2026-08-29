@@ -25,12 +25,12 @@ The foundations are in place:
 * Profile management — `/profile delete` (yours, or a member's for moderators) and automatic cleanup when a member leaves the server
 * Automatic discussion thread on every event message (best-effort; skipped if the bot lacks Create Public Threads)
 * RSVP prompt before an event — an "are you coming?" message with confirm/decline buttons and a live tally (configurable timing)
+* Character picker at sign-up — players with several registered characters pick which one they bring after choosing a role, each shown with its Aion 2 class icon; `/profile set` restricts characters to the known class list
 
 ## 🟢 Phase 1 — Better group organisation
 
 Make creating and managing groups as frictionless as possible.
 
-* [ ] Aion 2 class picker during sign-up
 * [ ] Improved event and party UX
 * [ ] Better waitlist management (manual reordering, role-aware slots)
 * [ ] More flexible party compositions (custom ratios)
