@@ -7,6 +7,7 @@ published messages stay clickable.
 """
 
 import asyncio
+import io
 import time
 from collections import defaultdict
 
@@ -16,6 +17,7 @@ from . import config, i18n
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ModalErrorMixin, ViewErrorMixin
 from .logic import MOVE_DOWN, MOVE_UP, assign, reorder_priorities, signup_priority
+from .utils.ics import build_calendar
 from .utils.permissions import member_is_admin, member_is_moderator
 from .utils.time_parse import (
     ParseError,
@@ -242,6 +244,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         "aion2:cancel": "signup.btn_cancel",
         "aion2:edit": "signup.btn_edit",
         "aion2:queue": "signup.btn_manage",
+        "aion2:ics": "signup.btn_calendar",
     }
 
     def __init__(self, lang: str = "en"):
@@ -441,6 +444,25 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             i18n.t("signup.manage_intro", lang),
             view=QueueManageView(event, signups, lang),
             ephemeral=True,
+        )
+
+    @discord.ui.button(
+        label="Calendar", emoji="📅", style=discord.ButtonStyle.secondary,
+        custom_id="aion2:ics", row=2,
+    )
+    async def ics_button(self, interaction: discord.Interaction, _):
+        db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        events = await db.upcoming_events(interaction.guild_id, int(time.time()))
+        if not any(e["starts_at"] is not None for e in events):
+            await interaction.response.send_message(
+                i18n.t("ics.none", lang), ephemeral=True
+            )
+            return
+        data = build_calendar(events).encode("utf-8")
+        file = discord.File(io.BytesIO(data), filename="kisk-events.ics")
+        await interaction.response.send_message(
+            i18n.t("ics.here", lang), file=file, ephemeral=True
         )
 
     # ----- Shared machinery -----

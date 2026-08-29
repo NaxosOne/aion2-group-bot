@@ -47,6 +47,8 @@ VIEW_KEYS = {
     "signup.edit_gone": {},
     "signup.edit_when_cleared": {},
     "signup.rescheduled": {"title": "Raid", "when": "<t:1:F>", "mentions": "<@1>"},
+    "ics.here": {},
+    "ics.none": {},
     "signup.event_gone": {},
     "signup.event_done": {},
     "signup.event_cancelled": {},
