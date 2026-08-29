@@ -11,7 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from .. import config
+from .. import config, i18n
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..logic import MAX_CHARACTERS, ROLES
 
@@ -61,8 +61,11 @@ async def character_autocomplete(interaction: discord.Interaction, current: str)
 
 async def deletable_autocomplete(interaction: discord.Interaction, current: str):
     """Same list, with "everything" as the first entry."""
+    lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
     choices = [
-        app_commands.Choice(name="🗑️ Every character", value=ALL_CHARACTERS)
+        app_commands.Choice(
+            name=i18n.t("profile.every_character", lang), value=ALL_CHARACTERS
+        )
     ] + await _character_choices(interaction, current)
     return choices[:25]
 
@@ -142,6 +145,7 @@ class Profile(commands.GroupCog, name="profile"):
         role: app_commands.Choice[str],
         main: bool = False,
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         name, char_class = name.strip(), char_class.value
         characters = await self.bot.db.get_profiles(
             interaction.guild_id, interaction.user.id
@@ -149,8 +153,7 @@ class Profile(commands.GroupCog, name="profile"):
         known = {row["char_name"].lower() for row in characters}
         if name.lower() not in known and len(characters) >= MAX_CHARACTERS:
             await interaction.response.send_message(
-                f"You've reached {MAX_CHARACTERS} characters — delete one with "
-                "`/profile delete` before adding another.",
+                i18n.t("profile.cap_reached", lang, max=MAX_CHARACTERS),
                 ephemeral=True,
             )
             return
@@ -164,15 +167,11 @@ class Profile(commands.GroupCog, name="profile"):
             f"{ROLE_EMOJI[role.value]} **{name}** "
             f"({char_class}, {ROLE_LABEL[role.value]})"
         )
-        if main or was_first:
-            note = "It's your **main**: it's the one shown by default in parties."
-        else:
-            note = (
-                "Sign up for an event and you'll get to pick which character "
-                "you're bringing. `/profile main` changes your default."
-            )
+        note = i18n.t(
+            "profile.note_main" if main or was_first else "profile.note_alt", lang
+        )
         await interaction.response.send_message(
-            f"✅ Saved: {detail}\n{note}", ephemeral=True
+            i18n.t("profile.saved", lang, detail=detail, note=note), ephemeral=True
         )
 
     @app_commands.command(
@@ -181,13 +180,13 @@ class Profile(commands.GroupCog, name="profile"):
     @app_commands.describe(character="The character to promote")
     @app_commands.autocomplete(character=character_autocomplete)
     async def main(self, interaction: discord.Interaction, character: str):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         row = await resolve_character(
             self.bot.db, interaction.guild_id, interaction.user.id, character
         )
         if row is None:
             await interaction.response.send_message(
-                f"You have no character called **{character}**. "
-                "Register it with `/profile set`.",
+                i18n.t("profile.main_not_found", lang, character=character),
                 ephemeral=True,
             )
             return
@@ -196,7 +195,7 @@ class Profile(commands.GroupCog, name="profile"):
             interaction.guild_id, interaction.user.id, row["id"]
         )
         await interaction.response.send_message(
-            f"⭐ **{row['char_name']}** is now your main.", ephemeral=True
+            i18n.t("profile.main_set", lang, name=row["char_name"]), ephemeral=True
         )
 
     @app_commands.command(name="show", description="See a member's profile")
@@ -204,27 +203,30 @@ class Profile(commands.GroupCog, name="profile"):
     async def show(
         self, interaction: discord.Interaction, member: discord.Member | None = None
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         target = member or interaction.user
+        is_self = target == interaction.user
         characters = await self.bot.db.get_profiles(interaction.guild_id, target.id)
         if not characters:
-            who = (
-                "You don't have"
-                if target == interaction.user
-                else f"{target.display_name} doesn't have"
-            )
+            key = "profile.show_none_self" if is_self else "profile.show_none_other"
             await interaction.response.send_message(
-                f"{who} a profile yet. Create one with `/profile set`!",
+                i18n.t(key, lang, name=target.display_name),
                 ephemeral=True,
             )
             return
 
+        title = (
+            i18n.t("profile.show_title_self", lang)
+            if is_self
+            else i18n.t("profile.show_title_other", lang, name=target.display_name)
+        )
         embed = discord.Embed(
-            title=f"👤 {target.display_name}'s profile",
+            title=title,
             description="\n".join(character_line(row) for row in characters),
             colour=discord.Colour.blurple(),
         )
         embed.set_footer(
-            text=f"{len(characters)} character(s) • ⭐ = main"
+            text=i18n.t("profile.show_footer", lang, n=len(characters))
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -242,13 +244,12 @@ class Profile(commands.GroupCog, name="profile"):
         character: str | None = None,
         member: discord.Member | None = None,
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         target = member or interaction.user
-        if (
-            target != interaction.user
-            and not interaction.user.guild_permissions.manage_guild
-        ):
+        is_self = target == interaction.user
+        if not is_self and not interaction.user.guild_permissions.manage_guild:
             await interaction.response.send_message(
-                "Only moderators can delete another member's profile.", ephemeral=True
+                i18n.t("profile.delete_mod_only", lang), ephemeral=True
             )
             return
 
@@ -258,13 +259,16 @@ class Profile(commands.GroupCog, name="profile"):
                 self.bot.db, interaction.guild_id, target.id, character
             )
             if row is None:
-                whose = (
-                    "You have"
-                    if target == interaction.user
-                    else f"{target.display_name} has"
+                key = (
+                    "profile.delete_not_found_self"
+                    if is_self
+                    else "profile.delete_not_found_other"
                 )
                 await interaction.response.send_message(
-                    f"{whose} no character called **{character}**.", ephemeral=True
+                    i18n.t(
+                        key, lang, name=target.display_name, character=character
+                    ),
+                    ephemeral=True,
                 )
                 return
 
@@ -272,24 +276,31 @@ class Profile(commands.GroupCog, name="profile"):
             interaction.guild_id, target.id, None if row is None else row["id"]
         )
         if count == 0:
-            whose = (
-                "You have"
-                if target == interaction.user
-                else f"{target.display_name} has"
-            )
+            key = "profile.delete_none_self" if is_self else "profile.delete_none_other"
             await interaction.response.send_message(
-                f"{whose} nothing to delete there.", ephemeral=True
+                i18n.t(key, lang, name=target.display_name), ephemeral=True
             )
             return
 
-        whose = "Your" if target == interaction.user else f"{target.display_name}'s"
         if row is None:
-            what = f"profile ({count} character(s))"
+            key = (
+                "profile.deleted_self_profile"
+                if is_self
+                else "profile.deleted_other_profile"
+            )
+            message = i18n.t(
+                key, lang, name=target.display_name, count=count
+            )
         else:
-            what = f"character **{row['char_name']}**"
-        await interaction.response.send_message(
-            f"🗑️ {whose} {what} was deleted.", ephemeral=True
-        )
+            key = (
+                "profile.deleted_self_char"
+                if is_self
+                else "profile.deleted_other_char"
+            )
+            message = i18n.t(
+                key, lang, name=target.display_name, char=row["char_name"]
+            )
+        await interaction.response.send_message(message, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -349,10 +360,11 @@ class Roster(commands.Cog):
 
     @app_commands.command(name="roster", description="The legion's character roster")
     async def roster(self, interaction: discord.Interaction):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         characters = await self.bot.db.all_profiles(interaction.guild_id)
         if not characters:
             await interaction.response.send_message(
-                "The roster is empty: add yourself with `/profile set`.",
+                i18n.t("roster.empty", lang),
                 ephemeral=True,
             )
             return
@@ -368,7 +380,7 @@ class Roster(commands.Cog):
             line = f"• <@{user_id}>: {character_line(chars[0], star=False)}"
             if len(chars) > 1:
                 alts = ", ".join(row["char_name"] for row in chars[1:])
-                line += f" — alts: {alts}"
+                line += i18n.t("roster.alts", lang, alts=alts)
             lines.append(line)
 
         # Safety margin under Discord's 4096-character description limit.
@@ -377,7 +389,10 @@ class Roster(commands.Cog):
             text = text[:3900] + "\n…"
 
         embed = discord.Embed(
-            title=f"📖 Legion roster ({len(by_member)} members, {len(characters)} characters)",
+            title=i18n.t(
+                "roster.title", lang,
+                members=len(by_member), chars=len(characters),
+            ),
             description=text,
             colour=discord.Colour.blurple(),
         )

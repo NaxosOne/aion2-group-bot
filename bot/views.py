@@ -12,7 +12,7 @@ from collections import defaultdict
 
 import discord
 
-from . import config
+from . import config, i18n
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ViewErrorMixin
 from .logic import assign
@@ -30,7 +30,9 @@ async def refresh_event_message(client, event) -> list:
     classes = await client.db.get_main_classes(
         event["guild_id"], [s["user_id"] for s in signups]
     )
-    embed = build_event_embed(event, signups, classes)
+    guild = client.get_guild(event["guild_id"])
+    lang = await i18n.resolve_lang(client.db, guild)
+    embed = build_event_embed(event, signups, classes, lang)
     channel = client.get_channel(event["channel_id"])
     if channel is None:
         channel = await client.fetch_channel(event["channel_id"])
@@ -52,9 +54,9 @@ def character_option(row, *, default: bool = False) -> discord.SelectOption:
 class CharacterSelect(discord.ui.Select):
     """Which character the member is bringing to this event."""
 
-    def __init__(self, characters: list, current_id: int | None):
+    def __init__(self, characters: list, current_id: int | None, lang: str = "en"):
         super().__init__(
-            placeholder="Which character are you bringing?",
+            placeholder=i18n.t("signup.pick_placeholder", lang),
             options=[
                 character_option(row, default=row["id"] == current_id)
                 for row in characters
@@ -73,7 +75,7 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
     """
 
     def __init__(self, signups: "SignupView", event, role: str, characters: list,
-                 current_id: int | None, switching: bool):
+                 current_id: int | None, switching: bool, lang: str = "en"):
         super().__init__(timeout=180)
         self.signups = signups
         self.event = event
@@ -81,16 +83,17 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
         # A member already in the party is only swapping characters; anyone
         # else is joining (or changing role), which re-queues them.
         self.switching = switching
-        self.add_item(CharacterSelect(characters, current_id))
+        self.add_item(CharacterSelect(characters, current_id, lang))
 
     async def chosen(self, interaction: discord.Interaction, character_id: int):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         character = await db.get_character(
             self.event["guild_id"], interaction.user.id, character_id
         )
         if character is None:  # deleted between opening the menu and picking
             await interaction.response.edit_message(
-                content="That character doesn't exist any more.", view=None
+                content=i18n.t("signup.char_gone", lang), view=None
             )
             return
 
@@ -100,15 +103,17 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
                     self.event["message_id"], interaction.user.id, character_id
                 )
                 await interaction.response.edit_message(
-                    content=f"🔁 You're bringing **{character['char_name']}** "
-                    f"to **{self.event['title']}**.",
+                    content=i18n.t(
+                        "signup.bringing", lang,
+                        name=character["char_name"], title=self.event["title"],
+                    ),
                     view=None,
                 )
                 await refresh_event_message(interaction.client, self.event)
                 return
 
             message, party_before = await self.signups.perform_join(
-                interaction, self.event, self.role, character
+                interaction, self.event, self.role, character, lang
             )
             await interaction.response.edit_message(content=message, view=None)
             await refresh_event_message(interaction.client, self.event)
@@ -126,8 +131,20 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     # concurrent clicks can't double-promote or emit phantom promotions.
     _locks: dict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
 
-    def __init__(self):
+    # Which buttons carry a translatable label; role buttons (tank/heal/dps)
+    # keep their emoji-driven tokens untouched.
+    _LABELS = {
+        "aion2:leave": "signup.btn_leave",
+        "aion2:done": "signup.btn_done",
+        "aion2:cancel": "signup.btn_cancel",
+    }
+
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
+        for child in self.children:
+            key = self._LABELS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
 
     # ----- Sign-up buttons -----
 
@@ -158,6 +175,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     )
     async def leave_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         event = await self._open_event(interaction)
         if event is None:
             return
@@ -170,12 +188,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             removed = await db.remove_signup(event["message_id"], interaction.user.id)
             if not removed:
                 await interaction.response.send_message(
-                    "You're not signed up for this event.", ephemeral=True
+                    i18n.t("signup.not_signed_up", lang), ephemeral=True
                 )
                 return
 
             await self._update_message(interaction, event)
-            await interaction.followup.send("You've left the event. 👋", ephemeral=True)
+            await interaction.followup.send(
+                i18n.t("signup.left", lang), ephemeral=True
+            )
             await self.announce_promoted(interaction, event, party_before)
 
     @discord.ui.button(
@@ -184,6 +204,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     )
     async def done_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         event = await self._open_event(interaction)
         if event is None:
             return
@@ -192,7 +213,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         is_mod = interaction.user.guild_permissions.manage_messages
         if not (is_creator or is_mod):
             await interaction.response.send_message(
-                "Only the event creator (or a moderator) can close it.",
+                i18n.t("signup.only_creator_close", lang),
                 ephemeral=True,
             )
             return
@@ -203,13 +224,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         classes = await db.get_main_classes(
             event["guild_id"], [s["user_id"] for s in signups]
         )
-        embed = build_event_embed(event, signups, classes)
+        embed = build_event_embed(event, signups, classes, lang)
         await interaction.response.edit_message(embed=embed, view=None)
 
         party, _ = assign(event["compo"], event["size"], signups)
         mentions = " ".join(f"<@{s['user_id']}>" for s in party)
         await interaction.followup.send(
-            f"🎉 **{event['title']}** completed!" + (f" GG {mentions}" if mentions else "")
+            i18n.t("signup.completed", lang, title=event["title"])
+            + (f" GG {mentions}" if mentions else "")
         )
 
     @discord.ui.button(
@@ -218,6 +240,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     )
     async def cancel_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         event = await self._open_event(interaction)
         if event is None:
             return
@@ -226,7 +249,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         is_mod = interaction.user.guild_permissions.manage_messages
         if not (is_creator or is_mod):
             await interaction.response.send_message(
-                "Only the event creator (or a moderator) can cancel it.",
+                i18n.t("signup.only_creator_cancel", lang),
                 ephemeral=True,
             )
             return
@@ -237,13 +260,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         classes = await db.get_main_classes(
             event["guild_id"], [s["user_id"] for s in signups]
         )
-        embed = build_event_embed(event, signups, classes)
+        embed = build_event_embed(event, signups, classes, lang)
         await interaction.response.edit_message(embed=embed, view=None)
 
         party, waitlist = assign(event["compo"], event["size"], signups)
         mentions = " ".join(f"<@{s['user_id']}>" for s in party + waitlist)
         await interaction.followup.send(
-            f"❌ **{event['title']}** was cancelled by {interaction.user.mention}."
+            i18n.t("signup.cancelled", lang, title=event["title"],
+                   who=interaction.user.mention)
             + (f"\n{mentions}" if mentions else "")
         )
 
@@ -251,6 +275,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
     async def _join(self, interaction: discord.Interaction, role: str):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         event = await self._open_event(interaction)
         if event is None:
             return
@@ -261,7 +286,8 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
         if already_in_this_role and len(characters) < 2:
             await interaction.response.send_message(
-                f"You're already signed up as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**.",
+                i18n.t("signup.already_role", lang,
+                       emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role]),
                 ephemeral=True,
             )
             return
@@ -273,13 +299,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 self, event, role, characters,
                 current_id=existing["character_id"] if existing else None,
                 switching=already_in_this_role,
+                lang=lang,
             )
             intro = (
-                f"You're already {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}** — "
-                "pick the character you're bringing:"
+                i18n.t("signup.pick_switch", lang,
+                       emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role])
                 if already_in_this_role
-                else f"Signing up as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**. "
-                "Which character are you bringing?"
+                else i18n.t("signup.pick_join", lang,
+                            emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role])
             )
             await interaction.response.send_message(
                 intro, view=picker, ephemeral=True
@@ -288,14 +315,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
         async with self._locks[event["message_id"]]:
             message, party_before = await self.perform_join(
-                interaction, event, role, characters[0] if characters else None
+                interaction, event, role, characters[0] if characters else None, lang
             )
             await interaction.response.send_message(message, ephemeral=True)
             await refresh_event_message(interaction.client, event)
             await self.announce_promoted(interaction, event, party_before)
 
     async def perform_join(self, interaction: discord.Interaction, event, role: str,
-                           character) -> tuple[str, list]:
+                           character, lang: str = "en") -> tuple[str, list]:
         """Signs the member up and redraws the event.
 
         Returns the reply to show them and the party as it stood beforehand,
@@ -320,37 +347,42 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
         signups = await db.get_signups(event["message_id"])
         party, waitlist = assign(event["compo"], event["size"], signups)
-        who = f" with **{character['char_name']}**" if character else ""
+        who = (
+            i18n.t("signup.with_character", lang, name=character["char_name"])
+            if character else ""
+        )
         if any(s["user_id"] == interaction.user.id for s in party):
-            message = (
-                f"You're in as {ROLE_EMOJI[role]} **{ROLE_LABEL[role]}**{who}! ✅"
+            message = i18n.t(
+                "signup.joined", lang,
+                emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role], who=who,
             )
         else:
             position = next(
                 i for i, s in enumerate(waitlist, start=1)
                 if s["user_id"] == interaction.user.id
             )
-            message = (
-                f"It's full for now: you're on the **waitlist** "
-                f"(position {position}) as {ROLE_EMOJI[role]} {ROLE_LABEL[role]}"
-                f"{who}. You'll be moved in automatically if a spot opens up. ⏳"
+            message = i18n.t(
+                "signup.waitlisted", lang,
+                position=position, emoji=ROLE_EMOJI[role],
+                label=ROLE_LABEL[role], who=who,
             )
         return message, party_before
 
     async def _open_event(self, interaction: discord.Interaction):
         """Finds the event tied to the clicked message, if it's still open."""
+        lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
         event = await interaction.client.db.get_event(interaction.message.id)
         if event is None:
             await interaction.response.send_message(
-                "I can't find this event any more (database reset?).",
+                i18n.t("signup.event_gone", lang),
                 ephemeral=True,
             )
             return None
         if event["status"] != "open":
             message = (
-                "This event is already completed. ✅"
+                i18n.t("signup.event_done", lang)
                 if event["status"] == "done"
-                else "This event was cancelled."
+                else i18n.t("signup.event_cancelled", lang)
             )
             await interaction.response.send_message(message, ephemeral=True)
             return None
@@ -364,11 +396,12 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         gateway when Discord refreshes the view on a message update.
         """
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         signups = await db.get_signups(event["message_id"])
         classes = await db.get_main_classes(
             event["guild_id"], [s["user_id"] for s in signups]
         )
-        embed = build_event_embed(event, signups, classes)
+        embed = build_event_embed(event, signups, classes, lang)
         await interaction.response.edit_message(embed=embed, view=self)
         return signups
 
@@ -382,10 +415,11 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             if s["user_id"] not in ids_before and s["user_id"] != interaction.user.id
         ]
         if promoted:
+            lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
             mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
             await interaction.followup.send(
-                f"📣 {mentions}: a spot opened up, you're in the party for "
-                f"**{event['title']}**!"
+                i18n.t("signup.promoted", lang,
+                       mentions=mentions, title=event["title"])
             )
 
 
@@ -396,8 +430,17 @@ class RSVPView(ViewErrorMixin, discord.ui.View):
     buttons find their event through `events.rsvp_prompt_id`.
     """
 
-    def __init__(self):
+    _LABELS = {
+        "rsvp:yes": "rsvp.btn_coming",
+        "rsvp:no": "rsvp.btn_not_coming",
+    }
+
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
+        for child in self.children:
+            key = self._LABELS.get(getattr(child, "custom_id", None))
+            if key is not None:
+                child.label = i18n.t(key, lang)
 
     @discord.ui.button(
         label="I'm coming", emoji="✅",
@@ -415,20 +458,21 @@ class RSVPView(ViewErrorMixin, discord.ui.View):
 
     async def _respond(self, interaction: discord.Interaction, status: str):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         event = await db.get_event_by_rsvp_prompt(interaction.message.id)
         if event is None:
             await interaction.response.send_message(
-                "This RSVP is no longer active.", ephemeral=True
+                i18n.t("rsvp.inactive", lang), ephemeral=True
             )
             return
         signups = await db.get_signups(event["message_id"])
         party, _waitlist = assign(event["compo"], event["size"], signups)
         if interaction.user.id not in {s["user_id"] for s in party}:
             await interaction.response.send_message(
-                "Sign up for the event first, then RSVP here.", ephemeral=True
+                i18n.t("rsvp.sign_up_first", lang), ephemeral=True
             )
             return
         await db.set_rsvp(event["message_id"], interaction.user.id, status)
         rsvps = await db.get_rsvps(event["message_id"])
-        embed = build_rsvp_embed(event, party, rsvps)
+        embed = build_rsvp_embed(event, party, rsvps, lang)
         await interaction.response.edit_message(embed=embed, view=self)

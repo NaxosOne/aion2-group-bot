@@ -20,7 +20,8 @@ Les fondations sont en place :
 * Pack d'emojis personnalisés — rôles, types d'événement et toutes les classes Aion 2
 * Rappels automatiques, clôture et annulation d'événement
 * Multi-serveur — Kisk fonctionne indépendamment sur autant de serveurs que voulu
-* Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), bilingue FR/EN, avec repli sur salon
+* Onboarding de profil guidé (`/onboard`) — les membres validés reçoivent un MP pour enregistrer leur main (et reroll), dans la langue du serveur, avec repli sur salon
+* Langue par serveur (`/language`) — choisir le français ou l'anglais (ou Auto pour suivre la langue Discord du serveur) ; chaque embed, bouton, MP d'onboarding et message s'affiche alors uniquement dans cette langue
 * Gestion des profils — `/profile delete` (le tien, ou celui d'un membre pour les modérateurs) et nettoyage automatique au départ d'un membre du serveur
 * Fil de discussion automatique sur chaque message d'événement (best-effort ; sauté si le bot n'a pas Create Public Threads)
 * Invite RSVP avant un événement — un message « tu viens ? » avec boutons confirmer/décliner et un décompte en direct (timing configurable)

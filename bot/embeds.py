@@ -2,7 +2,7 @@
 
 import discord
 
-from . import config
+from . import config, i18n
 from .logic import COMPO_STANDARD, ROLES, assign, standard_slots
 from .utils.rsvp import rsvp_summary
 
@@ -79,7 +79,9 @@ def _names(members: list, classes: dict) -> str:
     )
 
 
-def build_event_embed(event, signups: list, classes: dict | None = None) -> discord.Embed:
+def build_event_embed(
+    event, signups: list, classes: dict | None = None, lang: str = "en"
+) -> discord.Embed:
     """Builds an event's embed from its database row.
 
     `classes`: {user_id: main character's class} to display the class of
@@ -96,7 +98,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
     emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
     title = f"{emoji} {event['title']}"
     if cancelled:
-        title = f"❌ [CANCELLED] {event['title']}"
+        title = f"❌ {i18n.t('event.cancelled_prefix', lang)} {event['title']}"
     elif completed:
         title = f"✅ {event['title']}"
 
@@ -134,7 +136,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
             )
     else:
         embed.add_field(
-            name=f"👥 Party ({len(party)}/{event['size']})",
+            name=f"👥 {i18n.t('event.party', lang)} ({len(party)}/{event['size']})",
             value="\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
@@ -146,7 +148,7 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
 
     if waitlist:
         embed.add_field(
-            name=f"⏳ Waitlist ({len(waitlist)})",
+            name=f"⏳ {i18n.t('event.waitlist', lang)} ({len(waitlist)})",
             value="\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
@@ -156,16 +158,18 @@ def build_event_embed(event, signups: list, classes: dict | None = None) -> disc
         )
 
     if completed:
-        suffix = " • Completed 🎉"
+        suffix = " • " + i18n.t("event.completed_suffix", lang)
     elif full and not cancelled:
-        suffix = " • FULL"
+        suffix = " • " + i18n.t("event.full", lang)
     else:
         suffix = ""
-    embed.set_footer(text=f"Created by {event['creator_name']}{suffix}")
+    embed.set_footer(
+        text=i18n.t("event.footer_created_by", lang, name=event["creator_name"], suffix=suffix)
+    )
     return embed
 
 
-def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
+def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> discord.Embed:
     """The 'are you coming?' prompt, with live confirmed/declined/awaiting."""
     responses = {r["user_id"]: r["status"] for r in rsvps}
     party_ids = [s["user_id"] for s in party]
@@ -174,8 +178,8 @@ def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
     emoji = ACTIVITY_EMOJI.get(event["activity"], config.EMOJI_ACTIVITY["Other"])
     when = f" • 🕘 <t:{event['starts_at']}:R>" if event["starts_at"] else ""
     embed = discord.Embed(
-        title=f"{emoji} Are you coming? — {event['title']}",
-        description=f"**{event['activity']}**{when}\nTap a button below to let the party know.",
+        title=f"{emoji} " + i18n.t("rsvp.title", lang, title=event["title"]),
+        description=f"**{event['activity']}**{when}\n" + i18n.t("rsvp.body_hint", lang),
         colour=discord.Colour.blurple(),
     )
 
@@ -183,12 +187,15 @@ def build_rsvp_embed(event, party: list, rsvps: list) -> discord.Embed:
         return "\n".join(f"• <@{u}>" for u in ids) or "*—*"
 
     embed.add_field(
-        name=f"✅ Coming ({len(confirmed)})", value=_mentions(confirmed), inline=True
+        name="✅ " + i18n.t("rsvp.coming", lang, n=len(confirmed)),
+        value=_mentions(confirmed), inline=True
     )
     embed.add_field(
-        name=f"❌ Can't make it ({len(declined)})", value=_mentions(declined), inline=True
+        name="❌ " + i18n.t("rsvp.declined", lang, n=len(declined)),
+        value=_mentions(declined), inline=True
     )
     embed.add_field(
-        name=f"⏳ No reply ({len(awaiting)})", value=_mentions(awaiting), inline=True
+        name="⏳ " + i18n.t("rsvp.awaiting", lang, n=len(awaiting)),
+        value=_mentions(awaiting), inline=True
     )
     return embed

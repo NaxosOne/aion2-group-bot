@@ -14,7 +14,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from .. import config
+from .. import config, i18n
 from ..errors import ViewErrorMixin
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 # ----- /vote -----
 
 
-def build_poll_embed(poll, votes: list) -> discord.Embed:
+def build_poll_embed(poll, votes: list, lang: str = "en") -> discord.Embed:
     options = json.loads(poll["options"])
     by_choice: dict[int, list] = {i: [] for i in range(len(options))}
     for v in votes:
@@ -51,14 +51,14 @@ def build_poll_embed(poll, votes: list) -> discord.Embed:
         )
     total = len(votes)
     embed.set_footer(
-        text=("Poll closed • " if closed else "")
-        + f"{total} vote{'s' if total > 1 else ''}"
+        text=(i18n.t("poll.closed_prefix", lang) if closed else "")
+        + i18n.t("poll.votes", lang, total=total)
     )
     return embed
 
 
 class VoteView(ViewErrorMixin, discord.ui.View):
-    def __init__(self, option_count: int = 5):
+    def __init__(self, option_count: int = 5, lang: str = "en"):
         super().__init__(timeout=None)
         # Drop the extra buttons for a poll with fewer than 5 options.
         for item in list(self.children):
@@ -67,6 +67,8 @@ class VoteView(ViewErrorMixin, discord.ui.View):
                 and int(item.custom_id.rsplit(":", 1)[1]) >= option_count
             ):
                 self.remove_item(item)
+            elif item.custom_id == "vote:clore":
+                item.label = i18n.t("poll.btn_close", lang)
 
     @discord.ui.button(emoji="1️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:0")
     async def option_0(self, interaction: discord.Interaction, _):
@@ -94,67 +96,69 @@ class VoteView(ViewErrorMixin, discord.ui.View):
     )
     async def close(self, interaction: discord.Interaction, _):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         poll = await db.get_poll(interaction.message.id)
         if poll is None or poll["status"] != "open":
             await interaction.response.send_message(
-                "This poll can't be found or is already closed.", ephemeral=True
+                i18n.t("poll.not_found_or_closed", lang), ephemeral=True
             )
             return
         is_creator = interaction.user.id == poll["creator_id"]
         is_mod = interaction.user.guild_permissions.manage_messages
         if not (is_creator or is_mod):
             await interaction.response.send_message(
-                "Only the poll author (or a moderator) can close it.",
+                i18n.t("poll.only_author_close", lang),
                 ephemeral=True,
             )
             return
         await db.set_poll_status(poll["message_id"], "closed")
         poll = await db.get_poll(poll["message_id"])
-        embed = build_poll_embed(poll, await db.get_votes(poll["message_id"]))
+        embed = build_poll_embed(poll, await db.get_votes(poll["message_id"]), lang)
         await interaction.response.edit_message(embed=embed, view=None)
 
     async def _vote(self, interaction: discord.Interaction, choice: int):
         db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
         poll = await db.get_poll(interaction.message.id)
         if poll is None:
             await interaction.response.send_message(
-                "I can't find this poll any more.", ephemeral=True
+                i18n.t("poll.not_found", lang), ephemeral=True
             )
             return
         if poll["status"] != "open":
             await interaction.response.send_message(
-                "This poll is closed.", ephemeral=True
+                i18n.t("poll.closed", lang), ephemeral=True
             )
             return
         if choice >= len(json.loads(poll["options"])):
             return  # button for an option that doesn't exist (shouldn't happen)
         await db.set_vote(poll["message_id"], interaction.user.id, choice)
-        embed = build_poll_embed(poll, await db.get_votes(poll["message_id"]))
+        embed = build_poll_embed(poll, await db.get_votes(poll["message_id"]), lang)
         await interaction.response.edit_message(embed=embed)
 
 
 # ----- /availability -----
 
 
-def week_label(now: datetime) -> str:
+def week_label(now: datetime, lang: str = "en") -> str:
     monday = now.date() - timedelta(days=now.weekday())
-    return f"week of {monday.strftime('%d/%m')}"
+    return i18n.t("availability.week_of", lang, date=monday.strftime("%d/%m"))
 
 
-def build_availability_embed(board, marks: list) -> discord.Embed:
+def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Embed:
     by_day: dict[int, list] = {i: [] for i in range(7)}
     for m in marks:
         by_day[m["day"]].append(m["user_id"])
 
     embed = discord.Embed(
-        title=f"📅 Availability — {board['week_label']}",
-        description="Click the days you can play (click again to remove).",
+        title=i18n.t("availability.title", lang, week=board["week_label"]),
+        description=i18n.t("availability.hint", lang),
         colour=discord.Colour.green(),
     )
-    for i, day in enumerate(DAYS):
+    for i in range(7):
         players = by_day[i]
         embed.add_field(
-            name=f"{day} ({len(players)})",
+            name=f"{i18n.t(f'weekday.{i}', lang)} ({len(players)})",
             value="\n".join(f"<@{uid}>" for uid in players) or "*—*",
             inline=True,
         )
@@ -162,11 +166,11 @@ def build_availability_embed(board, marks: list) -> discord.Embed:
 
 
 class AvailabilityView(ViewErrorMixin, discord.ui.View):
-    def __init__(self):
+    def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
-        for i, day in enumerate(DAYS_SHORT):
+        for i in range(len(DAYS_SHORT)):
             button = discord.ui.Button(
-                label=day,
+                label=i18n.t(f"weekday_short.{i}", lang),
                 style=discord.ButtonStyle.primary,
                 custom_id=f"dispo:{i}",
                 row=0 if i < 5 else 1,
@@ -177,15 +181,16 @@ class AvailabilityView(ViewErrorMixin, discord.ui.View):
     def _day_callback(self, day: int):
         async def callback(interaction: discord.Interaction):
             db = interaction.client.db
+            lang = await i18n.resolve_lang(db, interaction.guild)
             board = await db.get_availability(interaction.message.id)
             if board is None:
                 await interaction.response.send_message(
-                    "I can't find this availability board any more.", ephemeral=True
+                    i18n.t("availability.board_gone", lang), ephemeral=True
                 )
                 return
             await db.toggle_availability(board["message_id"], interaction.user.id, day)
             embed = build_availability_embed(
-                board, await db.get_availability_marks(board["message_id"])
+                board, await db.get_availability_marks(board["message_id"]), lang
             )
             await interaction.response.edit_message(embed=embed)
 
@@ -231,14 +236,17 @@ class Polls(commands.Cog):
         option4: app_commands.Range[str, 1, 80] | None = None,
         option5: app_commands.Range[str, 1, 80] | None = None,
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         options = [o.strip() for o in (option1, option2, option3, option4, option5) if o]
         poll = {
             "question": question,
             "options": json.dumps(options),
             "status": "open",
         }
-        embed = build_poll_embed(poll, [])
-        await interaction.response.send_message(embed=embed, view=VoteView(len(options)))
+        embed = build_poll_embed(poll, [], lang)
+        await interaction.response.send_message(
+            embed=embed, view=VoteView(len(options), lang)
+        )
         message = await interaction.original_response()
         try:
             await self.bot.db.create_poll(
@@ -256,15 +264,16 @@ class Polls(commands.Cog):
             except discord.HTTPException:
                 pass
             await interaction.followup.send(
-                "Something went wrong saving this poll — please try again.",
+                i18n.t("poll.save_failed", lang),
                 ephemeral=True,
             )
 
     @availability.command(name="post", description="Post this week's availability board")
     async def availability_post(self, interaction: discord.Interaction):
-        label = week_label(datetime.now(config.TIMEZONE))
-        embed = build_availability_embed({"week_label": label}, [])
-        await interaction.response.send_message(embed=embed, view=AvailabilityView())
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
+        label = week_label(datetime.now(config.TIMEZONE), lang)
+        embed = build_availability_embed({"week_label": label}, [], lang)
+        await interaction.response.send_message(embed=embed, view=AvailabilityView(lang))
         message = await interaction.original_response()
         try:
             await self.bot.db.create_availability(
@@ -277,8 +286,7 @@ class Polls(commands.Cog):
             except discord.HTTPException:
                 pass
             await interaction.followup.send(
-                "Something went wrong posting the availability board — "
-                "please try again.",
+                i18n.t("availability.save_failed", lang),
                 ephemeral=True,
             )
 
@@ -297,19 +305,23 @@ class Polls(commands.Cog):
     async def availability_weekly(
         self, interaction: discord.Interaction, action: app_commands.Choice[str]
     ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         if action.value == "on":
             await self.bot.db.set_setting(
                 interaction.guild_id, "dispo_channel_id", interaction.channel_id
             )
+            day = i18n.t(f"weekday.{config.AVAILABILITY_DAY}", lang)
             await interaction.response.send_message(
-                f"📅 Got it: I'll post the availability board here every "
-                f"{DAYS[config.AVAILABILITY_DAY]} around {config.AVAILABILITY_HOUR}:00.",
+                i18n.t(
+                    "availability.weekly_on", lang,
+                    day=day, hour=config.AVAILABILITY_HOUR,
+                ),
                 ephemeral=True,
             )
         else:
             await self.bot.db.set_setting(interaction.guild_id, "dispo_channel_id", None)
             await interaction.response.send_message(
-                "Weekly availability posting disabled.", ephemeral=True
+                i18n.t("availability.weekly_off", lang), ephemeral=True
             )
 
     @tasks.loop(minutes=10)
@@ -334,12 +346,15 @@ class Polls(commands.Cog):
                 settings["guild_id"], "dispo_last_posted", int(now.timestamp())
             )
             try:
+                lang = await i18n.resolve_lang(
+                    self.bot.db, self.bot.get_guild(settings["guild_id"])
+                )
                 channel = self.bot.get_channel(
                     settings["dispo_channel_id"]
                 ) or await self.bot.fetch_channel(settings["dispo_channel_id"])
-                label = week_label(now)
-                embed = build_availability_embed({"week_label": label}, [])
-                message = await channel.send(embed=embed, view=AvailabilityView())
+                label = week_label(now, lang)
+                embed = build_availability_embed({"week_label": label}, [], lang)
+                message = await channel.send(embed=embed, view=AvailabilityView(lang))
                 await self.bot.db.create_availability(
                     message.id, settings["guild_id"], channel.id, label
                 )

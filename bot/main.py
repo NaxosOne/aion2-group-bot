@@ -2,15 +2,31 @@
 
 import discord
 from discord import app_commands
+from discord.app_commands import Translator, locale_str
 from discord.ext import commands
 
 from . import config
+from . import i18n
 from .errors import report_error
 from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
 from .views import RSVPView, SignupView
+
+
+class KiskTranslator(Translator):
+    async def translate(self, string: locale_str, locale, context) -> str | None:
+        key = string.extras.get("key")
+        if key is None:
+            return None
+        lang = i18n.normalize_locale(str(locale))
+        text = i18n.t(key, lang)
+        # t() echoes the raw key back when the catalog has no entry; treat that
+        # as "no translation" so discord.py keeps the command's base string.
+        # (Catalog keys are dotted identifiers, never real prose, so a genuine
+        # translation can't collide with its own key.)
+        return None if text == key else text
 
 
 class GroupBot(commands.Bot):
@@ -25,6 +41,7 @@ class GroupBot(commands.Bot):
     async def setup_hook(self):
         self.tree.on_error = self.on_tree_error
         await self.db.connect()
+        await self.tree.set_translator(KiskTranslator())
 
         # Re-register the persistent views so the buttons of already
         # published messages keep working after a restart.
@@ -44,6 +61,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.polls")
         await self.load_extension("bot.cogs.panel")
         await self.load_extension("bot.cogs.onboarding")
+        await self.load_extension("bot.cogs.settings")
 
         if config.GUILD_ID:
             # Single-guild sync: the commands show up right away.

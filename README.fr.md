@@ -373,7 +373,26 @@ principal — **classe** (avec les icônes de classes Aion 2), **rôle** et nom 
 puis pour ajouter autant d'autres personnages qu'il le souhaite, le tout sans
 taper la moindre commande. Si ses MP
 sont fermés, Kisk bascule sur le salon de bienvenue (ou le salon système du
-serveur). Tout le flux côté membre est bilingue **anglais / français**.
+serveur). Tout le flux côté membre s'affiche dans la langue du serveur (voir
+`/language` ci-dessous).
+
+### 🌍 Langue du serveur
+
+Kisk parle **français** ou **anglais**, au choix par serveur :
+
+```text
+/language choice: Français
+```
+
+Tout ce que voient les membres — embeds d'événements et de RSVP, boutons, MP
+d'onboarding, profils, sondages, panneau et messages d'erreur — apparaît alors
+**uniquement** dans cette langue. Choisis **Auto** (par défaut) pour suivre
+automatiquement la langue Discord du serveur. Seuls les modérateurs (Gérer le
+serveur) peuvent la changer.
+
+Seule exception : le sélecteur de commandes `/` de Discord — Discord localise les
+noms et descriptions des commandes selon la langue du client Discord de **chaque
+membre**, pas selon le réglage serveur, pour que ce menu reste lisible par tous.
 
 ### 🤖 Statut du bot
 
@@ -639,6 +658,12 @@ Le ping `@everyone` est réservé aux modérateurs.
 /channels events: #events absences: #absences rsvp: #rsvp   → où sont postés les résultats
 ```
 
+## Langue
+
+```text
+/language choice: Français     → langue du serveur : Français / English / Auto (modérateurs)
+```
+
 **Astuce pour un serveur bien rangé** : publiez `/panel` dans un salon dédié et
 épinglez-le, puis lancez `/channels events: #events absences: #absences` pour
 que le panneau ne soit jamais enterré sous ses propres résultats. Les membres
@@ -675,6 +700,7 @@ bot/
   views.py             Buttons and interactions
   actions.py           Event/absence logic shared by commands and forms
   errors.py            Always answer the user when something fails
+  i18n.py              Per-server language resolution and string catalog
 
   cogs/
     groups.py           /event, /events, reminders and bot status
@@ -683,6 +709,11 @@ bot/
     polls.py            /vote and /availability
     panel.py            /panel: buttons opening fill-in forms
     onboarding.py       /onboard: DM new members to set up their profile
+    settings.py         /language: choose the server's language
+
+  locales/
+    en.json             English strings (edit alongside fr.json)
+    fr.json             French strings — same keys as en.json
 
   utils/
     time_parse.py       Natural-language time parsing
