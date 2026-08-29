@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS signups (
     role         TEXT    NOT NULL,                -- 'tank', 'heal' or 'dps'
     joined_at    REAL    NOT NULL,
     character_id INTEGER,                         -- profiles.id, NULL = unspecified
+    priority     INTEGER NOT NULL DEFAULT 0,      -- admin reorder; 0 = first-come order
     PRIMARY KEY (message_id, user_id)
 );
 
@@ -145,6 +146,7 @@ class Database:
             },
             "signups": {
                 "character_id": "INTEGER",      # which character the member brings
+                "priority": "INTEGER NOT NULL DEFAULT 0",  # admin waitlist reorder
             },
             "events": {
                 "rsvp_sent": "INTEGER NOT NULL DEFAULT 0",
@@ -384,6 +386,20 @@ class Database:
         )
         await self.conn.commit()
         return cur.rowcount > 0
+
+    async def set_signup_priorities(
+        self, message_id: int, priorities: dict[int, int]
+    ) -> None:
+        """Persist an admin waitlist reorder as per-sign-up priority values.
+
+        `priorities` maps user_id -> priority; higher floats towards the front.
+        Only the given members are touched, so absent sign-ups keep their value.
+        """
+        await self.conn.executemany(
+            "UPDATE signups SET priority = ? WHERE message_id = ? AND user_id = ?",
+            [(prio, message_id, uid) for uid, prio in priorities.items()],
+        )
+        await self.conn.commit()
 
     async def remove_signup(self, message_id: int, user_id: int) -> bool:
         cur = await self.conn.execute(
