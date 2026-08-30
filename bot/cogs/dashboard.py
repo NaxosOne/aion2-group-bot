@@ -224,9 +224,15 @@ class Dashboard(commands.Cog):
     async def refresh_loop(self):
         """Keeps every posted dashboard current."""
         for row in await self.bot.db.guilds_with_dashboard():
-            guild = self.bot.get_guild(row["guild_id"])
-            lang = await i18n.resolve_lang(self.bot.db, guild)
-            await refresh_dashboard(self.bot, row["guild_id"], lang)
+            # One guild's failure must never kill the loop for every server.
+            try:
+                guild = self.bot.get_guild(row["guild_id"])
+                lang = await i18n.resolve_lang(self.bot.db, guild)
+                await refresh_dashboard(self.bot, row["guild_id"], lang)
+            except Exception:
+                log.exception(
+                    "Failed to refresh the dashboard for guild %s", row["guild_id"]
+                )
 
     @refresh_loop.before_loop
     async def _wait_ready(self):

@@ -6,6 +6,18 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A member who left a server kept lingering in the LFG pool and the "available
+  now" list until their entry expired; leaving now clears both immediately
+  (`purge_member`).
+
+### Changed
+
+- Hardened the LFG and dashboard auto-refresh loops so one guild's unexpected
+  error can no longer stop the loop for every server. Removed an unused helper
+  (`logic.role_capacity`).
+
 ## [0.5.0] - 2026-08-30
 
 ### Added
