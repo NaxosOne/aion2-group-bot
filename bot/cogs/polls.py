@@ -15,6 +15,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config, i18n
+from ..branding import brand
 from ..errors import ViewErrorMixin
 from ..utils.availability import availability_ranking
 from ..utils.permissions import member_is_moderator
@@ -41,6 +42,7 @@ def build_poll_embed(poll, votes: list, lang: str = "en") -> discord.Embed:
         title=f"🗳️ {poll['question']}",
         colour=discord.Colour.dark_grey() if closed else discord.Colour.blurple(),
     )
+    brand(embed)
     for i, option in enumerate(options):
         voters = by_choice[i]
         value = " ".join(f"<@{uid}>" for uid in voters) or "*—*"
@@ -166,6 +168,7 @@ def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Em
         description=description,
         colour=discord.Colour.green(),
     )
+    brand(embed)
     for i in range(7):
         players = by_day[i]
         embed.add_field(

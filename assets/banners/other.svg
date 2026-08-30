@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img" aria-label="Event">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1e26"/>
+      <stop offset="1" stop-color="#454b5a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="300" fill="url(#bg)"/>
+  <g fill="none" stroke="#000000" stroke-width="10" opacity="0.16">
+    <polygon points="150,60 210,95 210,165 150,200 90,165 90,95"/>
+    <polygon points="250,150 300,178 300,236 250,264 200,236 200,178"/>
+  </g>
+  <text x="960" y="150" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#eef1f7">EVENT</text>
+  <text x="960" y="200" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="600" fill="#eef1f7" opacity="0.75" letter-spacing="6">KISK</text>
+</svg>

@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from .. import i18n
 from ..actions import fmt_absence_ts, register_absence
+from ..branding import brand
 from ..errors import ModalErrorMixin
 
 
@@ -36,6 +37,7 @@ class AnnounceModal(ModalErrorMixin, discord.ui.Modal):
             description=self.content.value,
             colour=discord.Colour.gold(),
         )
+        brand(embed)
         embed.set_footer(
             text=i18n.t(
                 "announce.footer", self.lang, name=interaction.user.display_name
@@ -115,6 +117,7 @@ class Legion(commands.Cog):
             description="\n".join(lines),
             colour=discord.Colour.orange(),
         )
+        brand(embed)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="back", description="Cancel your absences (early return)")
@@ -184,6 +187,7 @@ class Legion(commands.Cog):
             description=i18n.t("welcome_join.body", lang),
             colour=discord.Colour.blurple(),
         )
+        brand(embed)
         try:
             await channel.send(content=member.mention, embed=embed)
         except discord.HTTPException:

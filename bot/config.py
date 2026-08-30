@@ -92,3 +92,12 @@ CLASS_EMOJI = {
 }
 
 DB_PATH = os.getenv("DB_PATH", "data/bot.db")
+
+# Where the embed artwork (logo, banners) is served from. Defaults to this
+# repository's raw assets on GitHub; override it to point at any public host.
+# Images only render if the assets are publicly reachable at this base.
+ASSET_BASE_URL = os.getenv(
+    "ASSET_BASE_URL",
+    "https://raw.githubusercontent.com/NaxosOne/aion2-group-bot"
+    "/claude/discord-bot-aion-groups-3bnutq/assets",
+).rstrip("/")
