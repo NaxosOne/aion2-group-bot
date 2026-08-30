@@ -448,9 +448,15 @@ class Lfg(commands.Cog):
         if not pruned:
             return
         for row in await self.bot.db.guilds_with_lfg_board():
-            guild = self.bot.get_guild(row["guild_id"])
-            lang = await i18n.resolve_lang(self.bot.db, guild)
-            await refresh_lfg_board(self.bot, row["guild_id"], lang)
+            # One guild's failure must never kill the loop for every server.
+            try:
+                guild = self.bot.get_guild(row["guild_id"])
+                lang = await i18n.resolve_lang(self.bot.db, guild)
+                await refresh_lfg_board(self.bot, row["guild_id"], lang)
+            except Exception:
+                log.exception(
+                    "Failed to refresh the LFG board for guild %s", row["guild_id"]
+                )
 
     @prune_loop.before_loop
     async def _wait_ready(self):

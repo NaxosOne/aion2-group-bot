@@ -151,6 +151,25 @@ def test_prune_available_deletes_lapsed_rows(tmp_path):
     assert remaining == [11]
 
 
+def test_purging_a_member_clears_their_lfg_and_available(tmp_path):
+    async def go():
+        db = _db(tmp_path)
+        await db.connect()
+        await db.set_lfg_looking(1, 10, "Dungeon", "tank", None, expires_at=5000)
+        await db.set_available(1, 10, expires_at=5000)
+        # A different member on the same server is left untouched.
+        await db.set_lfg_looking(1, 11, "Raid", "dps", None, expires_at=5000)
+        await db.purge_member(1, 10)
+        pool = await db.get_lfg_pool(1, now_ts=0)
+        available = await db.get_available(1, now_ts=0)
+        await db.close()
+        return [row["user_id"] for row in pool], [r["user_id"] for r in available]
+
+    pool, available = asyncio.run(go())
+    assert pool == [11]  # member 10 gone, member 11 kept
+    assert available == []
+
+
 def test_lfg_board_location_round_trips(tmp_path):
     async def go():
         db = _db(tmp_path)

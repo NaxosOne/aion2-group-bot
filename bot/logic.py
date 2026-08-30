@@ -125,10 +125,3 @@ def split_groups(members: list, groups: int, group_size: int) -> list:
     group.
     """
     return [members[i * group_size : (i + 1) * group_size] for i in range(groups)]
-
-
-def role_capacity(compo: str, size: int, role: str) -> int:
-    """Number of slots for a given role (useful for display)."""
-    if compo == COMPO_STANDARD:
-        return standard_slots(size)[role]
-    return size

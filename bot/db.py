@@ -788,9 +788,9 @@ class Database:
     async def purge_member(self, guild_id: int, user_id: int) -> None:
         """Removes every trace of a member from a guild (they left/were removed).
 
-        Profiles and absences are keyed by guild_id; sign-ups, poll votes and
-        availability marks are keyed by message_id, so they are filtered through
-        their parent table's guild_id.
+        Profiles, absences, LFG entries and the "available now" status are keyed
+        by guild_id; sign-ups, poll votes and availability marks are keyed by
+        message_id, so they are filtered through their parent table's guild_id.
         """
         await self.conn.execute(
             "DELETE FROM profiles WHERE guild_id = ? AND user_id = ?",
@@ -819,6 +819,14 @@ class Database:
             """DELETE FROM rsvp WHERE user_id = ? AND message_id IN
                (SELECT message_id FROM events WHERE guild_id = ?)""",
             (user_id, guild_id),
+        )
+        await self.conn.execute(
+            "DELETE FROM lfg_entries WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        )
+        await self.conn.execute(
+            "DELETE FROM available_now WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
         )
         await self.conn.commit()
 
