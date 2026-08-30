@@ -6,6 +6,8 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-30
+
 ### Added
 
 - **"Available now" status** — a lighter, activity-agnostic companion to LFG.
@@ -91,6 +93,7 @@ All notable changes to Kisk are documented here. The format follows
 [#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
 [#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
 
-[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NaxosOne/aion2-group-bot/releases/tag/v0.3.0

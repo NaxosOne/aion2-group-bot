@@ -51,17 +51,18 @@ place.
 * [x] Disponibilités hebdomadaires améliorées
 * [x] Gestion de séries d'événements *(couvert par les événements récurrents)*
 
-## 🟣 Phase 3 — Formation intelligente des groupes *(en cours)*
+## ✅ Phase 3 — Formation intelligente des groupes *(terminée)*
 
-Passer de l'organisation manuelle des groupes à une aide automatique pour trouver le bon groupe.
+La couche de visibilité dont une légion a vraiment besoin est en place : les
+joueurs signalent ce qu'ils cherchent et qui est libre pour jouer maintenant, et
+les organisateurs forment les groupes à partir de cette image en direct.
 
 * [x] Système LFG *(pool + tableau par serveur, avec un bouton « Inviter LFG » sur les événements ouverts)*
 * [x] Statut « disponible maintenant » *(présence sans activité, affichée en tête du tableau LFG)*
-* [ ] Suggestions automatiques de groupes
-* [ ] Équilibrage rôle/classe
-* [ ] Promotion intelligente (selon les rôles) depuis la liste d'attente
-* [ ] Suggestions de remplaçants
-* [ ] Meilleures préférences des joueurs
+
+L'automatisation lourde du matchmaking a été envisagée puis **volontairement
+écartée** : une légion est un groupe soudé qui forme ses parties socialement, pas
+un pool d'inconnus à apparier par algorithme. Ces idées passent en **Exploration**.
 
 ## 🟠 Phase 4 — Outils de légion
 
@@ -74,6 +75,10 @@ Donner aux organisateurs une vision plus claire de ce qui se passe.
 
 Certaines idées sont intéressantes, mais ne sont pas prioritaires actuellement :
 
+* Suggestions automatiques de groupes *(une légion forme ses parties socialement, pas par matchmaking)*
+* Équilibrage rôle/classe
+* Suggestions de remplaçants *(le bouton « Inviter LFG » couvre déjà une place libérée)*
+* Meilleures préférences des joueurs
 * Compositions de groupe plus flexibles (ratios de rôles personnalisés)
 * Jets de butin (loot rolls)
 * Anniversaires
