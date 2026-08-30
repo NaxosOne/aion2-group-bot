@@ -407,6 +407,21 @@ se marquer **✋ disponible tout de suite** (2h par défaut) — avec le bouton 
 suis dispo** du tableau ou `/lfg available on`. Le tableau affiche une section
 **Dispo maintenant** en tête, pour voir d'un coup d'œil qui est là pour jouer.
 
+### 📊 Tableau de bord de légion
+
+Pour une vue d'ensemble unique, les modérateurs publient un **tableau de bord** —
+un par serveur — qui **se rafraîchit tout seul** (toutes les deux minutes) :
+
+```text
+/dashboard
+```
+
+Il regroupe dans un embed : les **événements à venir** avec le remplissage et les
+rôles manquants, les compteurs **LFG** et **dispo maintenant**, les **absences**
+en cours, les **séries récurrentes** actives, et la **santé du roster** (membres
+et répartition tank/heal/DPS parmi les mains). Aucune commande à relancer —
+épingle-le et il reste à jour.
+
 ### ✅ Fin d'un événement
 
 Quand la sortie est terminée, appuyez sur :

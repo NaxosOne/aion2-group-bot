@@ -63,12 +63,12 @@ Heavier matchmaking automation was considered and **deliberately dropped**: a
 legion is a close-knit group that forms its parties socially, not a pool of
 strangers to match algorithmically. Those ideas moved to **Exploring** below.
 
-## 🟠 Phase 4 — Legion tools
+## 🟠 Phase 4 — Legion tools *(in progress)*
 
 Give organisers a clearer view of what's happening.
 
-* [ ] Legion dashboard
-* [ ] Web interface
+* [x] Legion dashboard *(an auto-refreshing `/dashboard` overview inside Discord)*
+* [ ] Web interface *(a major scope jump — its own brainstorming + spec before any code)*
 
 ## 💡 Exploring
 

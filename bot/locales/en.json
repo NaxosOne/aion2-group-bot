@@ -280,5 +280,21 @@
   "lfg.invite_ping": "{mentions} — {emoji} **{activity}** has an open spot! Join here: {link}",
   "lfg.invite_none": "Nobody in the LFG pool fits an open seat right now.",
   "lfg.invite_full": "This event is already full.",
-  "lfg.invite_forbidden": "Only the event's creator or a moderator can invite from LFG."
+  "lfg.invite_forbidden": "Only the event's creator or a moderator can invite from LFG.",
+  "dashboard.title": "Legion dashboard",
+  "dashboard.subtitle": "A live overview of what's happening in the legion.",
+  "dashboard.events": "Upcoming events",
+  "dashboard.no_events": "*No open events right now.*",
+  "dashboard.no_time": "no time set",
+  "dashboard.lfg": "Looking for group",
+  "dashboard.lfg_line": "🔎 {looking} looking · ✋ {available} available now",
+  "dashboard.recurring": "Recurring series",
+  "dashboard.absences": "Away",
+  "dashboard.no_absences": "*Nobody is away.*",
+  "dashboard.roster": "Roster",
+  "dashboard.roster_members": "{members} member(s) with a profile",
+  "dashboard.footer": "Updated {updated} · refreshes automatically",
+  "dashboard.posted": "Dashboard posted — {link}. Pin it so organisers find it easily.",
+  "dashboard.refreshed": "Dashboard refreshed — {link}",
+  "dashboard.forbidden": "I can't edit the saved dashboard (missing access). Post a new one here?"
 }

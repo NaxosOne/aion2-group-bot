@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     admin_role_id      INTEGER,                   -- role treated as a Kisk admin
     voice_category_id  INTEGER,                   -- category for temp voice channels
     lfg_channel_id     INTEGER,                   -- channel of the LFG board
-    lfg_message_id     INTEGER                    -- its message; /lfg board edits it
+    lfg_message_id     INTEGER,                   -- its message; /lfg board edits it
+    dashboard_channel_id INTEGER,                 -- channel of the legion dashboard
+    dashboard_message_id INTEGER                  -- its message; auto-refreshed
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -191,6 +193,8 @@ class Database:
                 "voice_category_id": "INTEGER",  # category for temp voice channels
                 "lfg_channel_id": "INTEGER",  # LFG board location
                 "lfg_message_id": "INTEGER",  # so /lfg board refreshes it in place
+                "dashboard_channel_id": "INTEGER",  # legion dashboard location
+                "dashboard_message_id": "INTEGER",  # auto-refreshed in place
             },
             "signups": {
                 "character_id": "INTEGER",  # which character the member brings
@@ -1153,3 +1157,40 @@ class Database:
         )
         await self.conn.commit()
         return cur.rowcount
+
+    # ----- Legion dashboard (/dashboard) -----
+
+    async def get_dashboard(self, guild_id: int) -> "tuple[int, int] | None":
+        """The (channel_id, message_id) of the guild's dashboard, or None."""
+        async with self.conn.execute(
+            "SELECT dashboard_channel_id, dashboard_message_id FROM guild_settings "
+            "WHERE guild_id = ?",
+            (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None or row["dashboard_channel_id"] is None:
+            return None
+        return row["dashboard_channel_id"], row["dashboard_message_id"]
+
+    async def set_dashboard(
+        self, guild_id: int, channel_id: int | None, message_id: int | None
+    ) -> None:
+        """Remembers where the dashboard lives so it can be refreshed in place."""
+        await self.conn.execute(
+            """INSERT INTO guild_settings
+                   (guild_id, dashboard_channel_id, dashboard_message_id)
+               VALUES (?, ?, ?)
+               ON CONFLICT(guild_id) DO UPDATE SET
+                   dashboard_channel_id = excluded.dashboard_channel_id,
+                   dashboard_message_id = excluded.dashboard_message_id""",
+            (guild_id, channel_id, message_id),
+        )
+        await self.conn.commit()
+
+    async def guilds_with_dashboard(self):
+        """Guilds that have posted a dashboard (for the auto-refresh loop)."""
+        async with self.conn.execute(
+            "SELECT guild_id, dashboard_channel_id, dashboard_message_id "
+            "FROM guild_settings WHERE dashboard_message_id IS NOT NULL"
+        ) as cur:
+            return await cur.fetchall()
