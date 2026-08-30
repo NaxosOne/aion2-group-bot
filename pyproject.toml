@@ -27,6 +27,8 @@ packages = ["bot", "bot.cogs", "bot.utils"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+# Design docs may contain illustrative (not necessarily formatted) code blocks.
+extend-exclude = ["docs"]
 
 # The codebase is `ruff format`-normalised and passes this set:
 #   E  pycodestyle (incl. line length), F pyflakes, I import sorting,
