@@ -928,6 +928,14 @@ class Database:
         await self.conn.commit()
         return True
 
+    async def clear_availability(self, message_id: int, user_id: int) -> None:
+        """Removes every day a member ticked on a board."""
+        await self.conn.execute(
+            "DELETE FROM dispo_marks WHERE message_id = ? AND user_id = ?",
+            (message_id, user_id),
+        )
+        await self.conn.commit()
+
     async def get_availability_marks(self, message_id: int):
         async with self.conn.execute(
             "SELECT * FROM dispo_marks WHERE message_id = ? ORDER BY rowid",

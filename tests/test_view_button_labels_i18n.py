@@ -25,6 +25,7 @@ BUTTON_KEYS = [
     "rsvp.btn_coming",
     "rsvp.btn_not_coming",
     "poll.btn_close",
+    "availability.btn_clear",
     "panel.btn_create_event",
     "panel.btn_report_absence",
     *[f"weekday_short.{i}" for i in range(7)],
