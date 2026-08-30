@@ -63,17 +63,23 @@ Heavier matchmaking automation was considered and **deliberately dropped**: a
 legion is a close-knit group that forms its parties socially, not a pool of
 strangers to match algorithmically. Those ideas moved to **Exploring** below.
 
-## 🟠 Phase 4 — Legion tools *(in progress)*
+## ✅ Phase 4 — Legion tools *(complete)*
 
-Give organisers a clearer view of what's happening.
+Organisers have a clear, live view of what's happening: the auto-refreshing
+`/dashboard` overview inside Discord.
 
 * [x] Legion dashboard *(an auto-refreshing `/dashboard` overview inside Discord)*
-* [ ] Web interface *(a major scope jump — its own brainstorming + spec before any code)*
+
+A separate web interface was considered and **deferred**: a legion lives in
+Discord, and the in-Discord dashboard covers the need without a second surface to
+host and secure. Moved to **Exploring**, to revisit only if a concrete
+out-of-Discord need appears.
 
 ## 💡 Exploring
 
 Some ideas are interesting, but aren't currently priorities:
 
+* Web interface *(Discord covers the need today; revisit for an out-of-Discord use case)*
 * Automatic party suggestions *(a legion forms parties socially, not by matchmaking)*
 * Role/class balancing
 * Replacement suggestions *(the "Invite LFG" button already covers a freed spot)*

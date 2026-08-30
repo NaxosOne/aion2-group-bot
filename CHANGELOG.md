@@ -6,6 +6,8 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-30
+
 ### Added
 
 - **Legion dashboard** — the first Phase 4 feature. `/dashboard` (moderators)
@@ -103,7 +105,8 @@ All notable changes to Kisk are documented here. The format follows
 [#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
 [#46]: https://github.com/NaxosOne/aion2-group-bot/pull/46
 
-[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NaxosOne/aion2-group-bot/releases/tag/v0.3.0
