@@ -49,6 +49,9 @@ versioned, so entries are grouped by date.
 
 ### Fixed
 
+- Embed fields and descriptions are now trimmed to Discord's limits, so a long
+  waitlist (or a big siege / RSVP / availability board) no longer makes the API
+  reject the update and freeze the message. ([#35])
 - Cancelled or deleted events no longer fire their last-minute reminder or RSVP
   prompt. ([#18], [#19])
 
@@ -58,3 +61,4 @@ versioned, so entries are grouped by date.
 [#21]: https://github.com/NaxosOne/aion2-group-bot/pull/21
 [#22]: https://github.com/NaxosOne/aion2-group-bot/pull/22
 [#23]: https://github.com/NaxosOne/aion2-group-bot/pull/23
+[#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
