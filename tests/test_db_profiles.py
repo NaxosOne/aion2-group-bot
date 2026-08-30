@@ -106,7 +106,7 @@ def test_delete_without_a_character_removes_them_all(tmp_path):
         for name in ("Kratos", "Loki", "Zed"):
             await db.add_character(1, 42, name, "Ranger", "dps")
         await db.add_character(2, 42, "Elsewhere", "Cleric", "heal")  # other guild
-        await db.add_character(1, 99, "Someone", "Cleric", "heal")    # other member
+        await db.add_character(1, 99, "Someone", "Cleric", "heal")  # other member
         removed = await db.delete_profile(1, 42)
         counts = (
             len(await db.get_profiles(1, 42)),
@@ -124,9 +124,15 @@ def test_signups_carry_the_character_brought_along(tmp_path):
         db = await _fresh(tmp_path)
         loki = await db.add_character(1, 42, "Loki", "Assassin", "dps")
         await db.create_event(
-            message_id=555, channel_id=7, guild_id=1, creator_id=42,
-            creator_name="Kratos", title="Run", activity="Dungeon",
-            compo="standard", size=5,
+            message_id=555,
+            channel_id=7,
+            guild_id=1,
+            creator_id=42,
+            creator_name="Kratos",
+            title="Run",
+            activity="Dungeon",
+            compo="standard",
+            size=5,
         )
         await db.upsert_signup(555, 42, "Kratos", "dps", 1.0, loki)
         joined = (await db.get_signups(555))[0]
@@ -156,9 +162,15 @@ def test_signup_without_a_profile_still_works(tmp_path):
     async def go():
         db = await _fresh(tmp_path)
         await db.create_event(
-            message_id=555, channel_id=7, guild_id=1, creator_id=42,
-            creator_name="Nobody", title="Run", activity="Dungeon",
-            compo="standard", size=5,
+            message_id=555,
+            channel_id=7,
+            guild_id=1,
+            creator_id=42,
+            creator_name="Nobody",
+            title="Run",
+            activity="Dungeon",
+            compo="standard",
+            size=5,
         )
         await db.upsert_signup(555, 42, "Nobody", "tank", 1.0)
         row = (await db.get_signups(555))[0]
@@ -175,9 +187,15 @@ def test_purge_member_removes_profile_absence_and_signup(tmp_path):
         await db.add_character(1, 42, "Loki", "Assassin", "dps")
         await db.add_absence(1, 42, 1000, 10_000_000_000, "holiday")
         await db.create_event(
-            message_id=555, channel_id=7, guild_id=1, creator_id=42,
-            creator_name="Kratos", title="Run", activity="Dungeon",
-            compo="standard", size=5,
+            message_id=555,
+            channel_id=7,
+            guild_id=1,
+            creator_id=42,
+            creator_name="Kratos",
+            title="Run",
+            activity="Dungeon",
+            compo="standard",
+            size=5,
         )
         await db.upsert_signup(555, 42, "Kratos", "tank", 1.0)
 
@@ -223,7 +241,9 @@ def test_migration_keeps_characters_and_seats_the_main(tmp_path):
         await db.connect()
         kept = [(r["char_name"], r["is_main"]) for r in await db.get_profiles(1, 42)]
         # A member who only ever set an alt still ends up with a main.
-        alt_only = [(r["char_name"], r["is_main"]) for r in await db.get_profiles(1, 99)]
+        alt_only = [
+            (r["char_name"], r["is_main"]) for r in await db.get_profiles(1, 99)
+        ]
         onboarded = await db.has_main_profile(1, 99)
         leftover = await db.conn.execute_fetchall(
             "SELECT name FROM sqlite_master WHERE name = 'profiles_slots'"
@@ -246,7 +266,7 @@ def test_migration_runs_once_and_alts_can_be_added_after(tmp_path):
         await db.connect()
         await db.close()
 
-        db = Database(path)          # restart: the migration must be a no-op
+        db = Database(path)  # restart: the migration must be a no-op
         await db.connect()
         await db.add_character(1, 42, "Zed", "Assassin", "dps")
         rows = await db.get_profiles(1, 42)
@@ -260,7 +280,7 @@ def test_profile_user_ids_lists_each_member_once_per_guild(tmp_path):
     async def go():
         db = await _fresh(tmp_path)
         await db.add_character(1, 42, "Kratos", "Templar", "tank")
-        await db.add_character(1, 42, "Loki", "Assassin", "dps")   # same member
+        await db.add_character(1, 42, "Loki", "Assassin", "dps")  # same member
         await db.add_character(1, 99, "Solo", "Ranger", "dps")
         await db.add_character(2, 77, "Elsewhere", "Cleric", "heal")  # other guild
         here = sorted(await db.profile_user_ids(1))

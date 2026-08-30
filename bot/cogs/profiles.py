@@ -12,8 +12,8 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from .. import config, i18n
-from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..branding import brand
+from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..logic import MAX_CHARACTERS, ROLES
 from ..utils.permissions import member_is_admin
 
@@ -161,8 +161,12 @@ class Profile(commands.GroupCog, name="profile"):
             return
 
         await self.bot.db.add_character(
-            interaction.guild_id, interaction.user.id,
-            name, char_class, role.value, make_main=main,
+            interaction.guild_id,
+            interaction.user.id,
+            name,
+            char_class,
+            role.value,
+            make_main=main,
         )
         was_first = not characters
         detail = (
@@ -228,9 +232,7 @@ class Profile(commands.GroupCog, name="profile"):
             colour=discord.Colour.blurple(),
         )
         brand(embed)
-        embed.set_footer(
-            text=i18n.t("profile.show_footer", lang, n=len(characters))
-        )
+        embed.set_footer(text=i18n.t("profile.show_footer", lang, n=len(characters)))
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(
@@ -268,9 +270,7 @@ class Profile(commands.GroupCog, name="profile"):
                     else "profile.delete_not_found_other"
                 )
                 await interaction.response.send_message(
-                    i18n.t(
-                        key, lang, name=target.display_name, character=character
-                    ),
+                    i18n.t(key, lang, name=target.display_name, character=character),
                     ephemeral=True,
                 )
                 return
@@ -291,18 +291,12 @@ class Profile(commands.GroupCog, name="profile"):
                 if is_self
                 else "profile.deleted_other_profile"
             )
-            message = i18n.t(
-                key, lang, name=target.display_name, count=count
-            )
+            message = i18n.t(key, lang, name=target.display_name, count=count)
         else:
             key = (
-                "profile.deleted_self_char"
-                if is_self
-                else "profile.deleted_other_char"
+                "profile.deleted_self_char" if is_self else "profile.deleted_other_char"
             )
-            message = i18n.t(
-                key, lang, name=target.display_name, char=row["char_name"]
-            )
+            message = i18n.t(key, lang, name=target.display_name, char=row["char_name"])
         await interaction.response.send_message(message, ephemeral=True)
 
     @commands.Cog.listener()
@@ -342,7 +336,9 @@ class Profile(commands.GroupCog, name="profile"):
                     await self.bot.db.purge_member(guild.id, user_id)
                     log.info(
                         "Purged %s: no longer a member of %s (%s)",
-                        user_id, guild.name, guild.id,
+                        user_id,
+                        guild.name,
+                        guild.id,
                     )
                 except discord.HTTPException:
                     continue
@@ -393,8 +389,10 @@ class Roster(commands.Cog):
 
         embed = discord.Embed(
             title=i18n.t(
-                "roster.title", lang,
-                members=len(by_member), chars=len(characters),
+                "roster.title",
+                lang,
+                members=len(by_member),
+                chars=len(characters),
             ),
             description=text,
             colour=discord.Colour.blurple(),

@@ -19,8 +19,15 @@ def test_rejects_what_discord_would_refuse():
     # A shortcode, a bare name, a truncated id, quotes or stray whitespace:
     # each of these answered every panel click with 400 Invalid Form Body.
     for value in (
-        "", ":dungeon:", "dungeon", "<:dungeon:12>", "<dungeon>",
-        '"🏰"', "🏰 ", " 🏰", "🏰🏰x",
+        "",
+        ":dungeon:",
+        "dungeon",
+        "<:dungeon:12>",
+        "<dungeon>",
+        '"🏰"',
+        "🏰 ",
+        " 🏰",
+        "🏰🏰x",
         "ð\x9f\x8f°",  # UTF-8 read as latin-1: a .env saved in the wrong encoding
     ):
         assert not is_valid(value), value

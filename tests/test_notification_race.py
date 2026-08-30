@@ -14,9 +14,17 @@ from bot.db import Database
 
 def _open_event(db, message_id):
     return db.create_event(
-        message_id=message_id, channel_id=7, guild_id=1, creator_id=1,
-        creator_name="A", title="Run", activity="Dungeon",
-        compo="standard", size=5, starts_at=1000, status="open",
+        message_id=message_id,
+        channel_id=7,
+        guild_id=1,
+        creator_id=1,
+        creator_name="A",
+        title="Run",
+        activity="Dungeon",
+        compo="standard",
+        size=5,
+        starts_at=1000,
+        status="open",
     )
 
 
@@ -25,8 +33,8 @@ def test_mark_reminded_claims_open_once_and_refuses_cancelled(tmp_path):
         db = Database(str(tmp_path / "r.db"))
         await db.connect()
         await _open_event(db, 1)
-        first = await db.mark_reminded(1)      # open + unreminded -> claims
-        second = await db.mark_reminded(1)     # already reminded -> refuses
+        first = await db.mark_reminded(1)  # open + unreminded -> claims
+        second = await db.mark_reminded(1)  # already reminded -> refuses
         await _open_event(db, 2)
         await db.set_status(2, "cancelled")
         cancelled = await db.mark_reminded(2)  # not open -> refuses
@@ -41,8 +49,8 @@ def test_mark_rsvp_sent_claims_open_once_and_refuses_cancelled(tmp_path):
         db = Database(str(tmp_path / "r.db"))
         await db.connect()
         await _open_event(db, 1)
-        first = await db.mark_rsvp_sent(1)     # open + unsent -> claims
-        second = await db.mark_rsvp_sent(1)    # already sent -> refuses
+        first = await db.mark_rsvp_sent(1)  # open + unsent -> claims
+        second = await db.mark_rsvp_sent(1)  # already sent -> refuses
         await _open_event(db, 2)
         await db.set_status(2, "cancelled")
         cancelled = await db.mark_rsvp_sent(2)  # not open -> refuses

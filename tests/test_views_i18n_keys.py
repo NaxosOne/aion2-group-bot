@@ -21,9 +21,7 @@ VIEW_KEYS = {
     "signup.pick_placeholder": {},
     "signup.with_character": {"name": "Aria"},
     "signup.joined": {"emoji": "🛡️", "label": "Tank", "who": " with **Aria**"},
-    "signup.waitlisted": {
-        "position": 2, "emoji": "🛡️", "label": "Tank", "who": ""
-    },
+    "signup.waitlisted": {"position": 2, "emoji": "🛡️", "label": "Tank", "who": ""},
     "signup.left": {},
     "signup.not_signed_up": {},
     "signup.only_creator_close": {},

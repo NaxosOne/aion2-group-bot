@@ -5,17 +5,28 @@ from bot.embeds import ROLE_EMOJI, build_event_embed, build_rsvp_embed
 from bot.logic import COMPO_OPEN, COMPO_STANDARD
 
 EVENT = {
-    "message_id": 1, "channel_id": 2, "guild_id": 3, "creator_id": 4,
-    "creator_name": "Naxos", "title": "Fire Temple", "activity": "Dungeon",
-    "description": None, "compo": COMPO_STANDARD, "size": 5,
-    "starts_at": None, "status": "open",
+    "message_id": 1,
+    "channel_id": 2,
+    "guild_id": 3,
+    "creator_id": 4,
+    "creator_name": "Naxos",
+    "title": "Fire Temple",
+    "activity": "Dungeon",
+    "description": None,
+    "compo": COMPO_STANDARD,
+    "size": 5,
+    "starts_at": None,
+    "status": "open",
 }
 
 
 def signup(user_id, role, char_name=None, char_class=None):
     return {
-        "user_id": user_id, "role": role, "display_name": f"m{user_id}",
-        "joined_at": float(user_id), "char_name": char_name,
+        "user_id": user_id,
+        "role": role,
+        "display_name": f"m{user_id}",
+        "joined_at": float(user_id),
+        "char_name": char_name,
         "char_class": char_class,
     }
 
@@ -36,8 +47,11 @@ def test_open_seats_are_shown_in_role_fields():
 
 def test_full_standard_party_has_no_needs_summary():
     full = [
-        signup(1, "tank"), signup(2, "heal"),
-        signup(3, "dps"), signup(4, "dps"), signup(5, "dps"),
+        signup(1, "tank"),
+        signup(2, "heal"),
+        signup(3, "dps"),
+        signup(4, "dps"),
+        signup(5, "dps"),
     ]
     embed = build_event_embed(EVENT, full)
     assert "Needs" not in (embed.description or "")
@@ -140,8 +154,7 @@ def test_a_different_class_icon_is_kept_next_to_the_role_icon():
     embed = build_event_embed(event, [signup(10, "dps", "Zed", "Ranger")])
     line = next(x for x in party_text(embed).split("\n") if "<@10>" in x)
     assert line == (
-        f"• {ROLE_EMOJI['dps']} <@10> — {config.CLASS_EMOJI['Ranger']} "
-        "*Zed (Ranger)*"
+        f"• {ROLE_EMOJI['dps']} <@10> — {config.CLASS_EMOJI['Ranger']} *Zed (Ranger)*"
     )
 
 

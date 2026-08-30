@@ -1,10 +1,10 @@
 """Tests for the party/waitlist split. Run: pytest"""
 
 from bot.logic import (
-    MOVE_DOWN,
-    MOVE_UP,
     COMPO_OPEN,
     COMPO_STANDARD,
+    MOVE_DOWN,
+    MOVE_UP,
     assign,
     missing_slots,
     reorder_priorities,
@@ -55,9 +55,9 @@ def test_standard_slots():
 def test_standard_10():
     # Party of 10 (raid/battleground): 2 tanks / 2 heals / 6 DPS.
     signups = (
-        [s(i, "tank") for i in (1, 2, 3)]        # 3rd tank waitlisted
+        [s(i, "tank") for i in (1, 2, 3)]  # 3rd tank waitlisted
         + [s(i, "heal") for i in (4, 5)]
-        + [s(i, "dps") for i in range(6, 13)]    # 7th DPS waitlisted
+        + [s(i, "dps") for i in range(6, 13)]  # 7th DPS waitlisted
     )
     party, waitlist = assign(COMPO_STANDARD, 10, signups)
     assert ids(party) == [1, 2, 4, 5, 6, 7, 8, 9, 10, 11]
@@ -155,13 +155,15 @@ def test_missing_slots_open_mode_is_empty():
 
 def test_split_groups_chunks_members_in_order():
     assert split_groups([1, 2, 3, 4, 5, 6], groups=2, group_size=3) == [
-        [1, 2, 3], [4, 5, 6],
+        [1, 2, 3],
+        [4, 5, 6],
     ]
 
 
 def test_split_groups_last_group_can_be_partial():
     assert split_groups([1, 2, 3, 4, 5], groups=2, group_size=3) == [
-        [1, 2, 3], [4, 5],
+        [1, 2, 3],
+        [4, 5],
     ]
 
 

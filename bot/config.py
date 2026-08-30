@@ -58,18 +58,17 @@ DEFAULT_EMOJI_ACTIVITY = {
 # ...). Use this everywhere a custom emoji renders: embeds, messages,
 # buttons and menus.
 EMOJI_ACTIVITY = {
-    name: _emoji(
-        os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}"
-    )
+    name: _emoji(os.getenv(f"EMOJI_{name.upper()}"), default, f"EMOJI_{name.upper()}")
     for name, default in DEFAULT_EMOJI_ACTIVITY.items()
 }
+
 
 # Aion 2 class emojis, overridable the same way (EMOJI_GLADIATOR, EMOJI_TEMPLAR
 # ...). Defaults are Unicode; to use the real in-game icons, upload them as
 # custom emojis on your Discord (developer portal -> Emojis) and paste the codes
 # here, e.g. EMOJI_GLADIATOR=<:gladiator:123456789012345678>.
 def _class_variable(name: str) -> str:
-    """"Fist Fighter" -> EMOJI_FIST_FIGHTER."""
+    """ "Fist Fighter" -> EMOJI_FIST_FIGHTER."""
     return f"EMOJI_{name.upper().replace(' ', '_')}"
 
 

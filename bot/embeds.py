@@ -15,6 +15,7 @@ from .logic import (
 from .utils.rsvp import rsvp_summary
 from .utils.text import truncate_field
 
+
 def _with_legacy_labels(mapping: dict) -> dict:
     """Events created by earlier versions carry French activity labels."""
     return {
@@ -83,14 +84,10 @@ def _class_suffix(signup, classes: dict, *, role_shown: bool = False) -> str:
 def _names(members: list, classes: dict) -> str:
     if not members:
         return "*—*"
-    return "\n".join(
-        f"• <@{s['user_id']}>{_class_suffix(s, classes)}" for s in members
-    )
+    return "\n".join(f"• <@{s['user_id']}>{_class_suffix(s, classes)}" for s in members)
 
 
-def _role_field_value(
-    members: list, classes: dict, open_count: int, lang: str
-) -> str:
+def _role_field_value(members: list, classes: dict, open_count: int, lang: str) -> str:
     """A role field: its members, then one faded line per still-open seat."""
     parts = []
     if members:
@@ -142,10 +139,14 @@ def build_event_embed(
     if missing:
         roles_txt = ", ".join(
             i18n.t(
-                "event.needs_role", lang,
-                n=missing[role], emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role],
+                "event.needs_role",
+                lang,
+                n=missing[role],
+                emoji=ROLE_EMOJI[role],
+                label=ROLE_LABEL[role],
             )
-            for role in ROLES if role in missing
+            for role in ROLES
+            if role in missing
         )
         lines.append(i18n.t("event.needs", lang, roles=roles_txt))
 
@@ -186,34 +187,40 @@ def build_event_embed(
                     f"⚔️ {i18n.t('event.group', lang, n=index)} "
                     f"({len(members)}/{group_size})"
                 ),
-                value=truncate_field("\n".join(
-                    f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                    f"{_class_suffix(s, classes, role_shown=True)}"
-                    for s in members
-                )
-                or "*—*"),
+                value=truncate_field(
+                    "\n".join(
+                        f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                        f"{_class_suffix(s, classes, role_shown=True)}"
+                        for s in members
+                    )
+                    or "*—*"
+                ),
                 inline=True,
             )
     else:
         embed.add_field(
             name=f"👥 {i18n.t('event.party', lang)} ({len(party)}/{event['size']})",
-            value=truncate_field("\n".join(
-                f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_class_suffix(s, classes, role_shown=True)}"
-                for s in party
-            )
-            or "*—*"),
+            value=truncate_field(
+                "\n".join(
+                    f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                    f"{_class_suffix(s, classes, role_shown=True)}"
+                    for s in party
+                )
+                or "*—*"
+            ),
             inline=False,
         )
 
     if waitlist:
         embed.add_field(
             name=f"⏳ {i18n.t('event.waitlist', lang)} ({len(waitlist)})",
-            value=truncate_field("\n".join(
-                f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
-                f"{_class_suffix(s, classes, role_shown=True)}"
-                for i, s in enumerate(waitlist, start=1)
-            )),
+            value=truncate_field(
+                "\n".join(
+                    f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                    f"{_class_suffix(s, classes, role_shown=True)}"
+                    for i, s in enumerate(waitlist, start=1)
+                )
+            ),
             inline=False,
         )
 
@@ -224,12 +231,16 @@ def build_event_embed(
     else:
         suffix = ""
     embed.set_footer(
-        text=i18n.t("event.footer_created_by", lang, name=event["creator_name"], suffix=suffix)
+        text=i18n.t(
+            "event.footer_created_by", lang, name=event["creator_name"], suffix=suffix
+        )
     )
     return embed
 
 
-def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> discord.Embed:
+def build_rsvp_embed(
+    event, party: list, rsvps: list, lang: str = "en"
+) -> discord.Embed:
     """The 'are you coming?' prompt, with live confirmed/declined/awaiting."""
     responses = {r["user_id"]: r["status"] for r in rsvps}
     party_ids = [s["user_id"] for s in party]
@@ -250,14 +261,17 @@ def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> disco
 
     embed.add_field(
         name="✅ " + i18n.t("rsvp.coming", lang, n=len(confirmed)),
-        value=_mentions(confirmed), inline=True
+        value=_mentions(confirmed),
+        inline=True,
     )
     embed.add_field(
         name="❌ " + i18n.t("rsvp.declined", lang, n=len(declined)),
-        value=_mentions(declined), inline=True
+        value=_mentions(declined),
+        inline=True,
     )
     embed.add_field(
         name="⏳ " + i18n.t("rsvp.awaiting", lang, n=len(awaiting)),
-        value=_mentions(awaiting), inline=True
+        value=_mentions(awaiting),
+        inline=True,
     )
     return embed

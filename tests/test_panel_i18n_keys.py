@@ -49,7 +49,9 @@ PANEL_KEYS = {
     "panel.field_reason_ph": {},
     "channels.reset_done": {},
     "channels.destinations": {
-        "events": "<#1>", "absences": "<#2>", "rsvp": "<#3>",
+        "events": "<#1>",
+        "absences": "<#2>",
+        "rsvp": "<#3>",
     },
     "channels.where_used": {},
     "channels.voice_on": {"category": "<#1>"},
@@ -70,13 +72,21 @@ PANEL_KEYS = {
 # Discord hard limits the event-setup surfaces must respect in every language.
 MODAL_TITLE_KEYS = ("panel.modal_away_title",)
 FIELD_LABEL_KEYS = (
-    "panel.field_title", "panel.field_type_name", "panel.field_when",
-    "panel.field_description", "panel.field_from", "panel.field_until",
+    "panel.field_title",
+    "panel.field_type_name",
+    "panel.field_when",
+    "panel.field_description",
+    "panel.field_from",
+    "panel.field_until",
     "panel.field_reason",
 )
 PLACEHOLDER_KEYS = (
-    "panel.field_type_name_ph", "panel.field_when_ph", "panel.field_from_ph",
-    "panel.field_until_ph", "panel.field_reason_ph", "panel.activity_placeholder",
+    "panel.field_type_name_ph",
+    "panel.field_when_ph",
+    "panel.field_from_ph",
+    "panel.field_until_ph",
+    "panel.field_reason_ph",
+    "panel.activity_placeholder",
     "panel.setup_placeholder",
 )
 

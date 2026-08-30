@@ -10,9 +10,17 @@ def test_rsvp_due_claim_prompt_and_responses(tmp_path):
         db = Database(str(tmp_path / "r.db"))
         await db.connect()
         await db.create_event(
-            message_id=100, channel_id=7, guild_id=1, creator_id=1,
-            creator_name="A", title="Run", activity="Dungeon",
-            compo="standard", size=5, starts_at=1000, status="open",
+            message_id=100,
+            channel_id=7,
+            guild_id=1,
+            creator_id=1,
+            creator_name="A",
+            title="Run",
+            activity="Dungeon",
+            compo="standard",
+            size=5,
+            starts_at=1000,
+            status="open",
         )
 
         # Due: starts_at (1000) is within now (0) + window (2000).

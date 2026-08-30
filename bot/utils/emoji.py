@@ -45,6 +45,8 @@ def resolve(value: str | None, default: str, variable: str) -> str:
     log.warning(
         "%s=%r is not a valid emoji, using %s instead. Use a plain emoji "
         "(🏰) or the portal's custom code (<:name:123456789012345678>).",
-        variable, value, default,
+        variable,
+        value,
+        default,
     )
     return default

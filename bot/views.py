@@ -83,8 +83,16 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
     event it belongs to is captured on the instance.
     """
 
-    def __init__(self, signups: "SignupView", event, role: str, characters: list,
-                 current_id: int | None, switching: bool, lang: str = "en"):
+    def __init__(
+        self,
+        signups: "SignupView",
+        event,
+        role: str,
+        characters: list,
+        current_id: int | None,
+        switching: bool,
+        lang: str = "en",
+    ):
         super().__init__(timeout=180)
         self.signups = signups
         self.event = event
@@ -113,8 +121,10 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
                 )
                 await interaction.response.edit_message(
                     content=i18n.t(
-                        "signup.bringing", lang,
-                        name=character["char_name"], title=self.event["title"],
+                        "signup.bringing",
+                        lang,
+                        name=character["char_name"],
+                        title=self.event["title"],
                     ),
                     view=None,
                 )
@@ -126,9 +136,7 @@ class CharacterPicker(ViewErrorMixin, discord.ui.View):
             )
             await interaction.response.edit_message(content=message, view=None)
             await refresh_event_message(interaction.client, self.event)
-            await self.signups.announce_promoted(
-                interaction, self.event, party_before
-            )
+            await self.signups.announce_promoted(interaction, self.event, party_before)
 
 
 class EventEditModal(ModalErrorMixin, discord.ui.Modal):
@@ -147,7 +155,8 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
 
         self.event_title = discord.ui.TextInput(
             label=i18n.t("signup.edit_field_title", lang),
-            default=event["title"], max_length=100,
+            default=event["title"],
+            max_length=100,
         )
         self.add_item(self.event_title)
 
@@ -155,7 +164,8 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
             label=i18n.t("signup.edit_field_when", lang),
             placeholder=i18n.t("signup.edit_field_when_ph", lang),
             default=format_when_for_edit(event["starts_at"], config.TIMEZONE),
-            required=False, max_length=30,
+            required=False,
+            max_length=30,
         )
         self.add_item(self.when)
 
@@ -163,7 +173,8 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
             label=i18n.t("signup.edit_field_description", lang),
             style=discord.TextStyle.paragraph,
             default=event["description"] or "",
-            required=False, max_length=500,
+            required=False,
+            max_length=500,
         )
         self.add_item(self.description)
 
@@ -181,8 +192,9 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
         if self.when.value.strip():
             try:
                 starts_at = int(
-                    parse_when(self.when.value, config.TIMEZONE, lang=self.lang)
-                    .timestamp()
+                    parse_when(
+                        self.when.value, config.TIMEZONE, lang=self.lang
+                    ).timestamp()
                 )
             except ParseError as err:
                 await interaction.response.send_message(str(err), ephemeral=True)
@@ -214,7 +226,8 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
         if not recipients:
             return
         when = (
-            f"<t:{starts_at}:F>" if starts_at
+            f"<t:{starts_at}:F>"
+            if starts_at
             else i18n.t("signup.edit_when_cleared", self.lang)
         )
         mentions = " ".join(f"<@{s['user_id']}>" for s in recipients)
@@ -222,8 +235,13 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
         if channel is None:
             channel = await interaction.client.fetch_channel(event["channel_id"])
         await channel.send(
-            i18n.t("signup.rescheduled", self.lang,
-                   title=event["title"], when=when, mentions=mentions)
+            i18n.t(
+                "signup.rescheduled",
+                self.lang,
+                title=event["title"],
+                when=when,
+                mentions=mentions,
+            )
         )
 
 
@@ -257,29 +275,38 @@ class SignupView(ViewErrorMixin, discord.ui.View):
     # ----- Sign-up buttons -----
 
     @discord.ui.button(
-        label="Tank", emoji=config.EMOJI_TANK, style=discord.ButtonStyle.primary,
+        label="Tank",
+        emoji=config.EMOJI_TANK,
+        style=discord.ButtonStyle.primary,
         custom_id="aion2:tank",
     )
     async def tank_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "tank")
 
     @discord.ui.button(
-        label="Heal", emoji=config.EMOJI_HEAL, style=discord.ButtonStyle.success,
+        label="Heal",
+        emoji=config.EMOJI_HEAL,
+        style=discord.ButtonStyle.success,
         custom_id="aion2:heal",
     )
     async def heal_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "heal")
 
     @discord.ui.button(
-        label="DPS", emoji=config.EMOJI_DPS, style=discord.ButtonStyle.danger,
+        label="DPS",
+        emoji=config.EMOJI_DPS,
+        style=discord.ButtonStyle.danger,
         custom_id="aion2:dps",
     )
     async def dps_button(self, interaction: discord.Interaction, _):
         await self._join(interaction, "dps")
 
     @discord.ui.button(
-        label="Leave", emoji="🚪", style=discord.ButtonStyle.secondary,
-        custom_id="aion2:leave", row=1,
+        label="Leave",
+        emoji="🚪",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:leave",
+        row=1,
     )
     async def leave_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -290,7 +317,8 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
         async with self._locks[event["message_id"]]:
             party_before, _ = assign(
-                event["compo"], event["size"],
+                event["compo"],
+                event["size"],
                 await db.get_signups(event["message_id"]),
             )
             removed = await db.remove_signup(event["message_id"], interaction.user.id)
@@ -301,14 +329,15 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 return
 
             await self._update_message(interaction, event)
-            await interaction.followup.send(
-                i18n.t("signup.left", lang), ephemeral=True
-            )
+            await interaction.followup.send(i18n.t("signup.left", lang), ephemeral=True)
             await self.announce_promoted(interaction, event, party_before)
 
     @discord.ui.button(
-        label="Done", emoji="✅", style=discord.ButtonStyle.success,
-        custom_id="aion2:done", row=1,
+        label="Done",
+        emoji="✅",
+        style=discord.ButtonStyle.success,
+        custom_id="aion2:done",
+        row=1,
     )
     async def done_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -344,8 +373,11 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await self._delete_event_voice(interaction, event)
 
     @discord.ui.button(
-        label="Cancel event", emoji="🗑️", style=discord.ButtonStyle.secondary,
-        custom_id="aion2:cancel", row=1,
+        label="Cancel event",
+        emoji="🗑️",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:cancel",
+        row=1,
     )
     async def cancel_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -375,8 +407,12 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         party, waitlist = assign(event["compo"], event["size"], signups)
         mentions = " ".join(f"<@{s['user_id']}>" for s in party + waitlist)
         await interaction.followup.send(
-            i18n.t("signup.cancelled", lang, title=event["title"],
-                   who=interaction.user.mention)
+            i18n.t(
+                "signup.cancelled",
+                lang,
+                title=event["title"],
+                who=interaction.user.mention,
+            )
             + (f"\n{mentions}" if mentions else "")
         )
         await self._delete_event_voice(interaction, event)
@@ -395,8 +431,11 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await interaction.client.db.clear_voice_channel(event["message_id"])
 
     @discord.ui.button(
-        label="Edit", emoji="✏️", style=discord.ButtonStyle.secondary,
-        custom_id="aion2:edit", row=2,
+        label="Edit",
+        emoji="✏️",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:edit",
+        row=2,
     )
     async def edit_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -416,8 +455,11 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await interaction.response.send_modal(EventEditModal(event, lang))
 
     @discord.ui.button(
-        label="Manage queue", emoji="🧮", style=discord.ButtonStyle.secondary,
-        custom_id="aion2:queue", row=2,
+        label="Manage queue",
+        emoji="🧮",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:queue",
+        row=2,
     )
     async def queue_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -447,8 +489,11 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         )
 
     @discord.ui.button(
-        label="Calendar", emoji="📅", style=discord.ButtonStyle.secondary,
-        custom_id="aion2:ics", row=2,
+        label="Calendar",
+        emoji="📅",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:ics",
+        row=2,
     )
     async def ics_button(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -480,8 +525,12 @@ class SignupView(ViewErrorMixin, discord.ui.View):
 
         if already_in_this_role and len(characters) < 2:
             await interaction.response.send_message(
-                i18n.t("signup.already_role", lang,
-                       emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role]),
+                i18n.t(
+                    "signup.already_role",
+                    lang,
+                    emoji=ROLE_EMOJI[role],
+                    label=ROLE_LABEL[role],
+                ),
                 ephemeral=True,
             )
             return
@@ -490,21 +539,30 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         # everyone else is signed up straight away, as before.
         if len(characters) > 1:
             picker = CharacterPicker(
-                self, event, role, characters,
+                self,
+                event,
+                role,
+                characters,
                 current_id=existing["character_id"] if existing else None,
                 switching=already_in_this_role,
                 lang=lang,
             )
             intro = (
-                i18n.t("signup.pick_switch", lang,
-                       emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role])
+                i18n.t(
+                    "signup.pick_switch",
+                    lang,
+                    emoji=ROLE_EMOJI[role],
+                    label=ROLE_LABEL[role],
+                )
                 if already_in_this_role
-                else i18n.t("signup.pick_join", lang,
-                            emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role])
+                else i18n.t(
+                    "signup.pick_join",
+                    lang,
+                    emoji=ROLE_EMOJI[role],
+                    label=ROLE_LABEL[role],
+                )
             )
-            await interaction.response.send_message(
-                intro, view=picker, ephemeral=True
-            )
+            await interaction.response.send_message(intro, view=picker, ephemeral=True)
             return
 
         async with self._locks[event["message_id"]]:
@@ -515,8 +573,14 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             await refresh_event_message(interaction.client, event)
             await self.announce_promoted(interaction, event, party_before)
 
-    async def perform_join(self, interaction: discord.Interaction, event, role: str,
-                           character, lang: str = "en") -> tuple[str, list]:
+    async def perform_join(
+        self,
+        interaction: discord.Interaction,
+        event,
+        role: str,
+        character,
+        lang: str = "en",
+    ) -> tuple[str, list]:
         """Signs the member up and redraws the event.
 
         Returns the reply to show them and the party as it stood beforehand,
@@ -527,7 +591,8 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         """
         db = interaction.client.db
         party_before, _ = assign(
-            event["compo"], event["size"],
+            event["compo"],
+            event["size"],
             await db.get_signups(event["message_id"]),
         )
         await db.upsert_signup(
@@ -543,22 +608,30 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         party, waitlist = assign(event["compo"], event["size"], signups)
         who = (
             i18n.t("signup.with_character", lang, name=character["char_name"])
-            if character else ""
+            if character
+            else ""
         )
         if any(s["user_id"] == interaction.user.id for s in party):
             message = i18n.t(
-                "signup.joined", lang,
-                emoji=ROLE_EMOJI[role], label=ROLE_LABEL[role], who=who,
+                "signup.joined",
+                lang,
+                emoji=ROLE_EMOJI[role],
+                label=ROLE_LABEL[role],
+                who=who,
             )
         else:
             position = next(
-                i for i, s in enumerate(waitlist, start=1)
+                i
+                for i, s in enumerate(waitlist, start=1)
                 if s["user_id"] == interaction.user.id
             )
             message = i18n.t(
-                "signup.waitlisted", lang,
-                position=position, emoji=ROLE_EMOJI[role],
-                label=ROLE_LABEL[role], who=who,
+                "signup.waitlisted",
+                lang,
+                position=position,
+                emoji=ROLE_EMOJI[role],
+                label=ROLE_LABEL[role],
+                who=who,
             )
         return message, party_before
 
@@ -605,15 +678,15 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         party, _ = assign(event["compo"], event["size"], signups)
         ids_before = {s["user_id"] for s in party_before}
         promoted = [
-            s for s in party
+            s
+            for s in party
             if s["user_id"] not in ids_before and s["user_id"] != interaction.user.id
         ]
         if promoted:
             lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
             mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
             await interaction.followup.send(
-                i18n.t("signup.promoted", lang,
-                       mentions=mentions, title=event["title"])
+                i18n.t("signup.promoted", lang, mentions=mentions, title=event["title"])
             )
 
 
@@ -625,8 +698,9 @@ def _ranked_signups(signups: list) -> list:
 class QueueSelect(discord.ui.Select):
     """Picks which sign-up the admin is about to move up or down."""
 
-    def __init__(self, ranked: list, party_ids: set, selected: int | None,
-                 lang: str = "en"):
+    def __init__(
+        self, ranked: list, party_ids: set, selected: int | None, lang: str = "en"
+    ):
         options = []
         for position, s in enumerate(ranked[:25], start=1):
             in_party = s["user_id"] in party_ids
@@ -636,21 +710,21 @@ class QueueSelect(discord.ui.Select):
             description = f"{tag} · {ROLE_LABEL[s['role']]}"
             if s["char_name"]:
                 description += f" · {s['char_name']}"
-            options.append(discord.SelectOption(
-                label=f"{position}. {s['display_name']}"[:100],
-                value=str(s["user_id"]),
-                description=description[:100],
-                default=s["user_id"] == selected,
-            ))
+            options.append(
+                discord.SelectOption(
+                    label=f"{position}. {s['display_name']}"[:100],
+                    value=str(s["user_id"]),
+                    description=description[:100],
+                    default=s["user_id"] == selected,
+                )
+            )
         super().__init__(
             placeholder=i18n.t("signup.queue_placeholder", lang), options=options
         )
 
     async def callback(self, interaction: discord.Interaction):
         self.view.selected = int(self.values[0])
-        signups = await interaction.client.db.get_signups(
-            self.view.event["message_id"]
-        )
+        signups = await interaction.client.db.get_signups(self.view.event["message_id"])
         await interaction.response.edit_message(
             view=QueueManageView(
                 self.view.event, signups, self.view.lang, selected=self.view.selected
@@ -669,8 +743,9 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
 
     _BUTTONS = {"queue:up": "signup.btn_up", "queue:down": "signup.btn_down"}
 
-    def __init__(self, event, signups: list, lang: str = "en",
-                 selected: int | None = None):
+    def __init__(
+        self, event, signups: list, lang: str = "en", selected: int | None = None
+    ):
         super().__init__(timeout=180)
         self.event = event
         self.lang = lang
@@ -686,13 +761,15 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
                 child.label = i18n.t(key, lang)
         self.add_item(QueueSelect(ranked, party_ids, selected, lang))
 
-    @discord.ui.button(emoji="⬆️", style=discord.ButtonStyle.primary,
-                       custom_id="queue:up", row=1)
+    @discord.ui.button(
+        emoji="⬆️", style=discord.ButtonStyle.primary, custom_id="queue:up", row=1
+    )
     async def up_button(self, interaction: discord.Interaction, _):
         await self._move(interaction, MOVE_UP)
 
-    @discord.ui.button(emoji="⬇️", style=discord.ButtonStyle.primary,
-                       custom_id="queue:down", row=1)
+    @discord.ui.button(
+        emoji="⬇️", style=discord.ButtonStyle.primary, custom_id="queue:down", row=1
+    )
     async def down_button(self, interaction: discord.Interaction, _):
         await self._move(interaction, MOVE_DOWN)
 
@@ -708,9 +785,7 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
                 )
                 return
 
-            party_before, _ = assign(
-                self.event["compo"], self.event["size"], signups
-            )
+            party_before, _ = assign(self.event["compo"], self.event["size"], signups)
             priorities = reorder_priorities(ordered_ids, self.selected, direction)
             await db.set_signup_priorities(self.event["message_id"], priorities)
             signups = await db.get_signups(self.event["message_id"])
@@ -725,8 +800,7 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
             await refresh_event_message(interaction.client, self.event)
             await self._announce_promoted(interaction, party_before, signups)
 
-    async def _announce_promoted(self, interaction, party_before: list,
-                                 signups: list):
+    async def _announce_promoted(self, interaction, party_before: list, signups: list):
         party, _ = assign(self.event["compo"], self.event["size"], signups)
         ids_before = {s["user_id"] for s in party_before}
         promoted = [s for s in party if s["user_id"] not in ids_before]
@@ -737,8 +811,12 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
             channel = await interaction.client.fetch_channel(self.event["channel_id"])
         mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
         await channel.send(
-            i18n.t("signup.promoted", self.lang,
-                   mentions=mentions, title=self.event["title"])
+            i18n.t(
+                "signup.promoted",
+                self.lang,
+                mentions=mentions,
+                title=self.event["title"],
+            )
         )
 
 
@@ -762,15 +840,19 @@ class RSVPView(ViewErrorMixin, discord.ui.View):
                 child.label = i18n.t(key, lang)
 
     @discord.ui.button(
-        label="I'm coming", emoji="✅",
-        style=discord.ButtonStyle.success, custom_id="rsvp:yes",
+        label="I'm coming",
+        emoji="✅",
+        style=discord.ButtonStyle.success,
+        custom_id="rsvp:yes",
     )
     async def coming(self, interaction: discord.Interaction, _):
         await self._respond(interaction, "yes")
 
     @discord.ui.button(
-        label="Can't make it", emoji="❌",
-        style=discord.ButtonStyle.secondary, custom_id="rsvp:no",
+        label="Can't make it",
+        emoji="❌",
+        style=discord.ButtonStyle.secondary,
+        custom_id="rsvp:no",
     )
     async def not_coming(self, interaction: discord.Interaction, _):
         await self._respond(interaction, "no")

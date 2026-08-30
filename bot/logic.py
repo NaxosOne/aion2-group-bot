@@ -124,10 +124,7 @@ def split_groups(members: list, groups: int, group_size: int) -> list:
     groups are still returned, so a multi-group (siege) event always shows every
     group.
     """
-    return [
-        members[i * group_size:(i + 1) * group_size]
-        for i in range(groups)
-    ]
+    return [members[i * group_size : (i + 1) * group_size] for i in range(groups)]
 
 
 def role_capacity(compo: str, size: int, role: str) -> int:

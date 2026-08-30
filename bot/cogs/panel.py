@@ -49,7 +49,8 @@ class ActivitySelect(discord.ui.Select):
     def __init__(self, chosen: str | None, lang: str):
         super().__init__(
             placeholder=i18n.t("panel.activity_placeholder", lang),
-            row=0, options=self._options(chosen),
+            row=0,
+            options=self._options(chosen),
         )
 
     @staticmethod
@@ -77,7 +78,8 @@ class SetupSelect(discord.ui.Select):
     def __init__(self, chosen: str, lang: str):
         super().__init__(
             placeholder=i18n.t("panel.setup_placeholder", lang),
-            row=1, options=self._options(chosen, lang),
+            row=1,
+            options=self._options(chosen, lang),
         )
 
     @staticmethod
@@ -129,8 +131,11 @@ class EventSetupView(ViewErrorMixin, discord.ui.View):
         return discord.Embed(
             title=i18n.t("panel.event_step1_title", self.lang),
             description=i18n.t(
-                "panel.event_step1_body", self.lang,
-                type_line=type_line, label=label, description=description,
+                "panel.event_step1_body",
+                self.lang,
+                type_line=type_line,
+                label=label,
+                description=description,
             ),
             colour=discord.Colour.blurple(),
         )
@@ -172,21 +177,24 @@ class EventDetailsModal(ModalErrorMixin, discord.ui.Modal):
             self.custom_type = discord.ui.TextInput(
                 label=i18n.t("panel.field_type_name", lang),
                 placeholder=i18n.t("panel.field_type_name_ph", lang),
-                required=False, max_length=30,
+                required=False,
+                max_length=30,
             )
             self.add_item(self.custom_type)
 
         self.when = discord.ui.TextInput(
             label=i18n.t("panel.field_when", lang),
             placeholder=i18n.t("panel.field_when_ph", lang),
-            required=False, max_length=30,
+            required=False,
+            max_length=30,
         )
         self.add_item(self.when)
 
         self.description = discord.ui.TextInput(
             label=i18n.t("panel.field_description", lang),
             style=discord.TextStyle.paragraph,
-            required=False, max_length=500,
+            required=False,
+            max_length=500,
         )
         self.add_item(self.description)
 
@@ -195,8 +203,9 @@ class EventDetailsModal(ModalErrorMixin, discord.ui.Modal):
         if self.when.value:
             try:
                 starts_at = int(
-                    parse_when(self.when.value, config.TIMEZONE, lang=self.lang)
-                    .timestamp()
+                    parse_when(
+                        self.when.value, config.TIMEZONE, lang=self.lang
+                    ).timestamp()
                 )
             except ParseError as err:
                 await interaction.response.send_message(str(err), ephemeral=True)
@@ -232,14 +241,16 @@ class AwayModal(ModalErrorMixin, discord.ui.Modal):
         self.until = discord.ui.TextInput(
             label=i18n.t("panel.field_until", lang),
             placeholder=i18n.t("panel.field_until_ph", lang),
-            required=False, max_length=30,
+            required=False,
+            max_length=30,
         )
         self.add_item(self.until)
 
         self.reason = discord.ui.TextInput(
             label=i18n.t("panel.field_reason", lang),
             placeholder=i18n.t("panel.field_reason_ph", lang),
-            required=False, max_length=100,
+            required=False,
+            max_length=100,
         )
         self.add_item(self.reason)
 
@@ -266,7 +277,9 @@ class PanelView(ViewErrorMixin, discord.ui.View):
                 child.label = i18n.t(key, lang)
 
     @discord.ui.button(
-        label="Create an event", emoji="📅", style=discord.ButtonStyle.primary,
+        label="Create an event",
+        emoji="📅",
+        style=discord.ButtonStyle.primary,
         custom_id="panel:event",
     )
     async def create_event(self, interaction: discord.Interaction, _):
@@ -277,7 +290,9 @@ class PanelView(ViewErrorMixin, discord.ui.View):
         )
 
     @discord.ui.button(
-        label="Report an absence", emoji="🏖️", style=discord.ButtonStyle.secondary,
+        label="Report an absence",
+        emoji="🏖️",
+        style=discord.ButtonStyle.secondary,
         custom_id="panel:away",
     )
     async def report_absence(self, interaction: discord.Interaction, _):
@@ -305,9 +320,12 @@ def _panel_embed(settings, lang: str) -> discord.Embed:
     embed = discord.Embed(
         title=i18n.t("panel.title", lang),
         description=i18n.t(
-            "panel.body", lang,
-            tank=config.EMOJI_TANK, heal=config.EMOJI_HEAL,
-            dps=config.EMOJI_DPS, where=where,
+            "panel.body",
+            lang,
+            tank=config.EMOJI_TANK,
+            heal=config.EMOJI_HEAL,
+            dps=config.EMOJI_DPS,
+            where=where,
         ),
         colour=discord.Colour.blurple(),
     )
@@ -372,12 +390,14 @@ class Panel(commands.Cog):
         def describe(setting: str) -> str:
             channel_id = settings[setting] if settings else None
             return (
-                f"<#{channel_id}>" if channel_id
+                f"<#{channel_id}>"
+                if channel_id
                 else i18n.t("channels.where_used", lang)
             )
 
         message = i18n.t(
-            "channels.destinations", lang,
+            "channels.destinations",
+            lang,
             events=describe("event_channel_id"),
             absences=describe("absence_channel_id"),
             rsvp=describe("rsvp_channel_id"),
@@ -391,7 +411,10 @@ class Panel(commands.Cog):
 
     @app_commands.command(
         name="panel",
-        description="Post the quick-actions panel here, or refresh the existing one (moderators)",
+        description=(
+            "Post the quick-actions panel here, or refresh the existing "
+            "one (moderators)"
+        ),
     )
     @app_commands.default_permissions(manage_messages=True)
     async def panel(self, interaction: discord.Interaction):
@@ -437,7 +460,10 @@ class Panel(commands.Cog):
 
     @app_commands.command(
         name="redeploy",
-        description="Refresh the panel and re-render open events with the latest buttons (admins)",
+        description=(
+            "Refresh the panel and re-render open events with the latest "
+            "buttons (admins)"
+        ),
     )
     @app_commands.default_permissions(manage_guild=True)
     async def redeploy(self, interaction: discord.Interaction):

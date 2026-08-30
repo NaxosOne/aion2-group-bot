@@ -9,8 +9,10 @@ STAMP = 1_699_999_999  # 22:13:19 UTC
 
 def ev(message_id, starts_at, title="Fire Temple", description=None):
     return {
-        "message_id": message_id, "title": title,
-        "starts_at": starts_at, "description": description,
+        "message_id": message_id,
+        "title": title,
+        "starts_at": starts_at,
+        "description": description,
     }
 
 

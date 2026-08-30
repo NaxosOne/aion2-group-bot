@@ -64,7 +64,7 @@ class FakeBot:
 
 def sweep(guilds, profiles):
     db = FakeDB(profiles)
-    cog = Profile.__new__(Profile)          # no cog machinery needed here
+    cog = Profile.__new__(Profile)  # no cog machinery needed here
     cog.bot = FakeBot(guilds, db)
     asyncio.run(Profile.prune_departed.coro(cog))
     return db
@@ -74,7 +74,7 @@ def test_a_member_still_in_the_cache_is_left_alone():
     guild = FakeGuild(1, cached=[42])
     db = sweep([guild], {1: [42]})
     assert db.purged == []
-    assert guild.fetched == []              # no API call for a cache hit
+    assert guild.fetched == []  # no API call for a cache hit
 
 
 def test_a_member_the_api_no_longer_knows_is_purged():
@@ -120,8 +120,8 @@ def test_successive_passes_get_through_a_long_backlog():
 
 
 def test_guilds_are_swept_independently():
-    here = FakeGuild(1, cached=[], present=[])       # 42 left this server
-    elsewhere = FakeGuild(2, cached=[42])            # but is still on that one
+    here = FakeGuild(1, cached=[], present=[])  # 42 left this server
+    elsewhere = FakeGuild(2, cached=[42])  # but is still on that one
     db = sweep([here, elsewhere], {1: [42], 2: [42]})
     assert db.purged == [(1, 42)]
     assert db.profiles[2] == [42]

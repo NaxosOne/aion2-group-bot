@@ -32,11 +32,13 @@ class Settings(commands.Cog):
             "The language for this server", key="commands.language.choice"
         )
     )
-    @app_commands.choices(choice=[
-        app_commands.Choice(name="Français", value="fr"),
-        app_commands.Choice(name="English", value="en"),
-        app_commands.Choice(name="Auto (Discord server language)", value="auto"),
-    ])
+    @app_commands.choices(
+        choice=[
+            app_commands.Choice(name="Français", value="fr"),
+            app_commands.Choice(name="English", value="en"),
+            app_commands.Choice(name="Auto (Discord server language)", value="auto"),
+        ]
+    )
     @app_commands.default_permissions(manage_guild=True)
     async def language(
         self, interaction: discord.Interaction, choice: app_commands.Choice[str]

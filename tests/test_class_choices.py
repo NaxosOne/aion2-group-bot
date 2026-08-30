@@ -8,7 +8,8 @@ def option(display_name):
     """One option of /profile set, by the name Discord shows."""
     command = next(c for c in Profile.__cog_app_commands__ if c.name == "set")
     return next(
-        param for param in command._params.values()
+        param
+        for param in command._params.values()
         if param.display_name == display_name
     )
 

@@ -24,5 +24,6 @@ def test_both_catalogs_have_identical_keys():
 def test_placeholders_match_per_key():
     en, fr = _load("en"), _load("fr")
     for key in en:
-        assert set(_PLACEHOLDER.findall(en[key])) == set(_PLACEHOLDER.findall(fr[key])), \
-            f"placeholder mismatch on {key!r}"
+        assert set(_PLACEHOLDER.findall(en[key])) == set(
+            _PLACEHOLDER.findall(fr[key])
+        ), f"placeholder mismatch on {key!r}"
