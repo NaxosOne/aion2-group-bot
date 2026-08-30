@@ -40,6 +40,5 @@ def matching_pool(entries: list, activity: str, roles, now: int) -> list:
     return [
         entry
         for entry in active_entries(entries, now)
-        if entry["activity"] == activity
-        and (wanted is None or entry["role"] in wanted)
+        if entry["activity"] == activity and (wanted is None or entry["role"] in wanted)
     ]

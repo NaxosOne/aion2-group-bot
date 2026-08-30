@@ -349,9 +349,7 @@ class Lfg(commands.Cog):
                     return
 
         message = await interaction.channel.send(embed=embed, view=LfgBoardView(lang))
-        await db.set_lfg_board(
-            interaction.guild_id, interaction.channel_id, message.id
-        )
+        await db.set_lfg_board(interaction.guild_id, interaction.channel_id, message.id)
         await interaction.response.send_message(
             i18n.t("lfg.board_posted", lang, link=message.jump_url), ephemeral=True
         )
