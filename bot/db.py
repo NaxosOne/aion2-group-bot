@@ -130,6 +130,13 @@ CREATE TABLE IF NOT EXISTS lfg_entries (
     PRIMARY KEY (guild_id, user_id, activity)
 );
 
+CREATE TABLE IF NOT EXISTS available_now (
+    guild_id   INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,                  -- UTC timestamp; pruned past this
+    PRIMARY KEY (guild_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS recurrences (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id      INTEGER NOT NULL,
@@ -1088,3 +1095,61 @@ class Database:
             "WHERE lfg_message_id IS NOT NULL"
         ) as cur:
             return await cur.fetchall()
+
+    # ----- Available now (shown on the LFG board) -----
+
+    async def set_available(self, guild_id: int, user_id: int, expires_at: int) -> None:
+        """Marks a member available (or refreshes their window)."""
+        await self.conn.execute(
+            """INSERT INTO available_now (guild_id, user_id, expires_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(guild_id, user_id) DO UPDATE SET
+                   expires_at = excluded.expires_at""",
+            (guild_id, user_id, expires_at),
+        )
+        await self.conn.commit()
+
+    async def remove_available(self, guild_id: int, user_id: int) -> int:
+        """Clears a member's available status. Returns the number of rows removed."""
+        cur = await self.conn.execute(
+            "DELETE FROM available_now WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        )
+        await self.conn.commit()
+        return cur.rowcount
+
+    async def toggle_available(
+        self, guild_id: int, user_id: int, now_ts: int, expires_at: int
+    ) -> bool:
+        """Flips a member's available status. Returns True if now available.
+
+        A row whose window already lapsed counts as off, so toggling re-arms it.
+        """
+        async with self.conn.execute(
+            "SELECT expires_at FROM available_now WHERE guild_id = ? AND user_id = ?",
+            (guild_id, user_id),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is not None and row["expires_at"] > now_ts:
+            await self.remove_available(guild_id, user_id)
+            return False
+        await self.set_available(guild_id, user_id, expires_at)
+        return True
+
+    async def get_available(self, guild_id: int, now_ts: int):
+        """The guild's live "available now" members, soonest expiry first."""
+        async with self.conn.execute(
+            """SELECT * FROM available_now
+               WHERE guild_id = ? AND expires_at > ?
+               ORDER BY expires_at, rowid""",
+            (guild_id, now_ts),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def prune_available(self, now_ts: int) -> int:
+        """Deletes every lapsed available status. Returns the row count."""
+        cur = await self.conn.execute(
+            "DELETE FROM available_now WHERE expires_at <= ?", (now_ts,)
+        )
+        await self.conn.commit()
+        return cur.rowcount

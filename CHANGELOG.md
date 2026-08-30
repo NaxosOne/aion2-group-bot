@@ -8,6 +8,10 @@ All notable changes to Kisk are documented here. The format follows
 
 ### Added
 
+- **"Available now" status** — a lighter, activity-agnostic companion to LFG.
+  Mark yourself available to play right now (default 2h) with the LFG board's
+  **✋ I'm around now** button or `/lfg available on`; the board shows an
+  **Available now** section at the top. Shares the LFG expiry/prune loop.
 - **Looking for group (LFG)** — the first Phase 3 feature. `/lfg looking`
   (activity, role, optional note, auto-expiry) adds a member to the server's
   live pool; `/lfg stop` removes them. Moderators post a persistent **LFG

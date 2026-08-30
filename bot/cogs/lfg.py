@@ -22,6 +22,8 @@ from ..embeds import ROLE_EMOJI, ROLE_LABEL
 from ..errors import ViewErrorMixin
 from ..logic import ROLES
 from ..utils.lfg import (
+    AVAILABLE_DURATIONS,
+    DEFAULT_AVAILABLE,
     DEFAULT_DURATION,
     LFG_DURATIONS,
     active_entries,
@@ -44,12 +46,20 @@ _ROLE_CHOICES = [
 _DURATION_CHOICES = [
     app_commands.Choice(name=label, value=label) for label in LFG_DURATIONS
 ]
+_AVAILABLE_DURATION_CHOICES = [
+    app_commands.Choice(name=label, value=label) for label in AVAILABLE_DURATIONS
+]
+_ON_OFF_CHOICES = [
+    app_commands.Choice(name="On", value="on"),
+    app_commands.Choice(name="Off", value="off"),
+]
 
 
-def build_lfg_embed(pool: list, lang: str, now: int) -> discord.Embed:
-    """The LFG board: the live pool grouped by activity, one field each."""
-    live = active_entries(pool, now)
-    grouped = group_by_activity(live, config.ACTIVITIES)
+def build_lfg_embed(pool: list, available: list, lang: str, now: int) -> discord.Embed:
+    """The LFG board: who's available now, then the pool grouped by activity."""
+    live_pool = active_entries(pool, now)
+    live_available = active_entries(available, now)
+    grouped = group_by_activity(live_pool, config.ACTIVITIES)
 
     embed = discord.Embed(
         title="🔎 " + i18n.t("lfg.title", lang),
@@ -58,11 +68,21 @@ def build_lfg_embed(pool: list, lang: str, now: int) -> discord.Embed:
     )
     brand(embed)
 
-    if not grouped:
+    if not grouped and not live_available:
         embed.description += "\n\n" + i18n.t("lfg.empty", lang)
         return embed
 
-    field_cap = min(1024, EMBED_FIELD_BUDGET // len(grouped))
+    field_count = len(grouped) + (1 if live_available else 0)
+    field_cap = min(1024, EMBED_FIELD_BUDGET // field_count)
+
+    if live_available:
+        mentions = " ".join(f"<@{row['user_id']}>" for row in live_available)
+        embed.add_field(
+            name=f"✋ {i18n.t('lfg.available_title', lang)} ({len(live_available)})",
+            value=truncate_field(mentions, field_cap),
+            inline=False,
+        )
+
     for activity, members in grouped:
         emoji = config.EMOJI_ACTIVITY.get(activity, config.EMOJI_ACTIVITY["Other"])
         lines = []
@@ -77,7 +97,11 @@ def build_lfg_embed(pool: list, lang: str, now: int) -> discord.Embed:
             value=truncate_field("\n".join(lines), field_cap),
             inline=False,
         )
-    embed.set_footer(text=i18n.t("lfg.footer", lang, total=len(live)))
+    embed.set_footer(
+        text=i18n.t(
+            "lfg.footer", lang, total=len(live_pool), available=len(live_available)
+        )
+    )
     return embed
 
 
@@ -95,7 +119,8 @@ async def refresh_lfg_board(client, guild_id: int, lang: str) -> None:
             return
     now = int(time.time())
     pool = await client.db.get_lfg_pool(guild_id, now)
-    embed = build_lfg_embed(pool, lang, now)
+    available = await client.db.get_available(guild_id, now)
+    embed = build_lfg_embed(pool, available, lang, now)
     try:
         await channel.get_partial_message(message_id).edit(
             embed=embed, view=LfgBoardView(lang)
@@ -197,7 +222,11 @@ class LfgLookingView(ViewErrorMixin, discord.ui.View):
 class LfgBoardView(ViewErrorMixin, discord.ui.View):
     """The persistent board buttons: signal, or stop, looking for a group."""
 
-    _LABELS = {"lfg:looking": "lfg.btn_looking", "lfg:stop": "lfg.btn_stop"}
+    _LABELS = {
+        "lfg:looking": "lfg.btn_looking",
+        "lfg:available": "lfg.btn_available",
+        "lfg:stop": "lfg.btn_stop",
+    }
 
     def __init__(self, lang: str = "en"):
         super().__init__(timeout=None)
@@ -218,6 +247,26 @@ class LfgBoardView(ViewErrorMixin, discord.ui.View):
             i18n.t("lfg.looking_prompt", lang),
             view=LfgLookingView(lang),
             ephemeral=True,
+        )
+
+    @discord.ui.button(
+        label="I'm around now",
+        emoji="✋",
+        style=discord.ButtonStyle.success,
+        custom_id="lfg:available",
+    )
+    async def available(self, interaction: discord.Interaction, _):
+        db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        now = int(time.time())
+        expires_at = now + AVAILABLE_DURATIONS[DEFAULT_AVAILABLE]
+        on = await db.toggle_available(
+            interaction.guild_id, interaction.user.id, now, expires_at
+        )
+        await refresh_lfg_board(interaction.client, interaction.guild_id, lang)
+        key = "lfg.available_on" if on else "lfg.available_off"
+        await interaction.response.send_message(
+            i18n.t(key, lang, duration=DEFAULT_AVAILABLE), ephemeral=True
         )
 
     @discord.ui.button(
@@ -314,6 +363,41 @@ class Lfg(commands.Cog):
         await interaction.response.send_message(i18n.t(key, lang), ephemeral=True)
 
     @lfg.command(
+        name="available",
+        description="Mark yourself available to play right now (or turn it off)",
+    )
+    @app_commands.describe(
+        status="On to appear as available now, Off to clear it",
+        duration="How long you stay available (default 2h)",
+    )
+    @app_commands.choices(status=_ON_OFF_CHOICES, duration=_AVAILABLE_DURATION_CHOICES)
+    async def available(
+        self,
+        interaction: discord.Interaction,
+        status: app_commands.Choice[str],
+        duration: app_commands.Choice[str] | None = None,
+    ):
+        lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
+        if status.value == "off":
+            await self.bot.db.remove_available(
+                interaction.guild_id, interaction.user.id
+            )
+            await refresh_lfg_board(self.bot, interaction.guild_id, lang)
+            await interaction.response.send_message(
+                i18n.t("lfg.available_off", lang), ephemeral=True
+            )
+            return
+        window = duration.value if duration else DEFAULT_AVAILABLE
+        expires_at = int(time.time()) + AVAILABLE_DURATIONS[window]
+        await self.bot.db.set_available(
+            interaction.guild_id, interaction.user.id, expires_at
+        )
+        await refresh_lfg_board(self.bot, interaction.guild_id, lang)
+        await interaction.response.send_message(
+            i18n.t("lfg.available_on", lang, duration=window), ephemeral=True
+        )
+
+    @lfg.command(
         name="board",
         description="Post the LFG board here, or refresh the existing one (moderators)",
     )
@@ -323,7 +407,8 @@ class Lfg(commands.Cog):
         lang = await i18n.resolve_lang(db, interaction.guild)
         now = int(time.time())
         pool = await db.get_lfg_pool(interaction.guild_id, now)
-        embed = build_lfg_embed(pool, lang, now)
+        available = await db.get_available(interaction.guild_id, now)
+        embed = build_lfg_embed(pool, available, lang, now)
 
         # Refresh the remembered board in place, so re-running never leaves a
         # stale duplicate behind (mirrors /panel).
@@ -357,7 +442,9 @@ class Lfg(commands.Cog):
     @tasks.loop(minutes=5)
     async def prune_loop(self):
         """Drops expired entries and refreshes the boards that changed."""
-        pruned = await self.bot.db.prune_lfg(int(time.time()))
+        now = int(time.time())
+        pruned = await self.bot.db.prune_lfg(now)
+        pruned += await self.bot.db.prune_available(now)
         if not pruned:
             return
         for row in await self.bot.db.guilds_with_lfg_board():

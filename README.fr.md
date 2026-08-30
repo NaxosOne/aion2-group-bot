@@ -402,6 +402,11 @@ ou quitter le pool sans commande. Et quand un événement a encore une place
 libre, son bouton **Inviter LFG** (créateur ou modérateur) ping les membres du
 pool qui correspondent à un rôle encore manquant.
 
+**Dispo maintenant.** Pour un signal plus léger, sans activité, un membre peut
+se marquer **✋ disponible tout de suite** (2h par défaut) — avec le bouton **Je
+suis dispo** du tableau ou `/lfg available on`. Le tableau affiche une section
+**Dispo maintenant** en tête, pour voir d'un coup d'œil qui est là pour jouer.
+
 ### ✅ Fin d'un événement
 
 Quand la sortie est terminée, appuyez sur :

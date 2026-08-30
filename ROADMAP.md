@@ -55,7 +55,7 @@ upgraded weekly availability board are all in place.
 Move from manually organising parties toward helping players find the right group automatically.
 
 * [x] LFG system *(per-server pool + board, with an "Invite LFG" button on open events)*
-* [ ] "Available now" status
+* [x] "Available now" status *(activity-agnostic presence, shown atop the LFG board)*
 * [ ] Automatic party suggestions
 * [ ] Role/class balancing
 * [ ] Smart, role-aware waitlist promotion
