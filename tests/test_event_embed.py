@@ -49,6 +49,18 @@ def test_cancelled_event_has_no_needs_summary():
     assert "Needs" not in (embed.description or "")
 
 
+def test_multi_group_event_renders_one_field_per_group():
+    event = {**EVENT, "compo": COMPO_OPEN, "size": 6, "groups": 3}
+    signups = [signup(i, "dps") for i in range(1, 6)]  # 5 of 6 seats
+    embed = build_event_embed(event, signups)
+    names = [f.name for f in embed.fields]
+    assert sum("Group" in n for n in names) == 3
+    # 2 per group: group 1 = m1,m2 ; group 3 empty.
+    assert "(2/2)" in names[0]
+    text = party_text(embed)
+    assert "<@1>" in text and "<@5>" in text
+
+
 def test_the_chosen_character_is_named():
     embed = build_event_embed(EVENT, [signup(10, "tank", "Kratos", "Templar")])
     assert "*Kratos (Templar)*" in party_text(embed)

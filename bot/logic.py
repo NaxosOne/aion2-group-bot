@@ -117,6 +117,19 @@ def missing_slots(compo: str, size: int, signups: list) -> dict:
     }
 
 
+def split_groups(members: list, groups: int, group_size: int) -> list:
+    """Split a flat roster into `groups` display groups of `group_size` each.
+
+    Members fill the groups in order; the last group may be partial and empty
+    groups are still returned, so a multi-group (siege) event always shows every
+    group.
+    """
+    return [
+        members[i * group_size:(i + 1) * group_size]
+        for i in range(groups)
+    ]
+
+
 def role_capacity(compo: str, size: int, role: str) -> int:
     """Number of slots for a given role (useful for display)."""
     if compo == COMPO_STANDARD:

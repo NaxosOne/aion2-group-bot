@@ -3,7 +3,14 @@
 import discord
 
 from . import config, i18n
-from .logic import COMPO_STANDARD, ROLES, assign, missing_slots, standard_slots
+from .logic import (
+    COMPO_STANDARD,
+    ROLES,
+    assign,
+    missing_slots,
+    split_groups,
+    standard_slots,
+)
 from .utils.rsvp import rsvp_summary
 
 def _with_legacy_labels(mapping: dict) -> dict:
@@ -163,6 +170,24 @@ def build_event_embed(
                 value=_role_field_value(
                     by_role[role], classes, missing.get(role, 0), lang
                 ),
+                inline=True,
+            )
+    elif (_row_get(event, "groups") or 1) > 1:
+        # Multi-group (siege): one flat roster shown split into equal groups.
+        groups = event["groups"]
+        group_size = event["size"] // groups
+        for index, members in enumerate(split_groups(party, groups, group_size), 1):
+            embed.add_field(
+                name=(
+                    f"⚔️ {i18n.t('event.group', lang, n=index)} "
+                    f"({len(members)}/{group_size})"
+                ),
+                value="\n".join(
+                    f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
+                    f"{_class_suffix(s, classes, role_shown=True)}"
+                    for s in members
+                )
+                or "*—*",
                 inline=True,
             )
     else:
