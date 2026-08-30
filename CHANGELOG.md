@@ -6,6 +6,15 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Party/pool pings no longer silently fail on large sieges. A ping built from a
+  whole party or pool (reminders, RSVP prompts, completion/cancellation notices,
+  LFG invites, waitlist promotions) could exceed Discord's 2000-character
+  message limit for a maxed siege (up to 200 members) and fail to send at all —
+  so nobody was pinged. Mentions are now trimmed to fit (`join_mentions`), and
+  the ping goes out.
+
 ## [0.5.1] - 2026-08-30
 
 ### Fixed

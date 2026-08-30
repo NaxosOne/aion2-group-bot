@@ -27,6 +27,7 @@ from .logic import (
 )
 from .utils.ics import build_calendar
 from .utils.lfg import matching_pool
+from .utils.mentions import join_mentions
 from .utils.permissions import member_is_admin, member_is_moderator
 from .utils.time_parse import (
     ParseError,
@@ -239,7 +240,7 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
             if starts_at
             else i18n.t("signup.edit_when_cleared", self.lang)
         )
-        mentions = " ".join(f"<@{s['user_id']}>" for s in recipients)
+        mentions = join_mentions(s["user_id"] for s in recipients)
         channel = interaction.client.get_channel(event["channel_id"])
         if channel is None:
             channel = await interaction.client.fetch_channel(event["channel_id"])
@@ -375,7 +376,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=None)
 
         party, _ = assign(event["compo"], event["size"], signups)
-        mentions = " ".join(f"<@{s['user_id']}>" for s in party)
+        mentions = join_mentions(s["user_id"] for s in party)
         await interaction.followup.send(
             i18n.t("signup.completed", lang, title=event["title"])
             + (f" GG {mentions}" if mentions else "")
@@ -415,7 +416,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=None)
 
         party, waitlist = assign(event["compo"], event["size"], signups)
-        mentions = " ".join(f"<@{s['user_id']}>" for s in party + waitlist)
+        mentions = join_mentions(s["user_id"] for s in party + waitlist)
         await interaction.followup.send(
             i18n.t(
                 "signup.cancelled",
@@ -575,7 +576,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         emoji = config.EMOJI_ACTIVITY.get(
             event["activity"], config.EMOJI_ACTIVITY["Other"]
         )
-        mentions = " ".join(f"<@{entry['user_id']}>" for entry in matches)
+        mentions = join_mentions(entry["user_id"] for entry in matches)
         await interaction.response.send_message(
             i18n.t(
                 "lfg.invite_ping",
@@ -762,7 +763,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         ]
         if promoted:
             lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
-            mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
+            mentions = join_mentions(s["user_id"] for s in promoted)
             await interaction.followup.send(
                 i18n.t("signup.promoted", lang, mentions=mentions, title=event["title"])
             )
@@ -887,7 +888,7 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
         channel = interaction.client.get_channel(self.event["channel_id"])
         if channel is None:
             channel = await interaction.client.fetch_channel(self.event["channel_id"])
-        mentions = " ".join(f"<@{s['user_id']}>" for s in promoted)
+        mentions = join_mentions(s["user_id"] for s in promoted)
         await channel.send(
             i18n.t(
                 "signup.promoted",
