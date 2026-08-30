@@ -333,7 +333,9 @@ Post a Monday → Sunday availability board:
 /availability post
 ```
 
-Players can indicate which evenings they are available.
+Players tick the days they can play (and a **Clear mine** button wipes their
+week in one click). The board shows a **Most available: Saturday (8), Friday
+(6)** summary at the top, so organisers can pick a day at a glance.
 
 Moderators can configure automatic weekly reposting:
 
