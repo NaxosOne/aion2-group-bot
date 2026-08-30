@@ -62,8 +62,7 @@ def build_dashboard_embed(
                 event["activity"], config.EMOJI_ACTIVITY["Other"]
             )
             line = (
-                f"{emoji} **{event['title']}** — {when} "
-                f"· {len(party)}/{event['size']}"
+                f"{emoji} **{event['title']}** — {when} · {len(party)}/{event['size']}"
             )
             missing = missing_slots(event["compo"], event["size"], signups)
             if missing:
