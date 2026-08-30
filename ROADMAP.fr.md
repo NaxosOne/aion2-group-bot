@@ -64,12 +64,12 @@ L'automatisation lourde du matchmaking a été envisagée puis **volontairement
 écartée** : une légion est un groupe soudé qui forme ses parties socialement, pas
 un pool d'inconnus à apparier par algorithme. Ces idées passent en **Exploration**.
 
-## 🟠 Phase 4 — Outils de légion
+## 🟠 Phase 4 — Outils de légion *(en cours)*
 
 Donner aux organisateurs une vision plus claire de ce qui se passe.
 
-* [ ] Tableau de bord de légion
-* [ ] Interface web
+* [x] Tableau de bord de légion *(une vue `/dashboard` auto-rafraîchie, dans Discord)*
+* [ ] Interface web *(un saut de périmètre majeur — son propre brainstorming + spec avant tout code)*
 
 ## 💡 En exploration
 

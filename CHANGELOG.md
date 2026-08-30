@@ -6,6 +6,15 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Legion dashboard** — the first Phase 4 feature. `/dashboard` (moderators)
+  posts one auto-refreshing overview per server (updates every couple of
+  minutes) that gathers, in one embed: upcoming events with fill and the roles
+  still short, the LFG pool and "available now" counts, current absences, active
+  recurring series, and roster health (members + tank/heal/DPS split among
+  mains). Read-only; a dedicated refresh loop keeps it current. ([#46])
+
 ## [0.4.0] - 2026-08-30
 
 ### Added
@@ -92,6 +101,7 @@ All notable changes to Kisk are documented here. The format follows
 [#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
 [#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
 [#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
+[#46]: https://github.com/NaxosOne/aion2-group-bot/pull/46
 
 [Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...v0.4.0

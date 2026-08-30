@@ -397,6 +397,20 @@ themselves **✋ available right now** (default 2h) — with the board's **I'm
 around now** button or `/lfg available on`. The board shows an **Available now**
 section at the top, so organisers see at a glance who's around to play anything.
 
+### 📊 Legion dashboard
+
+For a single at-a-glance view, moderators post a **dashboard** — one per server —
+that **refreshes itself** (every couple of minutes):
+
+```text
+/dashboard
+```
+
+It gathers, in one embed: **upcoming events** with fill and the roles still short,
+the **LFG pool** and **available now** counts, current **absences**, active
+**recurring series**, and **roster health** (members and the tank/heal/DPS split
+among mains). No command to re-run — pin it and it stays current.
+
 ### ✅ Event completion
 
 When the run is finished, press:
