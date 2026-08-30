@@ -49,6 +49,14 @@ def test_cancelled_event_has_no_needs_summary():
     assert "Needs" not in (embed.description or "")
 
 
+def test_a_big_waitlist_stays_within_the_discord_field_limit():
+    event = {**EVENT, "compo": COMPO_OPEN, "size": 1}
+    signups = [signup(i, "dps") for i in range(1, 200)]  # 1 in party, rest waiting
+    embed = build_event_embed(event, signups)
+    for field in embed.fields:
+        assert len(field.value) <= 1024
+
+
 def test_multi_group_event_renders_one_field_per_group():
     event = {**EVENT, "compo": COMPO_OPEN, "size": 6, "groups": 3}
     signups = [signup(i, "dps") for i in range(1, 6)]  # 5 of 6 seats

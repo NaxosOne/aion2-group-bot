@@ -13,6 +13,7 @@ from .logic import (
     standard_slots,
 )
 from .utils.rsvp import rsvp_summary
+from .utils.text import truncate_field
 
 def _with_legacy_labels(mapping: dict) -> dict:
     """Events created by earlier versions carry French activity labels."""
@@ -185,34 +186,34 @@ def build_event_embed(
                     f"⚔️ {i18n.t('event.group', lang, n=index)} "
                     f"({len(members)}/{group_size})"
                 ),
-                value="\n".join(
+                value=truncate_field("\n".join(
                     f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                     f"{_class_suffix(s, classes, role_shown=True)}"
                     for s in members
                 )
-                or "*—*",
+                or "*—*"),
                 inline=True,
             )
     else:
         embed.add_field(
             name=f"👥 {i18n.t('event.party', lang)} ({len(party)}/{event['size']})",
-            value="\n".join(
+            value=truncate_field("\n".join(
                 f"• {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
                 for s in party
             )
-            or "*—*",
+            or "*—*"),
             inline=False,
         )
 
     if waitlist:
         embed.add_field(
             name=f"⏳ {i18n.t('event.waitlist', lang)} ({len(waitlist)})",
-            value="\n".join(
+            value=truncate_field("\n".join(
                 f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                 f"{_class_suffix(s, classes, role_shown=True)}"
                 for i, s in enumerate(waitlist, start=1)
-            ),
+            )),
             inline=False,
         )
 
@@ -245,7 +246,7 @@ def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> disco
     embed.set_thumbnail(url=activity_icon_url(event["activity"]))
 
     def _mentions(ids: list) -> str:
-        return "\n".join(f"• <@{u}>" for u in ids) or "*—*"
+        return truncate_field("\n".join(f"• <@{u}>" for u in ids) or "*—*")
 
     embed.add_field(
         name="✅ " + i18n.t("rsvp.coming", lang, n=len(confirmed)),

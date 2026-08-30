@@ -18,6 +18,7 @@ from .. import config, i18n
 from ..branding import brand
 from ..errors import ViewErrorMixin
 from ..utils.availability import availability_ranking
+from ..utils.text import truncate_field
 from ..utils.permissions import member_is_moderator
 
 log = logging.getLogger(__name__)
@@ -173,7 +174,7 @@ def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Em
         players = by_day[i]
         embed.add_field(
             name=f"{i18n.t(f'weekday.{i}', lang)} ({len(players)})",
-            value="\n".join(f"<@{uid}>" for uid in players) or "*—*",
+            value=truncate_field("\n".join(f"<@{uid}>" for uid in players) or "*—*"),
             inline=True,
         )
     return embed
