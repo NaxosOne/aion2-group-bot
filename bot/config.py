@@ -62,6 +62,10 @@ EMOJI_ACTIVITY = {
     for name, default in DEFAULT_EMOJI_ACTIVITY.items()
 }
 
+# The event types offered by menus and choices, in display order. Single source
+# of truth for the panel's event dropdown and the LFG activity picker.
+ACTIVITIES = tuple(DEFAULT_EMOJI_ACTIVITY)
+
 
 # Aion 2 class emojis, overridable the same way (EMOJI_GLADIATOR, EMOJI_TEMPLAR
 # ...). Defaults are Unicode; to use the real in-game icons, upload them as
