@@ -50,6 +50,15 @@ VIEW_KEYS = {
     "signup.event_gone": {},
     "signup.event_done": {},
     "signup.event_cancelled": {},
+    "lfg.invite_forbidden": {},
+    "lfg.invite_full": {},
+    "lfg.invite_none": {},
+    "lfg.invite_ping": {
+        "mentions": "<@1>",
+        "emoji": "🏰",
+        "activity": "Dungeon",
+        "link": "https://discord.com/x",
+    },
     "rsvp.inactive": {},
     "rsvp.sign_up_first": {},
 }

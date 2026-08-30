@@ -6,6 +6,7 @@ from discord.app_commands import Translator, locale_str
 from discord.ext import commands
 
 from . import config, i18n
+from .cogs.lfg import LfgBoardView
 from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
@@ -49,6 +50,7 @@ class GroupBot(commands.Bot):
         self.add_view(VoteView())
         self.add_view(AvailabilityView())
         self.add_view(PanelView())
+        self.add_view(LfgBoardView())
 
         # The onboarding DM button carries its guild id in the custom_id, so it
         # is registered as a dynamic item rather than a fixed persistent view.
@@ -58,6 +60,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.profiles")
         await self.load_extension("bot.cogs.legion")
         await self.load_extension("bot.cogs.polls")
+        await self.load_extension("bot.cogs.lfg")
         await self.load_extension("bot.cogs.panel")
         await self.load_extension("bot.cogs.onboarding")
         await self.load_extension("bot.cogs.settings")

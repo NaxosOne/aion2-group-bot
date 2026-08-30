@@ -6,6 +6,17 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Looking for group (LFG)** — the first Phase 3 feature. `/lfg looking`
+  (activity, role, optional note, auto-expiry) adds a member to the server's
+  live pool; `/lfg stop` removes them. Moderators post a persistent **LFG
+  board** with `/lfg board` (one per server, like `/panel`) that shows the pool
+  grouped by activity, with **🔎 I'm looking** / **🛑 Stop looking** buttons; a
+  background loop prunes expired entries and refreshes the board. Open events
+  gain an **Invite LFG** button (creator or moderator) that pings the pool
+  members who fit a still-open role. ([#43])
+
 ## [0.3.1] - 2026-08-30
 
 ### Fixed
@@ -74,6 +85,7 @@ All notable changes to Kisk are documented here. The format follows
 [#23]: https://github.com/NaxosOne/aion2-group-bot/pull/23
 [#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
 [#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
+[#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
 
 [Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...HEAD
 [0.3.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...v0.3.1

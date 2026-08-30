@@ -77,7 +77,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     panel_channel_id   INTEGER,                   -- channel of the quick-actions panel
     panel_message_id   INTEGER,                   -- its message; /panel refreshes it
     admin_role_id      INTEGER,                   -- role treated as a Kisk admin
-    voice_category_id  INTEGER                    -- category for temp voice channels
+    voice_category_id  INTEGER,                   -- category for temp voice channels
+    lfg_channel_id     INTEGER,                   -- channel of the LFG board
+    lfg_message_id     INTEGER                    -- its message; /lfg board edits it
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -116,6 +118,16 @@ CREATE TABLE IF NOT EXISTS rsvp (
     user_id    INTEGER NOT NULL,
     status     TEXT    NOT NULL,                  -- 'yes' or 'no'
     PRIMARY KEY (message_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS lfg_entries (
+    guild_id   INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    activity   TEXT    NOT NULL,                  -- Dungeon / Raid / PvP / ...
+    role       TEXT    NOT NULL,                  -- 'tank', 'heal' or 'dps'
+    note       TEXT,                              -- optional free text
+    expires_at INTEGER NOT NULL,                  -- UTC timestamp; pruned past this
+    PRIMARY KEY (guild_id, user_id, activity)
 );
 
 CREATE TABLE IF NOT EXISTS recurrences (
@@ -170,6 +182,8 @@ class Database:
                 "panel_message_id": "INTEGER",  # so /panel refreshes it in place
                 "admin_role_id": "INTEGER",  # role treated as a Kisk admin
                 "voice_category_id": "INTEGER",  # category for temp voice channels
+                "lfg_channel_id": "INTEGER",  # LFG board location
+                "lfg_message_id": "INTEGER",  # so /lfg board refreshes it in place
             },
             "signups": {
                 "character_id": "INTEGER",  # which character the member brings
@@ -970,5 +984,107 @@ class Database:
         async with self.conn.execute(
             "SELECT * FROM dispo_marks WHERE message_id = ? ORDER BY rowid",
             (message_id,),
+        ) as cur:
+            return await cur.fetchall()
+
+    # ----- Looking for group (/lfg) -----
+
+    async def set_lfg_looking(
+        self,
+        guild_id: int,
+        user_id: int,
+        activity: str,
+        role: str,
+        note: str | None,
+        expires_at: int,
+    ) -> None:
+        """Adds a member to the pool for an activity, or refreshes their entry.
+
+        One entry per (guild, member, activity): re-signalling the same activity
+        updates the role, note and expiry rather than piling up duplicates.
+        """
+        await self.conn.execute(
+            """INSERT INTO lfg_entries
+                   (guild_id, user_id, activity, role, note, expires_at)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(guild_id, user_id, activity) DO UPDATE SET
+                   role = excluded.role,
+                   note = excluded.note,
+                   expires_at = excluded.expires_at""",
+            (guild_id, user_id, activity, role, note, expires_at),
+        )
+        await self.conn.commit()
+
+    async def remove_lfg(
+        self, guild_id: int, user_id: int, activity: str | None = None
+    ) -> int:
+        """Drops a member's entries — one activity, or all of them. Returns the
+        number of rows removed."""
+        if activity is None:
+            cur = await self.conn.execute(
+                "DELETE FROM lfg_entries WHERE guild_id = ? AND user_id = ?",
+                (guild_id, user_id),
+            )
+        else:
+            cur = await self.conn.execute(
+                "DELETE FROM lfg_entries "
+                "WHERE guild_id = ? AND user_id = ? AND activity = ?",
+                (guild_id, user_id, activity),
+            )
+        await self.conn.commit()
+        return cur.rowcount
+
+    async def get_lfg_pool(self, guild_id: int, now_ts: int):
+        """The guild's live pool (expired entries excluded), soonest expiry first
+        within each activity."""
+        async with self.conn.execute(
+            """SELECT * FROM lfg_entries
+               WHERE guild_id = ? AND expires_at > ?
+               ORDER BY activity, expires_at, rowid""",
+            (guild_id, now_ts),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def prune_lfg(self, now_ts: int) -> int:
+        """Deletes every expired entry across all guilds. Returns the row count,
+        so the scheduler only refreshes the boards when something changed."""
+        cur = await self.conn.execute(
+            "DELETE FROM lfg_entries WHERE expires_at <= ?", (now_ts,)
+        )
+        await self.conn.commit()
+        return cur.rowcount
+
+    async def get_lfg_board(self, guild_id: int) -> "tuple[int, int] | None":
+        """The (channel_id, message_id) of the guild's LFG board, or None."""
+        async with self.conn.execute(
+            "SELECT lfg_channel_id, lfg_message_id FROM guild_settings "
+            "WHERE guild_id = ?",
+            (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None or row["lfg_channel_id"] is None:
+            return None
+        return row["lfg_channel_id"], row["lfg_message_id"]
+
+    async def set_lfg_board(
+        self, guild_id: int, channel_id: int | None, message_id: int | None
+    ) -> None:
+        """Remembers where the LFG board lives so /lfg board can edit it."""
+        await self.conn.execute(
+            """INSERT INTO guild_settings
+                   (guild_id, lfg_channel_id, lfg_message_id)
+               VALUES (?, ?, ?)
+               ON CONFLICT(guild_id) DO UPDATE SET
+                   lfg_channel_id = excluded.lfg_channel_id,
+                   lfg_message_id = excluded.lfg_message_id""",
+            (guild_id, channel_id, message_id),
+        )
+        await self.conn.commit()
+
+    async def guilds_with_lfg_board(self):
+        """Guilds that have posted an LFG board (for the pruning refresh loop)."""
+        async with self.conn.execute(
+            "SELECT guild_id, lfg_channel_id, lfg_message_id FROM guild_settings "
+            "WHERE lfg_message_id IS NOT NULL"
         ) as cur:
             return await cur.fetchall()

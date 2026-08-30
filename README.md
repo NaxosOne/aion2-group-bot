@@ -368,6 +368,30 @@ Moderators can configure automatic weekly reposting:
 
 This gives organisers a quick overview of when the legion is most active.
 
+### 🔎 Looking for group (LFG)
+
+Players who want to play but don't have a group can add themselves to the
+server's **LFG pool**: an activity, a role, and an auto-expiry (default 3h).
+
+```text
+/lfg looking type: Dungeon role: Tank note: need 1 for hardmode
+```
+
+`/lfg stop` removes you (one activity, or all). Entries expire on their own, so
+the pool never fills up with stale "looking" states.
+
+Moderators post a persistent **LFG board** — one per server, like `/panel` —
+that shows the live pool grouped by activity:
+
+```text
+/lfg board
+```
+
+The board carries **🔎 I'm looking** and **🛑 Stop looking** buttons, so members
+join or leave the pool without a command. And when an event still has an open
+seat, its **Invite LFG** button (creator or moderator) pings the pool members
+who fit a role that's still short.
+
 ### ✅ Event completion
 
 When the run is finished, press:

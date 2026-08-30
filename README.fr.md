@@ -377,6 +377,31 @@ Les modérateurs peuvent configurer une republication hebdomadaire automatique :
 
 Cela donne aux organisateurs un aperçu rapide des moments où la légion est la plus active.
 
+### 🔎 Recherche de groupe (LFG)
+
+Les joueurs qui veulent jouer sans avoir de groupe peuvent s'ajouter au **pool
+LFG** du serveur : une activité, un rôle, et une expiration automatique
+(3h par défaut).
+
+```text
+/lfg looking type: Dungeon role: Tank note: besoin d'1 pour le hardmode
+```
+
+`/lfg stop` te retire (une activité, ou toutes). Les entrées expirent d'elles-mêmes,
+donc le pool ne se remplit jamais d'annonces mortes.
+
+Les modérateurs publient un **tableau LFG** persistant — un par serveur, comme
+`/panel` — qui affiche le pool en direct, groupé par activité :
+
+```text
+/lfg board
+```
+
+Le tableau porte des boutons **🔎 Je cherche** et **🛑 J'arrête**, pour rejoindre
+ou quitter le pool sans commande. Et quand un événement a encore une place
+libre, son bouton **Inviter LFG** (créateur ou modérateur) ping les membres du
+pool qui correspondent à un rôle encore manquant.
+
 ### ✅ Fin d'un événement
 
 Quand la sortie est terminée, appuyez sur :

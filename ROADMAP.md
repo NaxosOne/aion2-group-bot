@@ -50,11 +50,11 @@ upgraded weekly availability board are all in place.
 * [x] Improved weekly availability
 * [x] Event series management *(covered by recurring events)*
 
-## 🟣 Phase 3 — Smart group formation
+## 🟣 Phase 3 — Smart group formation *(in progress)*
 
 Move from manually organising parties toward helping players find the right group automatically.
 
-* [ ] LFG system
+* [x] LFG system *(per-server pool + board, with an "Invite LFG" button on open events)*
 * [ ] "Available now" status
 * [ ] Automatic party suggestions
 * [ ] Role/class balancing

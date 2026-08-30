@@ -16,8 +16,17 @@ import discord
 from . import config, i18n
 from .embeds import ROLE_EMOJI, ROLE_LABEL, build_event_embed, build_rsvp_embed
 from .errors import ModalErrorMixin, ViewErrorMixin
-from .logic import MOVE_DOWN, MOVE_UP, assign, reorder_priorities, signup_priority
+from .logic import (
+    COMPO_STANDARD,
+    MOVE_DOWN,
+    MOVE_UP,
+    assign,
+    missing_slots,
+    reorder_priorities,
+    signup_priority,
+)
 from .utils.ics import build_calendar
+from .utils.lfg import matching_pool
 from .utils.permissions import member_is_admin, member_is_moderator
 from .utils.time_parse import (
     ParseError,
@@ -263,6 +272,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         "aion2:edit": "signup.btn_edit",
         "aion2:queue": "signup.btn_manage",
         "aion2:ics": "signup.btn_calendar",
+        "aion2:lfg": "signup.btn_invite_lfg",
     }
 
     def __init__(self, lang: str = "en"):
@@ -508,6 +518,74 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         file = discord.File(io.BytesIO(data), filename="kisk-events.ics")
         await interaction.response.send_message(
             i18n.t("ics.here", lang), file=file, ephemeral=True
+        )
+
+    @discord.ui.button(
+        label="Invite LFG",
+        emoji="🔎",
+        style=discord.ButtonStyle.secondary,
+        custom_id="aion2:lfg",
+        row=2,
+    )
+    async def invite_lfg_button(self, interaction: discord.Interaction, _):
+        """Pings the LFG pool members who fit an open seat on this event."""
+        db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        event = await self._open_event(interaction)
+        if event is None:
+            return
+
+        is_creator = interaction.user.id == event["creator_id"]
+        if not (is_creator or await member_is_moderator(db, interaction.user)):
+            await interaction.response.send_message(
+                i18n.t("lfg.invite_forbidden", lang), ephemeral=True
+            )
+            return
+
+        signups = await db.get_signups(event["message_id"])
+        party, _waitlist = assign(event["compo"], event["size"], signups)
+        if len(party) >= event["size"]:
+            await interaction.response.send_message(
+                i18n.t("lfg.invite_full", lang), ephemeral=True
+            )
+            return
+
+        # Standard events only want the roles still short; open events take any.
+        if event["compo"] == COMPO_STANDARD:
+            needed = set(missing_slots(event["compo"], event["size"], signups))
+        else:
+            needed = None
+        signed_ids = {s["user_id"] for s in signups}
+        matches = [
+            entry
+            for entry in matching_pool(
+                await db.get_lfg_pool(event["guild_id"], int(time.time())),
+                event["activity"],
+                needed,
+                int(time.time()),
+            )
+            if entry["user_id"] not in signed_ids
+        ]
+        if not matches:
+            await interaction.response.send_message(
+                i18n.t("lfg.invite_none", lang), ephemeral=True
+            )
+            return
+
+        emoji = config.EMOJI_ACTIVITY.get(
+            event["activity"], config.EMOJI_ACTIVITY["Other"]
+        )
+        mentions = " ".join(f"<@{entry['user_id']}>" for entry in matches)
+        await interaction.response.send_message(
+            i18n.t(
+                "lfg.invite_ping",
+                lang,
+                mentions=mentions,
+                emoji=emoji,
+                activity=event["activity"],
+                link=interaction.message.jump_url,
+            ),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
 
     # ----- Shared machinery -----

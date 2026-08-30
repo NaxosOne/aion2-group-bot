@@ -28,7 +28,7 @@ from ..utils.time_parse import ParseError, parse_when
 from ..views import SignupView
 
 # The event types offered by the dropdown, in the order they appear.
-ACTIVITIES = ("Dungeon", "Raid", "Battleground", "PvP", "Rift", "Abyss", "Other")
+ACTIVITIES = config.ACTIVITIES
 
 # Party setups: value -> (composition mode, size). The human-readable label and
 # description live in the locale catalogs as panel.setup_label_<value> /
