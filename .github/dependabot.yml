@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keep the CI actions current (also clears the Node-20 deprecation warnings).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Python dependencies (security patches for discord.py etc.).
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]

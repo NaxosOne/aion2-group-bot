@@ -1,10 +1,12 @@
 # Changelog
 
 All notable changes to Kisk are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/); the project is not yet
-versioned, so entries are grouped by date.
+[Keep a Changelog](https://keepachangelog.com/) and the project uses
+[Semantic Versioning](https://semver.org/) (pre-1.0, so the API may still move).
 
-## 2026-08-29
+## [Unreleased]
+
+## [0.3.0] - 2026-08-30
 
 ### Added
 
@@ -62,3 +64,6 @@ versioned, so entries are grouped by date.
 [#22]: https://github.com/NaxosOne/aion2-group-bot/pull/22
 [#23]: https://github.com/NaxosOne/aion2-group-bot/pull/23
 [#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
+
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/NaxosOne/aion2-group-bot/releases/tag/v0.3.0
