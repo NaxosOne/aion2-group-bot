@@ -37,9 +37,11 @@ role-aware parties, character sign-up, automatic waitlist promotion, admin
 queue reordering, open-seat visibility and event editing are all in place. See
 **Already shipped** above for the details.
 
-## 🔵 Phase 2 — Legion scheduling
+## ✅ Phase 2 — Legion scheduling *(complete)*
 
-Make recurring legion activities easier to organise.
+Organising recurring legion activities is now covered: recurring events, siege
+events split into groups, temporary voice channels, calendar export and an
+upgraded weekly availability board are all in place.
 
 * [x] Recurring events
 * [x] Multi-party events for sieges *(light: one shared roster shown in groups)*

@@ -37,9 +37,12 @@ localisés, groupes par rôle, inscription par personnage, promotion automatique
 de la file, réordonnancement admin, visibilité des places libres et édition
 d'événement sont en place. Voir **Déjà livré** ci-dessus pour le détail.
 
-## 🔵 Phase 2 — Planification de légion
+## ✅ Phase 2 — Planification de légion *(terminée)*
 
-Faciliter l'organisation des activités récurrentes de la légion.
+L'organisation des activités récurrentes de la légion est désormais couverte :
+événements récurrents, événements de siège découpés en groupes, salons vocaux
+temporaires, export calendrier et tableau de disponibilités amélioré sont en
+place.
 
 * [x] Événements récurrents
 * [x] Événements multi-groupes pour les sièges *(léger : un roster partagé affiché en groupes)*
