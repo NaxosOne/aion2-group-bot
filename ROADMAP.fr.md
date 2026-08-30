@@ -41,12 +41,12 @@ d'événement sont en place. Voir **Déjà livré** ci-dessus pour le détail.
 
 Faciliter l'organisation des activités récurrentes de la légion.
 
-* [ ] Événements récurrents
-* [ ] Événements multi-groupes pour les sièges
-* [ ] Salons vocaux temporaires
-* [ ] Export calendrier (`.ics`)
-* [ ] Disponibilités hebdomadaires améliorées
-* [ ] Gestion de séries d'événements
+* [x] Événements récurrents
+* [x] Événements multi-groupes pour les sièges *(léger : un roster partagé affiché en groupes)*
+* [x] Salons vocaux temporaires
+* [x] Export calendrier (`.ics`)
+* [x] Disponibilités hebdomadaires améliorées
+* [x] Gestion de séries d'événements *(couvert par les événements récurrents)*
 
 ## 🟣 Phase 3 — Formation intelligente des groupes
 

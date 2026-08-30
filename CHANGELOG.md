@@ -8,6 +8,9 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Siege events (multiple groups)** — add `groups:` to an Open `/event` to
+  split one roster across several equal groups (Group 1 / 2 / 3); sign-up and
+  waitlist are unchanged.
 - **Weekly availability upgrades** — the board now shows a "Most available:
   Saturday (8), Friday (6)" summary, and a Clear-mine button wipes your week in
   one click.

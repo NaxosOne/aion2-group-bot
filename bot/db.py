@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS events (
     rsvp_sent     INTEGER NOT NULL DEFAULT 0,      -- 'are you coming?' prompt posted
     rsvp_prompt_id INTEGER,                        -- message id of that prompt
     voice_created INTEGER NOT NULL DEFAULT 0,      -- temp voice channel claimed
-    voice_channel_id INTEGER                       -- its channel, NULL once cleaned up
+    voice_channel_id INTEGER,                      -- its channel, NULL once cleaned up
+    groups        INTEGER NOT NULL DEFAULT 1       -- display groups (sieges); 1 = single party
 );
 
 CREATE TABLE IF NOT EXISTS signups (
@@ -179,6 +180,7 @@ class Database:
                 "rsvp_prompt_id": "INTEGER",
                 "voice_created": "INTEGER NOT NULL DEFAULT 0",
                 "voice_channel_id": "INTEGER",
+                "groups": "INTEGER NOT NULL DEFAULT 1",
             },
         }
         for table, columns in added.items():

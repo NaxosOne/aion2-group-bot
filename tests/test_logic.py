@@ -8,6 +8,7 @@ from bot.logic import (
     assign,
     missing_slots,
     reorder_priorities,
+    split_groups,
     standard_slots,
 )
 
@@ -150,6 +151,23 @@ def test_missing_slots_open_mode_is_empty():
     # Open mode has no per-role slots, so nothing to report.
     signups = [s(1, "dps")]
     assert missing_slots(COMPO_OPEN, 5, signups) == {}
+
+
+def test_split_groups_chunks_members_in_order():
+    assert split_groups([1, 2, 3, 4, 5, 6], groups=2, group_size=3) == [
+        [1, 2, 3], [4, 5, 6],
+    ]
+
+
+def test_split_groups_last_group_can_be_partial():
+    assert split_groups([1, 2, 3, 4, 5], groups=2, group_size=3) == [
+        [1, 2, 3], [4, 5],
+    ]
+
+
+def test_split_groups_always_returns_the_requested_number():
+    # Fewer members than one group still shows every (empty) group.
+    assert split_groups([1, 2], groups=3, group_size=3) == [[1, 2], [], []]
 
 
 def order_of(priorities):

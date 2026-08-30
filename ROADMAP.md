@@ -41,12 +41,12 @@ queue reordering, open-seat visibility and event editing are all in place. See
 
 Make recurring legion activities easier to organise.
 
-* [ ] Recurring events
-* [ ] Multi-party events for sieges
-* [ ] Temporary voice channels
-* [ ] Calendar export (`.ics`)
-* [ ] Improved weekly availability
-* [ ] Event series management
+* [x] Recurring events
+* [x] Multi-party events for sieges *(light: one shared roster shown in groups)*
+* [x] Temporary voice channels
+* [x] Calendar export (`.ics`)
+* [x] Improved weekly availability
+* [x] Event series management *(covered by recurring events)*
 
 ## 🟣 Phase 3 — Smart group formation
 

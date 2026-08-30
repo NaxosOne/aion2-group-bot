@@ -62,6 +62,7 @@ class Groups(commands.Cog):
         description="Extra info: required level, voice channel, etc.",
         ping="Optional: a role to notify (e.g. @Aion2). @everyone is moderators only.",
         repeat="Repeat this event automatically (moderators). Needs a time.",
+        groups="Split into this many groups for a siege (Open parties only).",
     )
     @app_commands.choices(
         repeat=[
@@ -98,6 +99,7 @@ class Groups(commands.Cog):
         description: app_commands.Range[str, 1, 500] | None = None,
         ping: discord.Role | None = None,
         repeat: app_commands.Choice[str] | None = None,
+        groups: app_commands.Range[int, 2, 8] | None = None,
     ):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         starts_at = None
@@ -115,6 +117,18 @@ class Groups(commands.Cog):
             comp_mode, party_size = COMPO_OPEN, size or 5
         else:
             comp_mode, party_size = COMPO_STANDARD, 10 if comp.value == "standard10" else 5
+
+        # Multi-group sieges are a flat Open roster shown split into groups;
+        # `size` is then the per-group size, so the total is size × groups.
+        group_count = 1
+        if groups is not None:
+            if comp.value != COMPO_OPEN:
+                await interaction.response.send_message(
+                    i18n.t("siege.open_only", lang), ephemeral=True
+                )
+                return
+            group_count = groups
+            party_size = party_size * groups
 
         if repeat is not None:
             await self._create_recurrence(
@@ -134,6 +148,7 @@ class Groups(commands.Cog):
             starts_at=starts_at,
             description=description,
             ping_role=ping,
+            groups=group_count,
         )
 
     async def _create_recurrence(

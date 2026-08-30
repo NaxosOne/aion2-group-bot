@@ -83,6 +83,13 @@ First come, first served.
 
 Choose between **2 and 25 slots**, with no role restrictions. Perfect for abyss farming and other activities where composition is flexible.
 
+**Sieges (multiple groups)**
+
+Add `groups:` to an **Open** event to split one roster across several groups —
+`/event … comp: Open size: 10 groups: 3` opens **3 groups of 10**. Sign-ups fill
+the groups in order and the party list shows **Group 1 / 2 / 3**; the total is
+`size × groups`, with the usual waitlist beyond that.
+
 ### 🖱️ One-click sign-up
 
 Players join directly from the event message.
