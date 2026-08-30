@@ -61,6 +61,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.legion")
         await self.load_extension("bot.cogs.polls")
         await self.load_extension("bot.cogs.lfg")
+        await self.load_extension("bot.cogs.dashboard")
         await self.load_extension("bot.cogs.panel")
         await self.load_extension("bot.cogs.onboarding")
         await self.load_extension("bot.cogs.settings")

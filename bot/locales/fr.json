@@ -280,5 +280,21 @@
   "lfg.invite_ping": "{mentions} — {emoji} **{activity}** a une place libre ! Rejoignez ici : {link}",
   "lfg.invite_none": "Personne dans le pool LFG ne correspond à une place libre pour l'instant.",
   "lfg.invite_full": "Cet événement est déjà complet.",
-  "lfg.invite_forbidden": "Seul le créateur de l'événement ou un modérateur peut inviter depuis le LFG."
+  "lfg.invite_forbidden": "Seul le créateur de l'événement ou un modérateur peut inviter depuis le LFG.",
+  "dashboard.title": "Tableau de bord de légion",
+  "dashboard.subtitle": "Une vue d'ensemble en direct de ce qui se passe dans la légion.",
+  "dashboard.events": "Événements à venir",
+  "dashboard.no_events": "*Aucun événement ouvert pour l'instant.*",
+  "dashboard.no_time": "sans horaire",
+  "dashboard.lfg": "Recherche de groupe",
+  "dashboard.lfg_line": "🔎 {looking} en recherche · ✋ {available} dispo maintenant",
+  "dashboard.recurring": "Séries récurrentes",
+  "dashboard.absences": "Absents",
+  "dashboard.no_absences": "*Personne n'est absent.*",
+  "dashboard.roster": "Roster",
+  "dashboard.roster_members": "{members} membre(s) avec un profil",
+  "dashboard.footer": "Mis à jour {updated} · rafraîchi automatiquement",
+  "dashboard.posted": "Tableau de bord publié — {link}. Épingle-le pour que les organisateurs le trouvent.",
+  "dashboard.refreshed": "Tableau de bord rafraîchi — {link}",
+  "dashboard.forbidden": "Je ne peux pas modifier le tableau enregistré (accès manquant). En publier un nouveau ici ?"
 }
