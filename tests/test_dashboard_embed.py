@@ -5,8 +5,15 @@ from bot.cogs.dashboard import build_dashboard_embed
 from bot.logic import COMPO_OPEN, COMPO_STANDARD
 
 
-def event(message_id, title, activity="Dungeon", compo=COMPO_STANDARD, size=5,
-          starts_at=None, status="open"):
+def event(
+    message_id,
+    title,
+    activity="Dungeon",
+    compo=COMPO_STANDARD,
+    size=5,
+    starts_at=None,
+    status="open",
+):
     return {
         "message_id": message_id,
         "title": title,

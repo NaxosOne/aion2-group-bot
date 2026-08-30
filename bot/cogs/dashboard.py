@@ -216,9 +216,7 @@ class Dashboard(commands.Cog):
                     return
 
         message = await interaction.channel.send(embed=embed)
-        await db.set_dashboard(
-            interaction.guild_id, interaction.channel_id, message.id
-        )
+        await db.set_dashboard(interaction.guild_id, interaction.channel_id, message.id)
         await interaction.response.send_message(
             i18n.t("dashboard.posted", lang, link=message.jump_url), ephemeral=True
         )
