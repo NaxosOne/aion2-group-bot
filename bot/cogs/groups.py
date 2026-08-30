@@ -16,6 +16,7 @@ from ..utils.mentions import ping_permitted
 from ..utils.messages import parse_message_id
 from ..utils.permissions import member_is_moderator
 from ..utils.recurrence import next_weekly, recurrence_due
+from ..utils.text import truncate_field
 from ..utils.time_parse import ParseError, parse_when
 from ..utils.voice import voice_channel_name, voice_due, voice_is_stale
 from ..views import RSVPView
@@ -215,7 +216,10 @@ class Groups(commands.Cog):
             for r in recs
         ]
         await interaction.response.send_message(
-            i18n.t("recurring.list_header", lang) + "\n" + "\n".join(lines),
+            truncate_field(
+                i18n.t("recurring.list_header", lang) + "\n" + "\n".join(lines),
+                2000,
+            ),
             ephemeral=True,
         )
 
@@ -276,7 +280,7 @@ class Groups(commands.Cog):
 
         embed = discord.Embed(
             title=i18n.t("events.title", lang),
-            description="\n".join(lines),
+            description=truncate_field("\n".join(lines), 4096),
             colour=discord.Colour.blurple(),
         )
         brand(embed)
