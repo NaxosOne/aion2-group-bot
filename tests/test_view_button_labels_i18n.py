@@ -24,6 +24,7 @@ BUTTON_KEYS = [
     "signup.btn_calendar",
     "signup.btn_invite_lfg",
     "lfg.btn_looking",
+    "lfg.btn_available",
     "lfg.btn_stop",
     "lfg.btn_confirm",
     "rsvp.btn_coming",

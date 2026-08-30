@@ -99,6 +99,58 @@ def test_remove_lfg_targets_one_activity_or_all(tmp_path):
     assert after_all == []
 
 
+def test_available_now_round_trips_and_hides_expired(tmp_path):
+    async def go():
+        db = _db(tmp_path)
+        await db.connect()
+        await db.set_available(1, 10, expires_at=500)
+        await db.set_available(1, 11, expires_at=5000)
+        live = await db.get_available(1, now_ts=1000)
+        other_guild = await db.get_available(2, now_ts=0)
+        await db.close()
+        return live, other_guild
+
+    live, other_guild = asyncio.run(go())
+    assert [row["user_id"] for row in live] == [11]
+    assert other_guild == []
+
+
+def test_toggle_available_flips_and_re_arms_expired(tmp_path):
+    async def go():
+        db = _db(tmp_path)
+        await db.connect()
+        on = await db.toggle_available(1, 10, now_ts=0, expires_at=1000)
+        off = await db.toggle_available(1, 10, now_ts=0, expires_at=1000)
+        # An expired status counts as off, so toggling re-arms it.
+        await db.set_available(1, 10, expires_at=100)
+        re_armed = await db.toggle_available(1, 10, now_ts=500, expires_at=2000)
+        live = await db.get_available(1, now_ts=500)
+        await db.close()
+        return on, off, re_armed, [row["user_id"] for row in live]
+
+    on, off, re_armed, live = asyncio.run(go())
+    assert on is True
+    assert off is False
+    assert re_armed is True
+    assert live == [10]
+
+
+def test_prune_available_deletes_lapsed_rows(tmp_path):
+    async def go():
+        db = _db(tmp_path)
+        await db.connect()
+        await db.set_available(1, 10, expires_at=500)
+        await db.set_available(1, 11, expires_at=5000)
+        pruned = await db.prune_available(now_ts=1000)
+        remaining = await db.get_available(1, now_ts=0)
+        await db.close()
+        return pruned, [row["user_id"] for row in remaining]
+
+    pruned, remaining = asyncio.run(go())
+    assert pruned == 1
+    assert remaining == [11]
+
+
 def test_lfg_board_location_round_trips(tmp_path):
     async def go():
         db = _db(tmp_path)

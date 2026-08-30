@@ -392,6 +392,11 @@ join or leave the pool without a command. And when an event still has an open
 seat, its **Invite LFG** button (creator or moderator) pings the pool members
 who fit a role that's still short.
 
+**Available now.** For a lighter, activity-agnostic signal, a member can mark
+themselves **✋ available right now** (default 2h) — with the board's **I'm
+around now** button or `/lfg available on`. The board shows an **Available now**
+section at the top, so organisers see at a glance who's around to play anything.
+
 ### ✅ Event completion
 
 When the run is finished, press:

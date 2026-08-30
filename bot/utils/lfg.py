@@ -9,6 +9,11 @@ Implements the "Looking for group" board rules (ROADMAP Phase 3 — LFG system).
 LFG_DURATIONS = {"1h": 3600, "3h": 3 * 3600, "6h": 6 * 3600}
 DEFAULT_DURATION = "3h"
 
+# How long an "available now" status stays live, offered as /available durations.
+# Shorter than LFG on purpose: "now" should stay trustworthy.
+AVAILABLE_DURATIONS = {"1h": 3600, "2h": 2 * 3600, "3h": 3 * 3600}
+DEFAULT_AVAILABLE = "2h"
+
 
 def active_entries(entries: list, now: int) -> list:
     """The pool with expired entries dropped (expires_at strictly after now)."""

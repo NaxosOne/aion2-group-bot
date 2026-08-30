@@ -56,7 +56,7 @@ place.
 Passer de l'organisation manuelle des groupes à une aide automatique pour trouver le bon groupe.
 
 * [x] Système LFG *(pool + tableau par serveur, avec un bouton « Inviter LFG » sur les événements ouverts)*
-* [ ] Statut « disponible maintenant »
+* [x] Statut « disponible maintenant » *(présence sans activité, affichée en tête du tableau LFG)*
 * [ ] Suggestions automatiques de groupes
 * [ ] Équilibrage rôle/classe
 * [ ] Promotion intelligente (selon les rôles) depuis la liste d'attente
