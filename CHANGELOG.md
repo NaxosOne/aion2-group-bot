@@ -6,6 +6,8 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-30
+
 ### Fixed
 
 - A maxed-out siege (8 groups × 25) with a long waitlist could exceed Discord's
@@ -73,5 +75,6 @@ All notable changes to Kisk are documented here. The format follows
 [#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
 [#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
 
-[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/NaxosOne/aion2-group-bot/releases/tag/v0.3.0
