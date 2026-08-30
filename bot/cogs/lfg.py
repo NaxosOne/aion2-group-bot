@@ -55,9 +55,7 @@ _ON_OFF_CHOICES = [
 ]
 
 
-def build_lfg_embed(
-    pool: list, available: list, lang: str, now: int
-) -> discord.Embed:
+def build_lfg_embed(pool: list, available: list, lang: str, now: int) -> discord.Embed:
     """The LFG board: who's available now, then the pool grouped by activity."""
     live_pool = active_entries(pool, now)
     live_available = active_entries(available, now)
