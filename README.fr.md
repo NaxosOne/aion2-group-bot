@@ -339,7 +339,10 @@ Publiez un tableau de disponibilités du lundi au dimanche :
 /availability post
 ```
 
-Les joueurs peuvent indiquer les soirées où ils sont disponibles.
+Les joueurs cochent les jours où ils peuvent jouer (et un bouton **Effacer les
+miennes** efface leur semaine en un clic). Le tableau affiche en tête un résumé
+**Plus disponibles : Samedi (8), Vendredi (6)**, pour choisir un jour d'un coup
+d'œil.
 
 Les modérateurs peuvent configurer une republication hebdomadaire automatique :
 

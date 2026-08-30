@@ -8,6 +8,9 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Weekly availability upgrades** — the board now shows a "Most available:
+  Saturday (8), Friday (6)" summary, and a Clear-mine button wipes your week in
+  one click.
 - **Recurring events** — `/event … repeat: Weekly` (moderators) makes an event
   repeat every week; Kisk posts each instance a day ahead. Manage them with
   `/recurring list` and `/recurring stop`.

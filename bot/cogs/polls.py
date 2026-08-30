@@ -16,6 +16,7 @@ from discord.ext import commands, tasks
 
 from .. import config, i18n
 from ..errors import ViewErrorMixin
+from ..utils.availability import availability_ranking
 from ..utils.permissions import member_is_moderator
 
 log = logging.getLogger(__name__)
@@ -151,9 +152,18 @@ def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Em
     for m in marks:
         by_day[m["day"]].append(m["user_id"])
 
+    description = i18n.t("availability.hint", lang)
+    ranking = availability_ranking(marks)
+    if ranking:
+        best = ", ".join(
+            f"{i18n.t(f'weekday.{day}', lang)} ({count})"
+            for day, count in ranking[:2]
+        )
+        description += "\n" + i18n.t("availability.most_available", lang, days=best)
+
     embed = discord.Embed(
         title=i18n.t("availability.title", lang, week=board["week_label"]),
-        description=i18n.t("availability.hint", lang),
+        description=description,
         colour=discord.Colour.green(),
     )
     for i in range(7):
@@ -178,6 +188,15 @@ class AvailabilityView(ViewErrorMixin, discord.ui.View):
             )
             button.callback = self._day_callback(i)
             self.add_item(button)
+        clear = discord.ui.Button(
+            label=i18n.t("availability.btn_clear", lang),
+            emoji="🧹",
+            style=discord.ButtonStyle.secondary,
+            custom_id="dispo:clear",
+            row=1,
+        )
+        clear.callback = self._clear_callback
+        self.add_item(clear)
 
     def _day_callback(self, day: int):
         async def callback(interaction: discord.Interaction):
@@ -196,6 +215,24 @@ class AvailabilityView(ViewErrorMixin, discord.ui.View):
             await interaction.response.edit_message(embed=embed)
 
         return callback
+
+    async def _clear_callback(self, interaction: discord.Interaction):
+        db = interaction.client.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        board = await db.get_availability(interaction.message.id)
+        if board is None:
+            await interaction.response.send_message(
+                i18n.t("availability.board_gone", lang), ephemeral=True
+            )
+            return
+        await db.clear_availability(board["message_id"], interaction.user.id)
+        embed = build_availability_embed(
+            board, await db.get_availability_marks(board["message_id"]), lang
+        )
+        await interaction.response.edit_message(embed=embed)
+        await interaction.followup.send(
+            i18n.t("availability.cleared", lang), ephemeral=True
+        )
 
 
 # ----- The cog -----
