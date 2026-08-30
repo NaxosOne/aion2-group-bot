@@ -83,6 +83,14 @@ Premier arrivé, premier servi.
 
 Choisissez entre **2 et 25 places**, sans restriction de rôle. Parfait pour le farm dans l'abysse et les autres activités où la composition est flexible.
 
+**Sièges (plusieurs groupes)**
+
+Ajoute `groups:` à un événement **Ouvert** pour répartir un roster sur plusieurs
+groupes — `/event … comp: Open size: 10 groups: 3` ouvre **3 groupes de 10**.
+Les inscriptions remplissent les groupes dans l'ordre et la liste affiche
+**Groupe 1 / 2 / 3** ; le total vaut `size × groups`, avec la liste d'attente
+habituelle au-delà.
+
 ### 🖱️ Inscription en un clic
 
 Les joueurs rejoignent directement depuis le message de l'événement.
