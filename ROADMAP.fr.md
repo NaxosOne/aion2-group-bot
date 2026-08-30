@@ -51,11 +51,11 @@ place.
 * [x] Disponibilités hebdomadaires améliorées
 * [x] Gestion de séries d'événements *(couvert par les événements récurrents)*
 
-## 🟣 Phase 3 — Formation intelligente des groupes
+## 🟣 Phase 3 — Formation intelligente des groupes *(en cours)*
 
 Passer de l'organisation manuelle des groupes à une aide automatique pour trouver le bon groupe.
 
-* [ ] Système LFG
+* [x] Système LFG *(pool + tableau par serveur, avec un bouton « Inviter LFG » sur les événements ouverts)*
 * [ ] Statut « disponible maintenant »
 * [ ] Suggestions automatiques de groupes
 * [ ] Équilibrage rôle/classe
