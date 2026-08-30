@@ -53,7 +53,9 @@ def test_dates():
 
 
 def test_parse_date():
-    pd = lambda t: parse_date(t, TZ, now=NOW)
+    def pd(t):
+        return parse_date(t, TZ, now=NOW)
+
     assert pd("30/08") == date(2026, 8, 30)
     assert pd("30/08/2026") == date(2026, 8, 30)
     assert pd("today") == date(2026, 8, 26)
@@ -71,7 +73,9 @@ def test_parse_date():
 
 
 def test_parse_when_or_date():
-    pwd = lambda t: parse_when_or_date(t, TZ, now=NOW)
+    def pwd(t):
+        return parse_when_or_date(t, TZ, now=NOW)
+
     # Whole days come back at midnight with has_time=False.
     assert pwd("30/08") == (datetime(2026, 8, 30, 0, 0, tzinfo=TZ), False)
     assert pwd("tomorrow") == (datetime(2026, 8, 27, 0, 0, tzinfo=TZ), False)
@@ -89,8 +93,18 @@ def test_parse_when_or_date():
 
 
 def test_errors():
-    for bad in ("", "gibberish", "25:00", "12:75", "31/02 20:00", "13pm", "21",
-                "today 9:00", "tomorrow", "30/08/2020 21:00"):
+    for bad in (
+        "",
+        "gibberish",
+        "25:00",
+        "12:75",
+        "31/02 20:00",
+        "13pm",
+        "21",
+        "today 9:00",
+        "tomorrow",
+        "30/08/2020 21:00",
+    ):
         try:
             p(bad)
         except ParseError:

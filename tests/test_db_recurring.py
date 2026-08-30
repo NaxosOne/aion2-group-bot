@@ -9,9 +9,17 @@ from bot.db import Database
 
 def rec(**over):
     row = dict(
-        guild_id=1, channel_id=2, creator_id=3, creator_name="n",
-        title="Raid", activity="Raid", description=None,
-        compo="standard", size=5, ping_role_id=None, next_at=1000,
+        guild_id=1,
+        channel_id=2,
+        creator_id=3,
+        creator_name="n",
+        title="Raid",
+        activity="Raid",
+        description=None,
+        compo="standard",
+        size=5,
+        ping_role_id=None,
+        next_at=1000,
     )
     row.update(over)
     return row

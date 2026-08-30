@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "ruff==0.16.5"]
 
 [project.scripts]
 kisk = "bot.main:main"
@@ -28,11 +28,11 @@ packages = ["bot", "bot.cogs", "bot.utils"]
 line-length = 88
 target-version = "py311"
 
-# Conservative lint baseline: pyflakes (real bugs — unused imports, undefined
-# names) only, so CI stays meaningful without churning the existing style.
-# Widen (E, I, UP, B) and enable `ruff format` once the codebase is normalised.
+# The codebase is `ruff format`-normalised and passes this set:
+#   E  pycodestyle (incl. line length), F pyflakes, I import sorting,
+#   B  flake8-bugbear, UP pyupgrade.
 [tool.ruff.lint]
-select = ["F"]
+select = ["E", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -5,13 +5,13 @@ can drop the server's upcoming events into their own calendar.
 """
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 _PRODID = "-//Kisk//Aion 2//EN"
 
 
 def _ics_time(ts: int) -> str:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return datetime.fromtimestamp(ts, tz=UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def _escape(text: str) -> str:
@@ -24,9 +24,7 @@ def _escape(text: str) -> str:
     )
 
 
-def build_calendar(
-    events, *, default_duration_s: int = 3600, dtstamp_ts=None
-) -> str:
+def build_calendar(events, *, default_duration_s: int = 3600, dtstamp_ts=None) -> str:
     """A VCALENDAR string for the scheduled events (unscheduled ones skipped).
 
     No end time is stored, so each event lasts `default_duration_s`. `dtstamp_ts`

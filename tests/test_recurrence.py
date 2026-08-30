@@ -13,7 +13,9 @@ def test_next_weekly_is_one_week_after_the_occurrence():
 
 def test_next_weekly_skips_missed_occurrences_after_downtime():
     # Two weeks and a bit have passed: jump straight to the next future one.
-    assert next_weekly(BASE, now_ts=BASE + 2 * WEEK_SECONDS + 5) == BASE + 3 * WEEK_SECONDS
+    assert (
+        next_weekly(BASE, now_ts=BASE + 2 * WEEK_SECONDS + 5) == BASE + 3 * WEEK_SECONDS
+    )
 
 
 def test_next_weekly_is_strictly_after_now():

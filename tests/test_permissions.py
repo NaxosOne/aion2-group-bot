@@ -23,24 +23,16 @@ def test_no_configured_role_falls_back_to_permission():
 
 
 def test_manage_messages_is_moderator():
-    assert is_moderator(
-        None, set(), manage_guild=False, manage_messages=True
-    ) is True
+    assert is_moderator(None, set(), manage_guild=False, manage_messages=True) is True
 
 
 def test_admin_implies_moderator_via_role():
-    assert is_moderator(
-        5, {5}, manage_guild=False, manage_messages=False
-    ) is True
+    assert is_moderator(5, {5}, manage_guild=False, manage_messages=False) is True
 
 
 def test_admin_implies_moderator_via_permission():
-    assert is_moderator(
-        None, set(), manage_guild=True, manage_messages=False
-    ) is True
+    assert is_moderator(None, set(), manage_guild=True, manage_messages=False) is True
 
 
 def test_plain_member_is_not_moderator():
-    assert is_moderator(
-        5, {9}, manage_guild=False, manage_messages=False
-    ) is False
+    assert is_moderator(5, {9}, manage_guild=False, manage_messages=False) is False

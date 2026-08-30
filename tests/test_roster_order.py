@@ -8,8 +8,13 @@ def member(user_id, *characters):
     return (
         user_id,
         [
-            {"user_id": user_id, "role": role, "char_class": klass,
-             "char_name": name, "is_main": int(i == 0)}
+            {
+                "user_id": user_id,
+                "role": role,
+                "char_class": klass,
+                "char_name": name,
+                "is_main": int(i == 0),
+            }
             for i, (role, klass, name) in enumerate(characters)
         ],
     )

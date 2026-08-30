@@ -37,7 +37,8 @@ class ClassSelect(discord.ui.Select):
     def __init__(self, chosen: str | None, lang: str):
         super().__init__(
             placeholder=i18n.t("onboard.class_placeholder", lang),
-            row=0, options=self._options(chosen),
+            row=0,
+            options=self._options(chosen),
         )
 
     @staticmethod
@@ -52,7 +53,9 @@ class ClassSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         self.view.char_class = self.values[0]
         self.options = self._options(self.values[0])
-        await interaction.response.edit_message(embed=self.view.summary(), view=self.view)
+        await interaction.response.edit_message(
+            embed=self.view.summary(), view=self.view
+        )
 
 
 class RoleSelect(discord.ui.Select):
@@ -61,7 +64,8 @@ class RoleSelect(discord.ui.Select):
     def __init__(self, chosen: str | None, lang: str):
         super().__init__(
             placeholder=i18n.t("onboard.role_placeholder", lang),
-            row=1, options=self._options(chosen),
+            row=1,
+            options=self._options(chosen),
         )
 
     @staticmethod
@@ -76,7 +80,9 @@ class RoleSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         self.view.role = self.values[0]
         self.options = self._options(self.values[0])
-        await interaction.response.edit_message(embed=self.view.summary(), view=self.view)
+        await interaction.response.edit_message(
+            embed=self.view.summary(), view=self.view
+        )
 
 
 class ProfileSetupView(ViewErrorMixin, discord.ui.View):
@@ -87,8 +93,12 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
     """
 
     def __init__(
-        self, guild_id: int, guild_name: str, ephemeral: bool,
-        lang: str, slot: str = "main",
+        self,
+        guild_id: int,
+        guild_name: str,
+        ephemeral: bool,
+        lang: str,
+        slot: str = "main",
     ):
         super().__init__(timeout=600)
         self.guild_id = guild_id
@@ -113,19 +123,28 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
         else:
             class_line = not_set
         role_line = f"**{ROLE_LABELS[self.role]}**" if self.role else not_set
-        title = f"{i18n.t(f'onboard.setup_title_{self.slot}', self.lang)} — {self.guild_name}"
-        return brand(discord.Embed(
-            title=title,
-            description=i18n.t(
-                "onboard.summary_body", self.lang,
-                class_line=class_line, role_line=role_line,
-            ),
-            colour=discord.Colour.blurple(),
-        ))
+        title = (
+            f"{i18n.t(f'onboard.setup_title_{self.slot}', self.lang)} — "
+            f"{self.guild_name}"
+        )
+        return brand(
+            discord.Embed(
+                title=title,
+                description=i18n.t(
+                    "onboard.summary_body",
+                    self.lang,
+                    class_line=class_line,
+                    role_line=role_line,
+                ),
+                colour=discord.Colour.blurple(),
+            )
+        )
 
     @discord.ui.button(
-        label="Continue", emoji="➡️",
-        style=discord.ButtonStyle.success, row=2,
+        label="Continue",
+        emoji="➡️",
+        style=discord.ButtonStyle.success,
+        row=2,
     )
     async def proceed(self, interaction: discord.Interaction, _):
         if self.char_class is None or self.role is None:
@@ -136,8 +155,13 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
             return
         await interaction.response.send_modal(
             ProfileNameModal(
-                self.guild_id, self.guild_name, self.char_class,
-                self.role, self.ephemeral, self.lang, self.slot,
+                self.guild_id,
+                self.guild_name,
+                self.char_class,
+                self.role,
+                self.ephemeral,
+                self.lang,
+                self.slot,
             )
         )
 
@@ -146,8 +170,14 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
     """Step two: the one thing that genuinely needs typing — the name."""
 
     def __init__(
-        self, guild_id: int, guild_name: str, char_class: str,
-        role: str, ephemeral: bool, lang: str, slot: str,
+        self,
+        guild_id: int,
+        guild_name: str,
+        char_class: str,
+        role: str,
+        ephemeral: bool,
+        lang: str,
+        slot: str,
     ):
         super().__init__(title=i18n.t(f"onboard.modal_title_{slot}", lang))
         self.guild_id = guild_id
@@ -159,7 +189,8 @@ class ProfileNameModal(ModalErrorMixin, discord.ui.Modal):
         self.slot = slot
         self.char_name = discord.ui.TextInput(
             label=i18n.t("onboard.name_label", lang),
-            max_length=32, placeholder=i18n.t("onboard.name_placeholder", lang),
+            max_length=32,
+            placeholder=i18n.t("onboard.name_placeholder", lang),
         )
         self.add_item(self.char_name)
 
@@ -211,7 +242,8 @@ class AddAltView(ViewErrorMixin, discord.ui.View):
                 child.label = i18n.t("onboard.add_char", lang)
 
     @discord.ui.button(
-        label="Add a character", emoji="➕",
+        label="Add a character",
+        emoji="➕",
         style=discord.ButtonStyle.secondary,
     )
     async def add_alt(self, interaction: discord.Interaction, _):
@@ -281,9 +313,7 @@ class Onboarding(commands.GroupCog, name="onboard"):
     @app_commands.default_permissions(manage_guild=True)
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
-        await self.bot.db.set_setting(
-            interaction.guild_id, "member_role_id", role.id
-        )
+        await self.bot.db.set_setting(interaction.guild_id, "member_role_id", role.id)
         await interaction.response.send_message(
             i18n.t("onboard.role_set_confirm", lang, role=role.name),
             ephemeral=True,
@@ -318,11 +348,13 @@ class Onboarding(commands.GroupCog, name="onboard"):
 
     @staticmethod
     def _welcome_embed(guild: discord.Guild, lang: str) -> discord.Embed:
-        return brand(discord.Embed(
-            title=i18n.t("onboard.welcome_title", lang, guild=guild.name),
-            description=i18n.t("onboard.welcome_body", lang),
-            colour=discord.Colour.blurple(),
-        ))
+        return brand(
+            discord.Embed(
+                title=i18n.t("onboard.welcome_title", lang, guild=guild.name),
+                description=i18n.t("onboard.welcome_body", lang),
+                colour=discord.Colour.blurple(),
+            )
+        )
 
     async def _onboard(self, member: discord.Member, settings):
         """DM the member; if their DMs are closed, fall back to a channel."""

@@ -84,7 +84,9 @@ def should_rearm_after_reschedule(
     return new_starts_at > now_ts
 
 
-def parse_when(text: str, tz, now: datetime | None = None, lang: str = "en") -> datetime:
+def parse_when(
+    text: str, tz, now: datetime | None = None, lang: str = "en"
+) -> datetime:
     """Converts text like "tomorrow 9pm" into a timezone-aware datetime."""
     now = (now or datetime.now(tz)).astimezone(tz)
     s = " ".join(text.strip().lower().split())
@@ -97,7 +99,7 @@ def parse_when(text: str, tz, now: datetime | None = None, lang: str = "en") -> 
     for keyword, days in DAY_KEYWORDS.items():
         if s == keyword or s.startswith(keyword + " "):
             offset = days
-            s = s[len(keyword):].strip()
+            s = s[len(keyword) :].strip()
             break
     if offset is None:
         m = _DATE_RE.match(s)
@@ -109,7 +111,7 @@ def parse_when(text: str, tz, now: datetime | None = None, lang: str = "en") -> 
                 if year < 100:
                     year += 2000
             date_part = (day, month, year)
-            s = s[m.end():].strip()
+            s = s[m.end() :].strip()
 
     # 2) The time part, required.
     hour, minute = _parse_time(s, lang)

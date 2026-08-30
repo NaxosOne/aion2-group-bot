@@ -13,9 +13,16 @@ GRACE = 3 * 60 * 60
 
 def base(**over):
     row = dict(
-        channel_id=2, guild_id=1, creator_id=4, creator_name="n",
-        title="t", activity="Dungeon", description=None,
-        compo="standard", size=5, starts_at=NOW + 600,
+        channel_id=2,
+        guild_id=1,
+        creator_id=4,
+        creator_name="n",
+        title="t",
+        activity="Dungeon",
+        description=None,
+        compo="standard",
+        size=5,
+        starts_at=NOW + 600,
     )
     row.update(over)
     return row
@@ -25,9 +32,9 @@ def test_events_due_for_voice_only_inside_the_window(tmp_path):
     async def go():
         db = Database(str(tmp_path / "v.db"))
         await db.connect()
-        await db.create_event(message_id=10, **base(starts_at=NOW + 600))     # soon
-        await db.create_event(message_id=11, **base(starts_at=NOW + 7200))    # far off
-        await db.create_event(message_id=12, **base(starts_at=None))          # no time
+        await db.create_event(message_id=10, **base(starts_at=NOW + 600))  # soon
+        await db.create_event(message_id=11, **base(starts_at=NOW + 7200))  # far off
+        await db.create_event(message_id=12, **base(starts_at=None))  # no time
         rows = await db.events_due_for_voice(NOW, LEAD, GRACE)
         await db.close()
         return sorted(r["message_id"] for r in rows)

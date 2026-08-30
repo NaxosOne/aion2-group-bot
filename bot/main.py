@@ -5,13 +5,12 @@ from discord import app_commands
 from discord.app_commands import Translator, locale_str
 from discord.ext import commands
 
-from . import config
-from . import i18n
-from .errors import report_error
+from . import config, i18n
 from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
 from .db import Database
+from .errors import report_error
 from .views import RSVPView, SignupView
 
 

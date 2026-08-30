@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS events (
     rsvp_prompt_id INTEGER,                        -- message id of that prompt
     voice_created INTEGER NOT NULL DEFAULT 0,      -- temp voice channel claimed
     voice_channel_id INTEGER,                      -- its channel, NULL once cleaned up
-    groups        INTEGER NOT NULL DEFAULT 1       -- display groups (sieges); 1 = single party
+    groups        INTEGER NOT NULL DEFAULT 1       -- display groups; 1 = single party
 );
 
 CREATE TABLE IF NOT EXISTS signups (
@@ -75,9 +75,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     event_channel_id   INTEGER,                   -- where events are posted
     absence_channel_id INTEGER,                   -- where absences are posted
     panel_channel_id   INTEGER,                   -- channel of the quick-actions panel
-    panel_message_id   INTEGER,                   -- its message, so /panel can refresh it
+    panel_message_id   INTEGER,                   -- its message; /panel refreshes it
     admin_role_id      INTEGER,                   -- role treated as a Kisk admin
-    voice_category_id  INTEGER                    -- category for temp event voice channels
+    voice_category_id  INTEGER                    -- category for temp voice channels
 );
 
 CREATE TABLE IF NOT EXISTS polls (
@@ -163,16 +163,16 @@ class Database:
             "guild_settings": {
                 "event_channel_id": "INTEGER",
                 "absence_channel_id": "INTEGER",
-                "member_role_id": "INTEGER",    # role that means "validated member"
-                "rsvp_channel_id": "INTEGER",   # where RSVP prompts are posted
-                "language": "TEXT",             # 'fr' | 'en' | NULL = auto
+                "member_role_id": "INTEGER",  # role that means "validated member"
+                "rsvp_channel_id": "INTEGER",  # where RSVP prompts are posted
+                "language": "TEXT",  # 'fr' | 'en' | NULL = auto
                 "panel_channel_id": "INTEGER",  # quick-actions panel location
                 "panel_message_id": "INTEGER",  # so /panel refreshes it in place
-                "admin_role_id": "INTEGER",     # role treated as a Kisk admin
-                "voice_category_id": "INTEGER", # category for temp voice channels
+                "admin_role_id": "INTEGER",  # role treated as a Kisk admin
+                "voice_category_id": "INTEGER",  # category for temp voice channels
             },
             "signups": {
-                "character_id": "INTEGER",      # which character the member brings
+                "character_id": "INTEGER",  # which character the member brings
                 "priority": "INTEGER NOT NULL DEFAULT 0",  # admin waitlist reorder
             },
             "events": {
@@ -255,8 +255,13 @@ class Database:
             return await cur.fetchone()
 
     async def update_event_details(
-        self, message_id: int, *, title: str, starts_at: int | None,
-        description: str | None, rearm_notifications: bool = False,
+        self,
+        message_id: int,
+        *,
+        title: str,
+        starts_at: int | None,
+        description: str | None,
+        rearm_notifications: bool = False,
     ) -> None:
         """Edits a posted event's text fields (title, schedule, description).
 
@@ -553,8 +558,13 @@ class Database:
             return await cur.fetchone()
 
     async def upsert_signup(
-        self, message_id: int, user_id: int, display_name: str, role: str,
-        joined_at: float, character_id: int | None = None,
+        self,
+        message_id: int,
+        user_id: int,
+        display_name: str,
+        role: str,
+        joined_at: float,
+        character_id: int | None = None,
     ) -> None:
         # REPLACE also overwrites joined_at: switching roles sends you to the
         # back of the queue, so you can never bump someone out of the party.
@@ -607,8 +617,13 @@ class Database:
     # ----- Profiles (the members' characters) -----
 
     async def add_character(
-        self, guild_id: int, user_id: int, char_name: str, char_class: str,
-        role: str, make_main: bool = False,
+        self,
+        guild_id: int,
+        user_id: int,
+        char_name: str,
+        char_class: str,
+        role: str,
+        make_main: bool = False,
     ) -> int:
         """Registers a character, or updates the one already under that name.
 
@@ -640,7 +655,9 @@ class Database:
                 (char_name, char_class, role, character_id),
             )
 
-        if make_main or (is_first and await self.count_characters(guild_id, user_id) == 1):
+        if make_main or (
+            is_first and await self.count_characters(guild_id, user_id) == 1
+        ):
             await self._seat_main(guild_id, user_id, character_id)
         await self.conn.commit()
         return character_id
@@ -780,7 +797,6 @@ class Database:
         )
         await self.conn.commit()
 
-
     async def get_main_classes(self, guild_id: int, user_ids: list) -> dict:
         """{user_id: main character's class}, for members who signed up
         without naming a character."""
@@ -797,7 +813,12 @@ class Database:
     # ----- Absences -----
 
     async def add_absence(
-        self, guild_id: int, user_id: int, starts_on: int, ends_on: int, reason: str | None
+        self,
+        guild_id: int,
+        user_id: int,
+        starts_on: int,
+        ends_on: int,
+        reason: str | None,
     ) -> None:
         await self.conn.execute(
             """INSERT INTO absences (guild_id, user_id, starts_on, ends_on, reason)
@@ -858,8 +879,13 @@ class Database:
     # ----- Polls (/vote) -----
 
     async def create_poll(
-        self, message_id: int, guild_id: int, channel_id: int,
-        creator_id: int, question: str, options_json: str,
+        self,
+        message_id: int,
+        guild_id: int,
+        channel_id: int,
+        creator_id: int,
+        question: str,
+        options_json: str,
     ) -> None:
         await self.conn.execute(
             """INSERT INTO polls
@@ -914,7 +940,9 @@ class Database:
         ) as cur:
             return await cur.fetchone()
 
-    async def toggle_availability(self, message_id: int, user_id: int, day: int) -> bool:
+    async def toggle_availability(
+        self, message_id: int, user_id: int, day: int
+    ) -> bool:
         """Ticks/unticks a day. Returns True if the day was just ticked."""
         cur = await self.conn.execute(
             "DELETE FROM dispo_marks WHERE message_id = ? AND user_id = ? AND day = ?",

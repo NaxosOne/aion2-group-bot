@@ -18,8 +18,8 @@ from .. import config, i18n
 from ..branding import brand
 from ..errors import ViewErrorMixin
 from ..utils.availability import availability_ranking
-from ..utils.text import truncate_field
 from ..utils.permissions import member_is_moderator
+from ..utils.text import truncate_field
 
 log = logging.getLogger(__name__)
 
@@ -75,29 +75,42 @@ class VoteView(ViewErrorMixin, discord.ui.View):
             elif item.custom_id == "vote:clore":
                 item.label = i18n.t("poll.btn_close", lang)
 
-    @discord.ui.button(emoji="1️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:0")
+    @discord.ui.button(
+        emoji="1️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:0"
+    )
     async def option_0(self, interaction: discord.Interaction, _):
         await self._vote(interaction, 0)
 
-    @discord.ui.button(emoji="2️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:1")
+    @discord.ui.button(
+        emoji="2️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:1"
+    )
     async def option_1(self, interaction: discord.Interaction, _):
         await self._vote(interaction, 1)
 
-    @discord.ui.button(emoji="3️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:2")
+    @discord.ui.button(
+        emoji="3️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:2"
+    )
     async def option_2(self, interaction: discord.Interaction, _):
         await self._vote(interaction, 2)
 
-    @discord.ui.button(emoji="4️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:3")
+    @discord.ui.button(
+        emoji="4️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:3"
+    )
     async def option_3(self, interaction: discord.Interaction, _):
         await self._vote(interaction, 3)
 
-    @discord.ui.button(emoji="5️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:4")
+    @discord.ui.button(
+        emoji="5️⃣", style=discord.ButtonStyle.primary, custom_id="vote:choix:4"
+    )
     async def option_4(self, interaction: discord.Interaction, _):
         await self._vote(interaction, 4)
 
     @discord.ui.button(
-        label="Close", emoji="🔒", style=discord.ButtonStyle.secondary,
-        custom_id="vote:clore", row=1,
+        label="Close",
+        emoji="🔒",
+        style=discord.ButtonStyle.secondary,
+        custom_id="vote:clore",
+        row=1,
     )
     async def close(self, interaction: discord.Interaction, _):
         db = interaction.client.db
@@ -159,8 +172,7 @@ def build_availability_embed(board, marks: list, lang: str = "en") -> discord.Em
     ranking = availability_ranking(marks)
     if ranking:
         best = ", ".join(
-            f"{i18n.t(f'weekday.{day}', lang)} ({count})"
-            for day, count in ranking[:2]
+            f"{i18n.t(f'weekday.{day}', lang)} ({count})" for day, count in ranking[:2]
         )
         description += "\n" + i18n.t("availability.most_available", lang, days=best)
 
@@ -247,7 +259,9 @@ class Polls(commands.Cog):
     """Quick polls and the weekly availability board (with auto-posting)."""
 
     availability = app_commands.Group(
-        name="availability", description="The weekly availability board", guild_only=True
+        name="availability",
+        description="The weekly availability board",
+        guild_only=True,
     )
 
     def __init__(self, bot: commands.Bot):
@@ -279,7 +293,9 @@ class Polls(commands.Cog):
         option5: app_commands.Range[str, 1, 80] | None = None,
     ):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
-        options = [o.strip() for o in (option1, option2, option3, option4, option5) if o]
+        options = [
+            o.strip() for o in (option1, option2, option3, option4, option5) if o
+        ]
         poll = {
             "question": question,
             "options": json.dumps(options),
@@ -310,12 +326,16 @@ class Polls(commands.Cog):
                 ephemeral=True,
             )
 
-    @availability.command(name="post", description="Post this week's availability board")
+    @availability.command(
+        name="post", description="Post this week's availability board"
+    )
     async def availability_post(self, interaction: discord.Interaction):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         label = week_label(datetime.now(config.TIMEZONE), lang)
         embed = build_availability_embed({"week_label": label}, [], lang)
-        await interaction.response.send_message(embed=embed, view=AvailabilityView(lang))
+        await interaction.response.send_message(
+            embed=embed, view=AvailabilityView(lang)
+        )
         message = await interaction.original_response()
         try:
             await self.bot.db.create_availability(
@@ -355,13 +375,17 @@ class Polls(commands.Cog):
             day = i18n.t(f"weekday.{config.AVAILABILITY_DAY}", lang)
             await interaction.response.send_message(
                 i18n.t(
-                    "availability.weekly_on", lang,
-                    day=day, hour=config.AVAILABILITY_HOUR,
+                    "availability.weekly_on",
+                    lang,
+                    day=day,
+                    hour=config.AVAILABILITY_HOUR,
                 ),
                 ephemeral=True,
             )
         else:
-            await self.bot.db.set_setting(interaction.guild_id, "dispo_channel_id", None)
+            await self.bot.db.set_setting(
+                interaction.guild_id, "dispo_channel_id", None
+            )
             await interaction.response.send_message(
                 i18n.t("availability.weekly_off", lang), ephemeral=True
             )
@@ -374,8 +398,11 @@ class Polls(commands.Cog):
         monday = now.date() - timedelta(days=now.weekday())
         post_day = monday + timedelta(days=config.AVAILABILITY_DAY)
         post_time = datetime(
-            post_day.year, post_day.month, post_day.day,
-            config.AVAILABILITY_HOUR, tzinfo=tz,
+            post_day.year,
+            post_day.month,
+            post_day.day,
+            config.AVAILABILITY_HOUR,
+            tzinfo=tz,
         )
         if now < post_time:
             return

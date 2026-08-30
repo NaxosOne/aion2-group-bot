@@ -7,9 +7,16 @@ import asyncio
 from bot.db import Database
 
 REQUIRED = dict(
-    channel_id=2, guild_id=1, creator_id=4, creator_name="n",
-    title="t", activity="Dungeon", description=None,
-    compo="standard", size=5, starts_at=None,
+    channel_id=2,
+    guild_id=1,
+    creator_id=4,
+    creator_name="n",
+    title="t",
+    activity="Dungeon",
+    description=None,
+    compo="standard",
+    size=5,
+    starts_at=None,
 )
 
 

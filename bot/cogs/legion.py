@@ -67,7 +67,10 @@ class Legion(commands.Cog):
 
     @app_commands.command(name="away", description="Let the legion know you'll be away")
     @app_commands.describe(
-        start="First day away, time optional (e.g. “30/08”, “30/08 14:00”, “tomorrow 18h”)",
+        start=(
+            "First day away, time optional "
+            "(e.g. “30/08”, “30/08 14:00”, “tomorrow 18h”)"
+        ),
         until="Last day away, time optional (empty = same day as “start”)",
         reason="Optional: holidays, exams, IRL...",
     )
@@ -96,7 +99,8 @@ class Legion(commands.Cog):
         for a in absences:
             ongoing = a["starts_on"] <= now
             state = (
-                i18n.t("absences.ongoing", lang) if ongoing
+                i18n.t("absences.ongoing", lang)
+                if ongoing
                 else i18n.t(
                     "absences.starting", lang, date=fmt_absence_ts(a["starts_on"])
                 )
@@ -120,7 +124,9 @@ class Legion(commands.Cog):
         brand(embed)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="back", description="Cancel your absences (early return)")
+    @app_commands.command(
+        name="back", description="Cancel your absences (early return)"
+    )
     async def back(self, interaction: discord.Interaction):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         cancelled = await self.bot.db.clear_absences(

@@ -76,10 +76,16 @@ async def post_event(
 
 
 async def publish_event(
-    interaction: discord.Interaction, *,
-    title: str, activity: str, comp_mode: str, size: int,
-    starts_at: int | None, description: str | None,
-    ping_role: "discord.Role | None" = None, groups: int = 1,
+    interaction: discord.Interaction,
+    *,
+    title: str,
+    activity: str,
+    comp_mode: str,
+    size: int,
+    starts_at: int | None,
+    description: str | None,
+    ping_role: "discord.Role | None" = None,
+    groups: int = 1,
 ) -> None:
     """Posts the event message in the configured (or current) channel.
 
@@ -128,8 +134,12 @@ async def publish_event(
     except discord.HTTPException as err:
         log.exception("Could not post the event in channel %s", channel.id)
         await interaction.followup.send(
-            i18n.t("event.post_failed", lang,
-                   channel=channel.mention, error=(err.text or err)),
+            i18n.t(
+                "event.post_failed",
+                lang,
+                channel=channel.mention,
+                error=(err.text or err),
+            ),
             ephemeral=True,
         )
         return
@@ -144,9 +154,7 @@ async def publish_event(
     )
 
 
-async def _open_event_thread(
-    message: discord.Message, title: str, lang: str
-) -> None:
+async def _open_event_thread(message: discord.Message, title: str, lang: str) -> None:
     """Attaches a discussion thread to the event message (best-effort).
 
     Skips silently if the bot lacks the Create Public Threads permission, so a
@@ -178,7 +186,9 @@ def fmt_absence_ts(ts: int, end: bool = False) -> str:
 
 async def register_absence(
     interaction: discord.Interaction,
-    start: str, until: str | None, reason: str | None,
+    start: str,
+    until: str | None,
+    reason: str | None,
 ) -> None:
     """Parses the bounds, stores the absence and announces it (or explains
     the input error ephemerally)."""
@@ -200,7 +210,9 @@ async def register_absence(
         end_ts = int(end_dt.timestamp())
     else:
         end_ts = int(
-            datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, tzinfo=tz).timestamp()
+            datetime(
+                end_dt.year, end_dt.month, end_dt.day, 23, 59, tzinfo=tz
+            ).timestamp()
         )
     if end_ts < start_ts:
         await interaction.response.send_message(
@@ -213,19 +225,22 @@ async def register_absence(
     )
 
     whole_single_day = (
-        not start_has_time and not end_has_time
-        and start_dt.date() == end_dt.date()
+        not start_has_time and not end_has_time and start_dt.date() == end_dt.date()
     )
     if whole_single_day:
         period = i18n.t("absence.period_single", lang, date=f"<t:{start_ts}:D>")
     else:
         period = i18n.t(
-            "absence.period_range", lang,
-            start=fmt_absence_ts(start_ts), end=fmt_absence_ts(end_ts, end=True),
+            "absence.period_range",
+            lang,
+            start=fmt_absence_ts(start_ts),
+            end=fmt_absence_ts(end_ts, end=True),
         )
     announcement = i18n.t(
-        "absence.announcement", lang,
-        mention=interaction.user.mention, period=period,
+        "absence.announcement",
+        lang,
+        mention=interaction.user.mention,
+        period=period,
         reason=(f" ({reason})" if reason else ""),
     )
     quiet = discord.AllowedMentions.none()
@@ -245,7 +260,8 @@ async def register_absence(
         )
         return
     await interaction.followup.send(
-        i18n.t("absence.registered", lang, channel=channel.mention,
-               link=message.jump_url),
+        i18n.t(
+            "absence.registered", lang, channel=channel.mention, link=message.jump_url
+        ),
         ephemeral=True,
     )

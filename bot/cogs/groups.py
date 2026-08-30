@@ -53,7 +53,9 @@ class Groups(commands.Cog):
 
     # ----- /event -----
 
-    @app_commands.command(name="event", description="Create a group call (dungeon, PvP...)")
+    @app_commands.command(
+        name="event", description="Create a group call (dungeon, PvP...)"
+    )
     @app_commands.rename(activity="type")
     @app_commands.describe(
         title="Name of the event (e.g. “Fire Temple HM”)",
@@ -118,7 +120,10 @@ class Groups(commands.Cog):
         if comp.value == COMPO_OPEN:
             comp_mode, party_size = COMPO_OPEN, size or 5
         else:
-            comp_mode, party_size = COMPO_STANDARD, 10 if comp.value == "standard10" else 5
+            comp_mode, party_size = (
+                COMPO_STANDARD,
+                10 if comp.value == "standard10" else 5,
+            )
 
         # Multi-group sieges are a flat Open roster shown split into groups;
         # `size` is then the per-group size, so the total is size × groups.
@@ -134,9 +139,14 @@ class Groups(commands.Cog):
 
         if repeat is not None:
             await self._create_recurrence(
-                interaction, lang,
-                title=title, activity=activity.value, comp_mode=comp_mode,
-                size=party_size, starts_at=starts_at, description=description,
+                interaction,
+                lang,
+                title=title,
+                activity=activity.value,
+                comp_mode=comp_mode,
+                size=party_size,
+                starts_at=starts_at,
+                description=description,
                 ping=ping,
             )
             return
@@ -154,8 +164,17 @@ class Groups(commands.Cog):
         )
 
     async def _create_recurrence(
-        self, interaction, lang, *, title, activity, comp_mode, size,
-        starts_at, description, ping,
+        self,
+        interaction,
+        lang,
+        *,
+        title,
+        activity,
+        comp_mode,
+        size,
+        starts_at,
+        description,
+        ping,
     ):
         """Stores a weekly recurrence; the loop posts each instance in advance."""
         if not await member_is_moderator(self.bot.db, interaction.user):
@@ -211,8 +230,13 @@ class Groups(commands.Cog):
             )
             return
         lines = [
-            i18n.t("recurring.list_line", lang,
-                   id=r["id"], title=r["title"], when=f"<t:{r['next_at']}:F>")
+            i18n.t(
+                "recurring.list_line",
+                lang,
+                id=r["id"],
+                title=r["title"],
+                when=f"<t:{r['next_at']}:F>",
+            )
             for r in recs
         ]
         await interaction.response.send_message(
@@ -240,10 +264,14 @@ class Groups(commands.Cog):
 
     # ----- /events -----
 
-    @app_commands.command(name="events", description="See the upcoming events on this server")
+    @app_commands.command(
+        name="events", description="See the upcoming events on this server"
+    )
     async def events(self, interaction: discord.Interaction):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
-        events = await self.bot.db.upcoming_events(interaction.guild_id, int(time.time()))
+        events = await self.bot.db.upcoming_events(
+            interaction.guild_id, int(time.time())
+        )
         if not events:
             await interaction.response.send_message(
                 i18n.t("events.none", lang),
@@ -333,9 +361,7 @@ class Groups(commands.Cog):
     @tasks.loop(seconds=60)
     async def reminders(self):
         now = int(time.time())
-        events = await self.bot.db.events_to_remind(
-            now, config.REMINDER_MINUTES * 60
-        )
+        events = await self.bot.db.events_to_remind(now, config.REMINDER_MINUTES * 60)
         for ev in events:
             # Atomic claim: skip if it was cancelled/completed (or already
             # reminded) between the due-query and now.
@@ -361,9 +387,7 @@ class Groups(commands.Cog):
         await self.bot.wait_until_ready()
 
     async def _send_reminder(self, ev):
-        lang = await i18n.resolve_lang(
-            self.bot.db, self.bot.get_guild(ev["guild_id"])
-        )
+        lang = await i18n.resolve_lang(self.bot.db, self.bot.get_guild(ev["guild_id"]))
         channel = self.bot.get_channel(ev["channel_id"])
         if channel is None:
             channel = await self.bot.fetch_channel(ev["channel_id"])
@@ -382,8 +406,7 @@ class Groups(commands.Cog):
             when=f"<t:{ev['starts_at']}:R>",
         )
         await channel.send(
-            text
-            + (f"\n{mentions}" if mentions else i18n.t("reminder.nobody", lang))
+            text + (f"\n{mentions}" if mentions else i18n.t("reminder.nobody", lang))
         )
 
     # ----- RSVP prompts ("are you coming?") -----
@@ -440,9 +463,7 @@ class Groups(commands.Cog):
         return await self._channel(ev["channel_id"])
 
     async def _send_rsvp(self, ev, party):
-        lang = await i18n.resolve_lang(
-            self.bot.db, self.bot.get_guild(ev["guild_id"])
-        )
+        lang = await i18n.resolve_lang(self.bot.db, self.bot.get_guild(ev["guild_id"]))
         channel = await self._rsvp_channel(ev)
         rsvps = await self.bot.db.get_rsvps(ev["message_id"])
         embed = build_rsvp_embed(ev, party, rsvps, lang=lang)
@@ -468,9 +489,7 @@ class Groups(commands.Cog):
         await self.bot.wait_until_ready()
 
     async def _open_due_voice(self, now: int, lead: int):
-        events = await self.bot.db.events_due_for_voice(
-            now, lead, VOICE_CLEANUP_GRACE
-        )
+        events = await self.bot.db.events_due_for_voice(now, lead, VOICE_CLEANUP_GRACE)
         for ev in events:
             if not voice_due(ev["starts_at"], now, lead):
                 continue
@@ -496,9 +515,7 @@ class Groups(commands.Cog):
             await self.bot.db.set_voice_channel(ev["message_id"], channel.id)
 
     async def _cleanup_stale_voice(self, now: int):
-        events = await self.bot.db.events_with_stale_voice(
-            now, VOICE_CLEANUP_GRACE
-        )
+        events = await self.bot.db.events_with_stale_voice(now, VOICE_CLEANUP_GRACE)
         for ev in events:
             if not voice_is_stale(
                 ev["status"], ev["starts_at"], now, VOICE_CLEANUP_GRACE
@@ -547,9 +564,7 @@ class Groups(commands.Cog):
         if channel is None or not hasattr(channel, "send"):
             return
         lang = await i18n.resolve_lang(self.bot.db, guild)
-        ping_role = (
-            guild.get_role(rec["ping_role_id"]) if rec["ping_role_id"] else None
-        )
+        ping_role = guild.get_role(rec["ping_role_id"]) if rec["ping_role_id"] else None
         event = {
             "channel_id": channel.id,
             "guild_id": rec["guild_id"],

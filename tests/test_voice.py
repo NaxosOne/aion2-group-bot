@@ -4,7 +4,7 @@ what to name it, and when it has gone stale. Run: pytest
 
 from bot.utils.voice import voice_channel_name, voice_due, voice_is_stale
 
-LEAD = 15 * 60      # create 15 min before the start
+LEAD = 15 * 60  # create 15 min before the start
 GRACE = 3 * 60 * 60  # a channel is stale 3 h after the start
 
 
@@ -40,12 +40,14 @@ def test_voice_stale_when_done_or_cancelled():
 
 
 def test_voice_stale_when_long_past_its_start():
-    assert voice_is_stale(
-        "open", 1_000_000, now=1_000_000 + GRACE + 1, grace_s=GRACE
-    ) is True
+    assert (
+        voice_is_stale("open", 1_000_000, now=1_000_000 + GRACE + 1, grace_s=GRACE)
+        is True
+    )
 
 
 def test_voice_not_stale_while_the_event_is_live():
-    assert voice_is_stale(
-        "open", 1_000_000, now=1_000_000 + 10 * 60, grace_s=GRACE
-    ) is False
+    assert (
+        voice_is_stale("open", 1_000_000, now=1_000_000 + 10 * 60, grace_s=GRACE)
+        is False
+    )

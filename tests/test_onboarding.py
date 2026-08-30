@@ -22,18 +22,22 @@ def test_role_just_added_detects_the_transition():
 
 
 def test_should_onboard_only_new_humans_without_a_profile():
-    assert should_onboard(
-        member_role_added=True, has_main_profile=False, is_bot=False
-    ) is True
+    assert (
+        should_onboard(member_role_added=True, has_main_profile=False, is_bot=False)
+        is True
+    )
     # Already has a profile.
-    assert should_onboard(
-        member_role_added=True, has_main_profile=True, is_bot=False
-    ) is False
+    assert (
+        should_onboard(member_role_added=True, has_main_profile=True, is_bot=False)
+        is False
+    )
     # Role wasn't just added.
-    assert should_onboard(
-        member_role_added=False, has_main_profile=False, is_bot=False
-    ) is False
+    assert (
+        should_onboard(member_role_added=False, has_main_profile=False, is_bot=False)
+        is False
+    )
     # Bots never get onboarded.
-    assert should_onboard(
-        member_role_added=True, has_main_profile=False, is_bot=True
-    ) is False
+    assert (
+        should_onboard(member_role_added=True, has_main_profile=False, is_bot=True)
+        is False
+    )
