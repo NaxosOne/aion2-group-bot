@@ -13,7 +13,7 @@ from ..branding import brand
 from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..errors import resilient_tick
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
-from ..utils.mentions import ping_permitted
+from ..utils.mentions import join_mentions, ping_permitted
 from ..utils.messages import parse_message_id
 from ..utils.permissions import member_is_moderator
 from ..utils.recurrence import next_weekly, recurrence_due
@@ -398,7 +398,7 @@ class Groups(commands.Cog):
             channel = await self.bot.fetch_channel(ev["channel_id"])
         signups = await self.bot.db.get_signups(ev["message_id"])
         party, _ = assign(ev["compo"], ev["size"], signups)
-        mentions = " ".join(f"<@{s['user_id']}>" for s in party)
+        mentions = join_mentions(s["user_id"] for s in party)
         link = (
             f"https://discord.com/channels/{ev['guild_id']}"
             f"/{ev['channel_id']}/{ev['message_id']}"
@@ -473,7 +473,7 @@ class Groups(commands.Cog):
         channel = await self._rsvp_channel(ev)
         rsvps = await self.bot.db.get_rsvps(ev["message_id"])
         embed = build_rsvp_embed(ev, party, rsvps, lang=lang)
-        mentions = " ".join(f"<@{s['user_id']}>" for s in party)
+        mentions = join_mentions(s["user_id"] for s in party)
         return await channel.send(
             content=mentions or None,
             embed=embed,
