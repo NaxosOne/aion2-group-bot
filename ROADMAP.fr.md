@@ -64,17 +64,23 @@ L'automatisation lourde du matchmaking a été envisagée puis **volontairement
 écartée** : une légion est un groupe soudé qui forme ses parties socialement, pas
 un pool d'inconnus à apparier par algorithme. Ces idées passent en **Exploration**.
 
-## 🟠 Phase 4 — Outils de légion *(en cours)*
+## ✅ Phase 4 — Outils de légion *(terminée)*
 
-Donner aux organisateurs une vision plus claire de ce qui se passe.
+Les organisateurs ont une vue claire et en direct de ce qui se passe : la vue
+`/dashboard` auto-rafraîchie, dans Discord.
 
 * [x] Tableau de bord de légion *(une vue `/dashboard` auto-rafraîchie, dans Discord)*
-* [ ] Interface web *(un saut de périmètre majeur — son propre brainstorming + spec avant tout code)*
+
+Une interface web séparée a été envisagée puis **différée** : une légion vit dans
+Discord, et le dashboard in-Discord couvre le besoin sans un second front à
+héberger et sécuriser. Déplacée en **Exploration**, à ressortir seulement si un
+besoin concret hors-Discord apparaît.
 
 ## 💡 En exploration
 
 Certaines idées sont intéressantes, mais ne sont pas prioritaires actuellement :
 
+* Interface web *(Discord couvre le besoin aujourd'hui ; à ressortir pour un usage hors-Discord)*
 * Suggestions automatiques de groupes *(une légion forme ses parties socialement, pas par matchmaking)*
 * Équilibrage rôle/classe
 * Suggestions de remplaçants *(le bouton « Inviter LFG » couvre déjà une place libérée)*
