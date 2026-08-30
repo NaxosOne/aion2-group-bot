@@ -217,6 +217,23 @@ via le bouton **Modifier** : changer le **titre**, l'**heure** ou la
 restent fixes). Replanifier ré-arme le rappel et l'invite « tu viens ? » sur la
 nouvelle heure et pingue la party ; vider le champ heure retire l'horaire.
 
+### 🎨 Identité visuelle
+
+Les embeds portent une author-line **Kisk** cohérente, le `/panel` affiche la
+bannière Kisk, et chaque événement reçoit une bannière selon son **type**
+(Donjon, Raid, PvP, Faille, Abysse, Champ de bataille). Les visuels sont servis
+par URL depuis `ASSET_BASE_URL` (les assets publics du repo par défaut). La
+source des bannières est `assets/banners/*.svg` ; convertis-les en PNG une fois
+avec :
+
+```bash
+pip install cairosvg
+python scripts/render_banners.py
+```
+
+Tant que les PNG ne sont pas générés et accessibles publiquement, les embeds
+s'affichent simplement sans les visuels.
+
 ### 🔁 Événements récurrents
 
 Les modérateurs peuvent faire répéter un événement chaque semaine. Ajoute

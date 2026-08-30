@@ -8,6 +8,10 @@ versioned, so entries are grouped by date.
 
 ### Added
 
+- **Branded embeds** — a consistent Kisk author line across embeds, the banner
+  on the `/panel`, and an original per-event-type banner (Dungeon, Raid, PvP, …)
+  on event embeds. Artwork is served by URL (`ASSET_BASE_URL`); SVG sources plus
+  `scripts/render_banners.py` produce the PNGs.
 - **Siege events (multiple groups)** — add `groups:` to an Open `/event` to
   split one roster across several equal groups (Group 1 / 2 / 3); sign-up and
   waitlist are unchanged.

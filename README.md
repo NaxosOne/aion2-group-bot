@@ -211,6 +211,22 @@ form (type, composition and size stay fixed). Rescheduling re-arms the reminder
 and the "are you coming?" prompt against the new time and pings the party;
 clearing the time field drops the schedule.
 
+### 🎨 Look & feel
+
+Embeds carry a consistent **Kisk** author line, the `/panel` shows the Kisk
+banner, and each event gets a banner matching its **type** (Dungeon, Raid, PvP,
+Rift, Abyss, Battleground). The artwork is served by URL from `ASSET_BASE_URL`
+(the repo's public assets by default). The banners' source is
+`assets/banners/*.svg`; render them to PNG once with:
+
+```bash
+pip install cairosvg
+python scripts/render_banners.py
+```
+
+Until the PNGs are generated and publicly reachable, embeds simply render
+without the artwork.
+
 ### 🔁 Recurring events
 
 Moderators can make an event repeat every week. Add `repeat: Weekly` to `/event`
