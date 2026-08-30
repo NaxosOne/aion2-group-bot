@@ -6,6 +6,8 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-30
+
 ### Security
 
 - **An event title could smuggle an `@everyone` ping.** Notification messages
@@ -148,7 +150,8 @@ All notable changes to Kisk are documented here. The format follows
 [#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
 [#46]: https://github.com/NaxosOne/aion2-group-bot/pull/46
 
-[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.1...v0.4.0
