@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img" aria-label="PvP">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a0708"/>
+      <stop offset="1" stop-color="#a01722"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="300" fill="url(#bg)"/>
+  <g stroke="#000000" stroke-width="16" stroke-linecap="round" opacity="0.18">
+    <line x1="60" y1="70" x2="240" y2="240"/>
+    <line x1="240" y1="70" x2="60" y2="240"/>
+  </g>
+  <g stroke="#ffd0d0" stroke-width="4" stroke-linecap="round" opacity="0.5">
+    <line x1="60" y1="70" x2="240" y2="240"/>
+    <line x1="240" y1="70" x2="60" y2="240"/>
+  </g>
+  <text x="960" y="150" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="800" fill="#ffd6d6">PvP</text>
+  <text x="960" y="200" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="600" fill="#ffd6d6" opacity="0.75" letter-spacing="6">KISK</text>
+</svg>

@@ -9,6 +9,7 @@ from discord.ext import commands, tasks
 
 from .. import config, i18n
 from ..actions import post_event, publish_event, resolve_channel
+from ..branding import brand
 from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.mentions import ping_permitted
@@ -278,6 +279,7 @@ class Groups(commands.Cog):
             description="\n".join(lines),
             colour=discord.Colour.blurple(),
         )
+        brand(embed)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # ----- /rsvp: post the "are you coming?" prompt on demand -----

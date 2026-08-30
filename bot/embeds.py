@@ -3,6 +3,7 @@
 import discord
 
 from . import config, i18n
+from .branding import activity_banner_url, activity_icon_url, brand
 from .logic import (
     COMPO_STANDARD,
     ROLES,
@@ -157,6 +158,8 @@ def build_event_embed(
         colour = COLOUR_OPEN
 
     embed = discord.Embed(title=title, description="\n".join(lines), colour=colour)
+    brand(embed)
+    embed.set_image(url=activity_banner_url(event["activity"]))
 
     if event["compo"] == COMPO_STANDARD:
         slots = standard_slots(event["size"])
@@ -238,6 +241,8 @@ def build_rsvp_embed(event, party: list, rsvps: list, lang: str = "en") -> disco
         description=f"**{event['activity']}**{when}\n" + i18n.t("rsvp.body_hint", lang),
         colour=discord.Colour.blurple(),
     )
+    brand(embed)
+    embed.set_thumbnail(url=activity_icon_url(event["activity"]))
 
     def _mentions(ids: list) -> str:
         return "\n".join(f"• <@{u}>" for u in ids) or "*—*"

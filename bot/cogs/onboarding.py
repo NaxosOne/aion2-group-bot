@@ -14,6 +14,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from .. import config, i18n
+from ..branding import brand
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import MAX_CHARACTERS
 from ..utils.onboarding import onboard_custom_id, role_just_added, should_onboard
@@ -113,14 +114,14 @@ class ProfileSetupView(ViewErrorMixin, discord.ui.View):
             class_line = not_set
         role_line = f"**{ROLE_LABELS[self.role]}**" if self.role else not_set
         title = f"{i18n.t(f'onboard.setup_title_{self.slot}', self.lang)} — {self.guild_name}"
-        return discord.Embed(
+        return brand(discord.Embed(
             title=title,
             description=i18n.t(
                 "onboard.summary_body", self.lang,
                 class_line=class_line, role_line=role_line,
             ),
             colour=discord.Colour.blurple(),
-        )
+        ))
 
     @discord.ui.button(
         label="Continue", emoji="➡️",
@@ -317,11 +318,11 @@ class Onboarding(commands.GroupCog, name="onboard"):
 
     @staticmethod
     def _welcome_embed(guild: discord.Guild, lang: str) -> discord.Embed:
-        return discord.Embed(
+        return brand(discord.Embed(
             title=i18n.t("onboard.welcome_title", lang, guild=guild.name),
             description=i18n.t("onboard.welcome_body", lang),
             colour=discord.Colour.blurple(),
-        )
+        ))
 
     async def _onboard(self, member: discord.Member, settings):
         """DM the member; if their DMs are closed, fall back to a channel."""

@@ -19,6 +19,7 @@ from discord.ext import commands
 
 from .. import config, i18n
 from ..actions import publish_event, register_absence
+from ..branding import BANNER_URL, brand
 from ..embeds import build_event_embed
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import COMPO_OPEN, COMPO_STANDARD
@@ -301,7 +302,7 @@ def _panel_embed(settings, lang: str) -> discord.Embed:
                 i18n.t("panel.target_absences", lang, channel=f"<#{absence_channel}>")
             )
         where = "\n\n*" + ", ".join(targets) + ".*"
-    return discord.Embed(
+    embed = discord.Embed(
         title=i18n.t("panel.title", lang),
         description=i18n.t(
             "panel.body", lang,
@@ -310,6 +311,9 @@ def _panel_embed(settings, lang: str) -> discord.Embed:
         ),
         colour=discord.Colour.blurple(),
     )
+    brand(embed)
+    embed.set_image(url=BANNER_URL)
+    return embed
 
 
 class Panel(commands.Cog):
