@@ -71,6 +71,18 @@ def test_a_big_waitlist_stays_within_the_discord_field_limit():
         assert len(field.value) <= 1024
 
 
+def test_maxed_out_siege_embed_stays_within_the_total_limit():
+    event = {**EVENT, "compo": COMPO_OPEN, "size": 200, "groups": 8}
+    signups = [
+        signup(i, "dps", char_name="Verylongcharactername", char_class="Sorcerer")
+        for i in range(1, 400)  # 200 in party (8×25), the rest waitlisted
+    ]
+    embed = build_event_embed(event, signups)
+    total = len(embed.title or "") + len(embed.description or "")
+    total += sum(len(f.name) + len(f.value) for f in embed.fields)
+    assert total <= 6000
+
+
 def test_multi_group_event_renders_one_field_per_group():
     event = {**EVENT, "compo": COMPO_OPEN, "size": 6, "groups": 3}
     signups = [signup(i, "dps") for i in range(1, 6)]  # 5 of 6 seats
