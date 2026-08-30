@@ -16,7 +16,7 @@ from discord.ext import commands, tasks
 
 from .. import config, i18n
 from ..branding import brand
-from ..errors import ViewErrorMixin
+from ..errors import ViewErrorMixin, resilient_tick
 from ..utils.availability import availability_ranking
 from ..utils.permissions import member_is_moderator
 from ..utils.text import truncate_field
@@ -391,6 +391,7 @@ class Polls(commands.Cog):
             )
 
     @tasks.loop(minutes=10)
+    @resilient_tick
     async def weekly_loop(self):
         """Posts the weekly board in the guilds that enabled it."""
         tz = config.TIMEZONE

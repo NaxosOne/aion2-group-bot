@@ -152,7 +152,8 @@ CREATE TABLE IF NOT EXISTS recurrences (
     size          INTEGER NOT NULL,
     ping_role_id  INTEGER,
     next_at       INTEGER NOT NULL,               -- next occurrence (UTC)
-    active        INTEGER NOT NULL DEFAULT 1
+    active        INTEGER NOT NULL DEFAULT 1,
+    groups        INTEGER NOT NULL DEFAULT 1       -- siege display groups; 1 = single
 );
 """
 
@@ -206,6 +207,9 @@ class Database:
                 "voice_created": "INTEGER NOT NULL DEFAULT 0",
                 "voice_channel_id": "INTEGER",
                 "groups": "INTEGER NOT NULL DEFAULT 1",
+            },
+            "recurrences": {
+                "groups": "INTEGER NOT NULL DEFAULT 1",  # siege split, threaded
             },
         }
         for table, columns in added.items():

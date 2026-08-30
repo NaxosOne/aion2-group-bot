@@ -16,6 +16,7 @@ from discord.ext import commands, tasks
 from .. import config, i18n
 from ..branding import brand
 from ..embeds import ROLE_EMOJI
+from ..errors import resilient_tick
 from ..logic import ROLES, assign, missing_slots
 from ..utils.dashboard import roster_stats
 from ..utils.text import truncate_field
@@ -221,6 +222,7 @@ class Dashboard(commands.Cog):
         )
 
     @tasks.loop(minutes=REFRESH_MINUTES)
+    @resilient_tick
     async def refresh_loop(self):
         """Keeps every posted dashboard current."""
         for row in await self.bot.db.guilds_with_dashboard():
