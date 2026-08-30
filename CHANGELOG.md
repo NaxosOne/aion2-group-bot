@@ -6,6 +6,13 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A maxed-out siege (8 groups × 25) with a long waitlist could exceed Discord's
+  6000-char embed ceiling — even with every field under the 1024 per-field
+  limit — and fail to render. The composition and waitlist fields now share a
+  total budget so the embed always stays valid. ([#40])
+
 ## [0.3.0] - 2026-08-30
 
 ### Added
@@ -64,6 +71,7 @@ All notable changes to Kisk are documented here. The format follows
 [#22]: https://github.com/NaxosOne/aion2-group-bot/pull/22
 [#23]: https://github.com/NaxosOne/aion2-group-bot/pull/23
 [#35]: https://github.com/NaxosOne/aion2-group-bot/issues/35
+[#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
 
 [Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/NaxosOne/aion2-group-bot/releases/tag/v0.3.0

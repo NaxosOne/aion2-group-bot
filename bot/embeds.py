@@ -45,6 +45,13 @@ COLOUR_OPEN = discord.Colour.blurple()
 COLOUR_FULL = discord.Colour.green()
 COLOUR_CANCELLED = discord.Colour.red()
 
+# Discord caps a single field at 1024 chars, but also the whole embed at 6000.
+# A maxed-out siege (8 groups × 25) with a long waitlist can blow the total
+# even when every field is under 1024, so the composition/waitlist fields share
+# this budget: each is truncated to the budget split across them (never above
+# the 1024 per-field limit). Kept below 6000 to leave room for title/footer.
+EMBED_FIELD_BUDGET = 5000
+
 
 def _row_get(row, key: str):
     """sqlite3.Row has no .get(), and the tests pass plain dicts."""
@@ -163,6 +170,16 @@ def build_event_embed(
     brand(embed)
     embed.set_image(url=activity_banner_url(event["activity"]))
 
+    # Share the total-embed budget across the composition and waitlist fields so
+    # a maxed siege stays under Discord's 6000-char ceiling (see EMBED_FIELD_BUDGET).
+    if event["compo"] == COMPO_STANDARD:
+        comp_fields = len(ROLES)
+    elif (_row_get(event, "groups") or 1) > 1:
+        comp_fields = event["groups"]
+    else:
+        comp_fields = 1
+    field_cap = min(1024, EMBED_FIELD_BUDGET // (comp_fields + (1 if waitlist else 0)))
+
     if event["compo"] == COMPO_STANDARD:
         slots = standard_slots(event["size"])
         by_role = {role: [s for s in party if s["role"] == role] for role in ROLES}
@@ -193,7 +210,8 @@ def build_event_embed(
                         f"{_class_suffix(s, classes, role_shown=True)}"
                         for s in members
                     )
-                    or "*—*"
+                    or "*—*",
+                    field_cap,
                 ),
                 inline=True,
             )
@@ -206,7 +224,8 @@ def build_event_embed(
                     f"{_class_suffix(s, classes, role_shown=True)}"
                     for s in party
                 )
-                or "*—*"
+                or "*—*",
+                field_cap,
             ),
             inline=False,
         )
@@ -219,7 +238,8 @@ def build_event_embed(
                     f"{i}. {ROLE_EMOJI[s['role']]} <@{s['user_id']}>"
                     f"{_class_suffix(s, classes, role_shown=True)}"
                     for i, s in enumerate(waitlist, start=1)
-                )
+                ),
+                field_cap,
             ),
             inline=False,
         )
