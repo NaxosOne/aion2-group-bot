@@ -251,7 +251,8 @@ class EventEditModal(ModalErrorMixin, discord.ui.Modal):
                 title=event["title"],
                 when=when,
                 mentions=mentions,
-            )
+            ),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
 
 
@@ -374,12 +375,16 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         )
         embed = build_event_embed(event, signups, classes, lang)
         await interaction.response.edit_message(embed=embed, view=None)
+        # Closing removes the buttons, so no interaction reaches this event's
+        # lock again: drop it rather than leak one lock per event forever.
+        self._locks.pop(event["message_id"], None)
 
         party, _ = assign(event["compo"], event["size"], signups)
         mentions = join_mentions(s["user_id"] for s in party)
         await interaction.followup.send(
             i18n.t("signup.completed", lang, title=event["title"])
-            + (f" GG {mentions}" if mentions else "")
+            + (f" GG {mentions}" if mentions else ""),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
         await self._delete_event_voice(interaction, event)
 
@@ -414,6 +419,7 @@ class SignupView(ViewErrorMixin, discord.ui.View):
         )
         embed = build_event_embed(event, signups, classes, lang)
         await interaction.response.edit_message(embed=embed, view=None)
+        self._locks.pop(event["message_id"], None)  # see done_button
 
         party, waitlist = assign(event["compo"], event["size"], signups)
         mentions = join_mentions(s["user_id"] for s in party + waitlist)
@@ -424,7 +430,8 @@ class SignupView(ViewErrorMixin, discord.ui.View):
                 title=event["title"],
                 who=interaction.user.mention,
             )
-            + (f"\n{mentions}" if mentions else "")
+            + (f"\n{mentions}" if mentions else ""),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
         await self._delete_event_voice(interaction, event)
 
@@ -765,7 +772,10 @@ class SignupView(ViewErrorMixin, discord.ui.View):
             lang = await i18n.resolve_lang(interaction.client.db, interaction.guild)
             mentions = join_mentions(s["user_id"] for s in promoted)
             await interaction.followup.send(
-                i18n.t("signup.promoted", lang, mentions=mentions, title=event["title"])
+                i18n.t(
+                    "signup.promoted", lang, mentions=mentions, title=event["title"]
+                ),
+                allowed_mentions=discord.AllowedMentions(users=True),
             )
 
 
@@ -895,7 +905,8 @@ class QueueManageView(ViewErrorMixin, discord.ui.View):
                 self.lang,
                 mentions=mentions,
                 title=self.event["title"],
-            )
+            ),
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
 
 

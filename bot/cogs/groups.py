@@ -411,7 +411,10 @@ class Groups(commands.Cog):
             when=f"<t:{ev['starts_at']}:R>",
         )
         await channel.send(
-            text + (f"\n{mentions}" if mentions else i18n.t("reminder.nobody", lang))
+            text + (f"\n{mentions}" if mentions else i18n.t("reminder.nobody", lang)),
+            # Restrict to the party members: an event titled "@everyone" must not
+            # turn a reminder into a mass ping (the @everyone gate is mods-only).
+            allowed_mentions=discord.AllowedMentions(users=True),
         )
 
     # ----- RSVP prompts ("are you coming?") -----
