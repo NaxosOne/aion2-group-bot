@@ -19,7 +19,7 @@ from discord.ext import commands, tasks
 from .. import config, i18n
 from ..branding import brand
 from ..embeds import ROLE_EMOJI, ROLE_LABEL
-from ..errors import ViewErrorMixin
+from ..errors import ViewErrorMixin, resilient_tick
 from ..logic import ROLES
 from ..utils.lfg import (
     AVAILABLE_DURATIONS,
@@ -440,6 +440,7 @@ class Lfg(commands.Cog):
         )
 
     @tasks.loop(minutes=5)
+    @resilient_tick
     async def prune_loop(self):
         """Drops expired entries and refreshes the boards that changed."""
         now = int(time.time())

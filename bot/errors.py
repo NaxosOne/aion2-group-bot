@@ -6,6 +6,7 @@ that to a member. Every entry point (commands, buttons, forms) routes its
 failures here so the user always gets an answer and we always get a log line.
 """
 
+import functools
 import logging
 import traceback
 
@@ -14,6 +15,26 @@ import discord
 from . import i18n
 
 log = logging.getLogger("kisk")
+
+
+def resilient_tick(coro):
+    """Wrap a ``@tasks.loop`` coroutine so one failing tick can't kill the loop.
+
+    discord.py stops a task loop the first time its coroutine raises; a
+    background job that quietly dies leaves reminders unsent or a board frozen,
+    with no error in front of anyone. This logs the failure and lets the next
+    scheduled tick run. Place it directly under the ``@tasks.loop(...)``
+    decorator.
+    """
+
+    @functools.wraps(coro)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await coro(*args, **kwargs)
+        except Exception:
+            log.exception("Background tick %s failed", getattr(coro, "__name__", coro))
+
+    return wrapper
 
 
 def _detail(error: Exception) -> str:

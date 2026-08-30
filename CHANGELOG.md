@@ -11,12 +11,20 @@ All notable changes to Kisk are documented here. The format follows
 - A member who left a server kept lingering in the LFG pool and the "available
   now" list until their entry expired; leaving now clears both immediately
   (`purge_member`).
+- A **recurring siege** lost its group split: `/event comp:Open groups:N
+  repeat:Weekly` stored the total size but not the group count, so each posted
+  instance rendered as one flat party instead of N groups. The group count is
+  now stored on the recurrence and reproduced on every instance.
 
 ### Changed
 
-- Hardened the LFG and dashboard auto-refresh loops so one guild's unexpected
-  error can no longer stop the loop for every server. Removed an unused helper
-  (`logic.role_capacity`).
+- **Every background loop is now crash-resilient.** discord.py stops a task loop
+  the first time its coroutine raises, which would silently freeze a background
+  job (reminders, RSVP prompts, voice channels, recurring events, bot status,
+  the weekly availability post, the LFG prune and the dashboard refresh). A
+  `resilient_tick` wrapper now logs the failure and lets the next tick run. This
+  supersedes the narrower LFG/dashboard guard added earlier in this cycle.
+- Removed an unused helper (`logic.role_capacity`).
 
 ## [0.5.0] - 2026-08-30
 

@@ -40,6 +40,22 @@ def test_create_and_due_window(tmp_path):
     assert due == [1000]
 
 
+def test_siege_groups_are_stored_and_default_to_one(tmp_path):
+    async def go():
+        db = Database(str(tmp_path / "r.db"))
+        await db.connect()
+        await db.create_recurrence(**rec(next_at=1000))  # no groups -> defaults to 1
+        await db.create_recurrence(**rec(next_at=1000, size=200, groups=8))
+        due = await db.recurrences_due(now_ts=1000, lead_s=0)
+        listed = {r["id"]: r["groups"] for r in await db.list_recurrences(1)}
+        await db.close()
+        return sorted(r["groups"] for r in due), listed
+
+    from_due, from_list = asyncio.run(go())
+    assert from_due == [1, 8]
+    assert from_list == {1: 1, 2: 8}
+
+
 def test_advance_recurrence_claims_once(tmp_path):
     async def go():
         db = Database(str(tmp_path / "r.db"))

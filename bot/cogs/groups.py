@@ -11,6 +11,7 @@ from .. import config, i18n
 from ..actions import post_event, publish_event, resolve_channel
 from ..branding import brand
 from ..embeds import PRESENCE_ACTIVITY_EMOJI, build_rsvp_embed
+from ..errors import resilient_tick
 from ..logic import COMPO_OPEN, COMPO_STANDARD, assign
 from ..utils.mentions import ping_permitted
 from ..utils.messages import parse_message_id
@@ -148,6 +149,7 @@ class Groups(commands.Cog):
                 starts_at=starts_at,
                 description=description,
                 ping=ping,
+                groups=group_count,
             )
             return
 
@@ -175,6 +177,7 @@ class Groups(commands.Cog):
         starts_at,
         description,
         ping,
+        groups=1,
     ):
         """Stores a weekly recurrence; the loop posts each instance in advance."""
         if not await member_is_moderator(self.bot.db, interaction.user):
@@ -208,6 +211,7 @@ class Groups(commands.Cog):
             size=size,
             ping_role_id=ping.id if ping else None,
             next_at=starts_at,
+            groups=groups,
         )
         await interaction.response.send_message(
             i18n.t("recurring.created", lang, title=title, when=f"<t:{starts_at}:F>"),
@@ -359,6 +363,7 @@ class Groups(commands.Cog):
     # ----- Automatic reminders -----
 
     @tasks.loop(seconds=60)
+    @resilient_tick
     async def reminders(self):
         now = int(time.time())
         events = await self.bot.db.events_to_remind(now, config.REMINDER_MINUTES * 60)
@@ -412,6 +417,7 @@ class Groups(commands.Cog):
     # ----- RSVP prompts ("are you coming?") -----
 
     @tasks.loop(seconds=60)
+    @resilient_tick
     async def rsvp_prompts(self):
         now = int(time.time())
         events = await self.bot.db.events_to_rsvp(now, config.RSVP_MINUTES * 60)
@@ -478,6 +484,7 @@ class Groups(commands.Cog):
     # ----- Temporary voice channels -----
 
     @tasks.loop(seconds=60)
+    @resilient_tick
     async def voice_channels(self):
         now = int(time.time())
         lead = config.REMINDER_MINUTES * 60
@@ -535,6 +542,7 @@ class Groups(commands.Cog):
     # ----- Recurring events -----
 
     @tasks.loop(seconds=60)
+    @resilient_tick
     async def recurring_events(self):
         now = int(time.time())
         for rec in await self.bot.db.recurrences_due(now, RECURRENCE_LEAD):
@@ -577,6 +585,7 @@ class Groups(commands.Cog):
             "size": rec["size"],
             "starts_at": occurrence,
             "status": "open",
+            "groups": rec["groups"],
         }
         await post_event(self.bot, channel, event, lang, ping_role)
 
@@ -597,6 +606,7 @@ class Groups(commands.Cog):
         return f"{self.DAYS_SHORT[dt.weekday()]} {dt.strftime('%d/%m')} {hm}"
 
     @tasks.loop(minutes=5)
+    @resilient_tick
     async def status(self):
         ev = await self.bot.db.next_upcoming_event(int(time.time()))
         if ev:
