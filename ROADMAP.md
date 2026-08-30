@@ -50,17 +50,18 @@ upgraded weekly availability board are all in place.
 * [x] Improved weekly availability
 * [x] Event series management *(covered by recurring events)*
 
-## 🟣 Phase 3 — Smart group formation *(in progress)*
+## ✅ Phase 3 — Smart group formation *(complete)*
 
-Move from manually organising parties toward helping players find the right group automatically.
+The visibility layer a legion actually needs is in place: players signal what
+they're looking for and who's free to play right now, and organisers pull groups
+together from that live picture.
 
 * [x] LFG system *(per-server pool + board, with an "Invite LFG" button on open events)*
 * [x] "Available now" status *(activity-agnostic presence, shown atop the LFG board)*
-* [ ] Automatic party suggestions
-* [ ] Role/class balancing
-* [ ] Smart, role-aware waitlist promotion
-* [ ] Replacement suggestions
-* [ ] Better player preferences
+
+Heavier matchmaking automation was considered and **deliberately dropped**: a
+legion is a close-knit group that forms its parties socially, not a pool of
+strangers to match algorithmically. Those ideas moved to **Exploring** below.
 
 ## 🟠 Phase 4 — Legion tools
 
@@ -73,6 +74,10 @@ Give organisers a clearer view of what's happening.
 
 Some ideas are interesting, but aren't currently priorities:
 
+* Automatic party suggestions *(a legion forms parties socially, not by matchmaking)*
+* Role/class balancing
+* Replacement suggestions *(the "Invite LFG" button already covers a freed spot)*
+* Better player preferences
 * More flexible party compositions (custom role ratios)
 * Loot rolls
 * Birthdays
