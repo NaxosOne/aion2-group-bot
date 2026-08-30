@@ -6,8 +6,20 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- **An event title could smuggle an `@everyone` ping.** Notification messages
+  (reminders, completion, cancellation, reschedule and waitlist-promotion
+  notices, and the discussion-thread intro) put the member-supplied event title
+  into the message body without restricting mentions, so an event titled
+  `@everyone` made Kisk mass-ping the server — bypassing the moderator-only
+  `@everyone` gate. Every such send now allows user mentions only.
+
 ### Fixed
 
+- `SignupView` leaked one lock per event for the bot's lifetime; the lock is now
+  dropped when an event is completed or cancelled (its buttons are gone, so no
+  interaction reaches it again).
 - Party/pool pings no longer silently fail on large sieges. A ping built from a
   whole party or pool (reminders, RSVP prompts, completion/cancellation notices,
   LFG invites, waitlist promotions) could exceed Discord's 2000-character

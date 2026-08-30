@@ -169,7 +169,12 @@ async def _open_event_thread(message: discord.Message, title: str, lang: str) ->
         log.info("Could not open a thread for event %s (missing perms?)", message.id)
         return
     try:
-        await thread.send(i18n.t("event.thread_intro", lang, title=title))
+        # The title is member-supplied: an "@everyone" title must not turn the
+        # thread intro into a mass ping.
+        await thread.send(
+            i18n.t("event.thread_intro", lang, title=title),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
     except discord.HTTPException:
         pass
 
