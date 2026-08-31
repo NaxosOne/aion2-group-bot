@@ -52,6 +52,18 @@ class Groups(commands.Cog):
         self.recurring_events.cancel()
         self.status.cancel()
 
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        """Cancels an event whose message was deleted.
+
+        The reminder / RSVP loops only act on open events; without this, a
+        deleted event message would leave its row 'open' and keep pinging the
+        party for an event whose message (and buttons) no longer exist.
+        """
+        event = await self.bot.db.get_event(payload.message_id)
+        if event is not None and event["status"] == "open":
+            await self.bot.db.set_status(payload.message_id, "cancelled")
+
     # ----- /event -----
 
     @app_commands.command(
