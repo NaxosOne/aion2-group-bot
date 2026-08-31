@@ -27,11 +27,17 @@ def _open_event(db, message_id):
     )
 
 
+def _cog(db):
+    cog = Groups.__new__(Groups)  # no cog machinery needed here
+    cog.bot = _Bot(db)
+    return cog
+
+
 def test_deleting_event_message_cancels_it(tmp_path):
     async def go():
         db = Database(str(tmp_path / "d.db"))
         await db.connect()
-        cog = Groups(_Bot(db))
+        cog = _cog(db)
         await _open_event(db, 100)
         await cog.on_raw_message_delete(_Payload(100))   # the event's message is gone
         after = (await db.get_event(100))["status"]
@@ -47,7 +53,7 @@ def test_deleting_message_of_a_finished_event_leaves_it(tmp_path):
     async def go():
         db = Database(str(tmp_path / "d2.db"))
         await db.connect()
-        cog = Groups(_Bot(db))
+        cog = _cog(db)
         await _open_event(db, 200)
         await db.set_status(200, "done")
         await cog.on_raw_message_delete(_Payload(200))   # only open events are touched
