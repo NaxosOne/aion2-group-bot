@@ -466,6 +466,33 @@ land elsewhere:
 /channels events: #events absences: #absences
 ```
 
+### 🛡️ Recruitment
+
+Turn newcomers into members without leaving Discord. Point Kisk at an
+officers-only review channel once:
+
+```text
+/recruit channel action: Enable in this channel
+```
+
+From then on, whenever someone joins, Kisk DMs them an **Apply** button (falling
+back to the welcome channel if their DMs are closed). It opens a dropdown-based
+form — **class** and **role** (with Aion 2 icons), then character name, level/CP,
+PvP·PvE experience, availability and motivation. On submit Kisk:
+
+* opens a **private channel for that candidate** (candidate + officers) to chat, and
+* posts a **review card** in the officers' channel with **✅ Accept** / **❌ Reject**.
+
+**Accept** grants your validated-member role — which triggers the profile
+onboarding below — then deletes the candidate channel and stamps the card
+"accepted". **Reject** asks for an optional reason (DMed to the candidate) and
+does the same. If a candidate leaves the server first, their card, channel and
+data are removed automatically.
+
+> Accept needs your member role set with `/onboard role` (below), and Kisk needs
+> the **Manage Channels** permission to open and delete candidate channels. The
+> whole candidate-facing flow is shown in the server's language.
+
 ### 👋 Welcoming newcomers
 
 Moderators can use:

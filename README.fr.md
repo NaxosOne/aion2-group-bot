@@ -479,6 +479,34 @@ que ses résultats atterrissent ailleurs :
 /channels events: #events absences: #absences
 ```
 
+### 🛡️ Recrutement
+
+Fais entrer les nouveaux venus sans quitter Discord. Indique une fois à Kisk un
+salon de revue réservé aux officiers :
+
+```text
+/recruit channel action: Enable in this channel
+```
+
+Dès lors, à chaque arrivée, Kisk envoie en MP un bouton **Postuler** (avec repli
+sur le salon d'accueil si les MP sont fermés). Il ouvre un formulaire à menus —
+**classe** et **rôle** (avec les icônes Aion 2), puis nom du personnage,
+niveau/CP, expérience PvP·PvE, disponibilités et motivation. À l'envoi, Kisk :
+
+* ouvre un **salon privé dédié au candidat** (candidat + officiers) pour échanger, et
+* poste une **fiche** dans le salon officiers avec **✅ Accepter** / **❌ Refuser**.
+
+**Accepter** attribue ton rôle de membre validé — ce qui déclenche l'onboarding
+de profil ci-dessous — puis supprime le salon du candidat et marque la fiche
+« accepté ». **Refuser** demande un motif optionnel (envoyé en MP au candidat) et
+fait de même. Si un candidat quitte le serveur avant, sa fiche, son salon et ses
+données sont supprimés automatiquement.
+
+> Accepter nécessite ton rôle de membre défini via `/onboard role` (ci-dessous),
+> et Kisk a besoin de la permission **Gérer les salons** pour ouvrir et supprimer
+> les salons candidats. Tout le parcours côté candidat s'affiche dans la langue du
+> serveur.
+
 ### 👋 Accueil des nouveaux venus
 
 Les modérateurs peuvent utiliser :
