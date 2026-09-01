@@ -6,6 +6,17 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Recruitment flow (`/recruit`).** Newcomers are DMed an application form
+  (class, role, level/CP, experience, availability, motivation); each candidate
+  gets a dedicated private channel to talk with officers, plus a review card in
+  the officers' channel with Accept / Reject. Accept grants the validated-member
+  role (which starts profile onboarding); Reject DMs an optional reason. The
+  card, channel and data are cleaned up automatically if the candidate leaves.
+  Enable it with `/recruit channel`; Kisk needs the **Manage Channels**
+  permission.
+
 ## [0.5.2] - 2026-08-30
 
 ### Security

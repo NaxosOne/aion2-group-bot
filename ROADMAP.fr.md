@@ -29,6 +29,7 @@ Les fondations sont en place :
 * Réordonnancement de la file par les admins — un bouton « Gérer la file » (admins uniquement) permet de faire monter ou descendre les inscriptions pour promouvoir des joueurs en attente ; les places par rôle restent respectées et tout joueur poussé dans la party est notifié
 * Modifier un événement publié — un bouton « Modifier » (créateur ou modérateur) change le titre, l'heure ou la description ; replanifier ré-arme le rappel et l'invite RSVP et pingue la party
 * Visibilité des places libres — un événement standard en cours affiche ses places vides par rôle et un résumé « Manque : 1 Tank, 2 DPS » jusqu'à ce qu'il soit complet
+* Recrutement (`/recruit`) — les nouveaux venus reçoivent un formulaire de candidature en MP ; les officiers examinent chaque candidat dans un salon privé dédié et acceptent (ce qui attribue le rôle de membre et lance l'onboarding) ou refusent avec un motif ; tout est nettoyé si le candidat quitte le serveur
 
 ## ✅ Phase 1 — Meilleure organisation des groupes *(terminée)*
 
@@ -75,6 +76,19 @@ Une interface web séparée a été envisagée puis **différée** : une légion
 Discord, et le dashboard in-Discord couvre le besoin sans un second front à
 héberger et sécuriser. Déplacée en **Exploration**, à ressortir seulement si un
 besoin concret hors-Discord apparaît.
+
+## ✅ Phase 5 — Recrutement *(terminée)*
+
+Faire entrer de nouveaux joueurs est désormais un flux à part entière, dans
+Discord : un formulaire de candidature à l'arrivée, un salon dédié par candidat
+pour discuter, et une revue officier qui accepte (attribue le rôle de membre, ce
+qui lance l'onboarding de profil) ou refuse avec un motif — avec nettoyage
+automatique au départ d'un candidat.
+
+* [x] Formulaire de candidature à l'arrivée (`/recruit`) dans la langue du serveur
+* [x] Salon privé de discussion dédié par candidat
+* [x] Fiche de revue officier avec accepter / refuser (motif optionnel envoyé en MP au candidat)
+* [x] Nettoyage automatique du salon, de la fiche et des données au départ d'un candidat
 
 ## 💡 En exploration
 
