@@ -583,10 +583,9 @@ class Recruitment(commands.Cog):
             return
         embed = message.embeds[0]
         text = i18n.t(outcome_key, lang, who=reviewer.mention)
-        if embed.fields:
-            embed.set_field_at(
-                len(embed.fields) - 1, name="​", value=text, inline=False
-            )
+        last = len(embed.fields) - 1
+        if last >= 0:
+            embed.set_field_at(last, name="​", value=text, inline=False)
         else:
             embed.add_field(name="​", value=text, inline=False)
         try:
