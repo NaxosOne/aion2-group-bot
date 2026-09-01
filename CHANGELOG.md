@@ -8,6 +8,10 @@ All notable changes to Kisk are documented here. The format follows
 
 ### Added
 
+- **Standing recruitment desk (`/recruit post`).** Posts a permanent **Apply**
+  button in a channel, so members who joined before recruitment was enabled — or
+  who missed the on-join DM — can apply any time. Moderators only; requires the
+  review channel to be set first (`/recruit channel`).
 - **Recruitment flow (`/recruit`).** Newcomers are DMed an application form
   (class, role, level/CP, experience, availability, motivation); each candidate
   gets a dedicated private channel to talk with officers, plus a review card in

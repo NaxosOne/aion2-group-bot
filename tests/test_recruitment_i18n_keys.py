@@ -48,6 +48,10 @@ RECRUIT_KEYS = {
     "recruit.dm_rejected_reason": {"guild": "Kisk", "reason": "low"},
     "recruit.cmd_on": {},
     "recruit.cmd_off": {},
+    "recruit.desk_title": {"guild": "Kisk"},
+    "recruit.desk_body": {},
+    "recruit.posted": {"link": "https://discord.com/x"},
+    "recruit.post_needs_channel": {},
     "recruit.save_failed": {},
 }
 

@@ -489,7 +489,15 @@ salon de revue réservé aux officiers :
 ```
 
 Dès lors, à chaque arrivée, Kisk envoie en MP un bouton **Postuler** (avec repli
-sur le salon d'accueil si les MP sont fermés). Il ouvre un formulaire à menus —
+sur le salon d'accueil si les MP sont fermés). Pour un point d'entrée permanent,
+utilisable par tous à tout moment — membres arrivés avant, ou ayant raté le MP —
+publie un espace recrutement dans un salon :
+
+```text
+/recruit post
+```
+
+Dans tous les cas, le bouton **Postuler** ouvre un formulaire à menus —
 **classe** et **rôle** (avec les icônes Aion 2), puis nom du personnage,
 niveau/CP, expérience PvP·PvE, disponibilités et motivation. À l'envoi, Kisk :
 
