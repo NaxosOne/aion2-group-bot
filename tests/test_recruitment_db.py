@@ -62,6 +62,19 @@ def test_set_status_records_decision_and_delete_removes_row():
     asyncio.run(go())
 
 
+def test_set_application_card_stores_channel_and_message_ids():
+    async def go():
+        db = Database(":memory:")
+        await db.connect()
+        app_id = await db.create_application(**APP)
+        await db.set_application_card(app_id, channel_id=555, card_message_id=777)
+        row = await db.get_application(app_id)
+        assert row["channel_id"] == 555
+        assert row["card_message_id"] == 777
+
+    asyncio.run(go())
+
+
 def test_recruit_channel_id_setting_roundtrips():
     async def go():
         db = Database(":memory:")
