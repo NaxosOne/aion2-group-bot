@@ -10,7 +10,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from .. import config, i18n
-from ..branding import brand
+from ..branding import RECRUIT_BANNER_URL, brand
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..utils.permissions import member_is_admin
 from ..utils.recruitment import channel_slug, overwrite_spec, recruitment_enabled
@@ -271,13 +271,16 @@ class Recruitment(commands.Cog):
                 i18n.t("recruit.post_needs_channel", lang), ephemeral=True
             )
             return
+        guild_name = interaction.guild.name
         embed = brand(
             discord.Embed(
-                title=i18n.t("recruit.desk_title", lang, guild=interaction.guild.name),
+                title=i18n.t("recruit.desk_title", lang, guild=guild_name),
                 description=i18n.t("recruit.desk_body", lang),
-                colour=discord.Colour.blurple(),
+                colour=discord.Colour.green(),
             )
         )
+        embed.set_image(url=RECRUIT_BANNER_URL)
+        embed.set_footer(text=i18n.t("recruit.desk_footer", lang, guild=guild_name))
         message = await interaction.channel.send(
             embed=embed, view=self._apply_view(interaction.guild_id, lang)
         )
