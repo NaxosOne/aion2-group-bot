@@ -298,6 +298,14 @@ class Recruitment(commands.Cog):
                 i18n.t("recruit.no_channel", lang), ephemeral=modal.ephemeral
             )
             return
+        # Re-check here too: the persistent apply button stays clickable, so a
+        # candidate could open a second form before finishing the first — this
+        # stops a duplicate pending application (and its orphan channel/fiche).
+        if await db.get_pending_application(modal.guild_id, interaction.user.id):
+            await interaction.followup.send(
+                i18n.t("recruit.already_pending", lang), ephemeral=modal.ephemeral
+            )
+            return
         app_id = await db.create_application(
             guild_id=modal.guild_id,
             user_id=interaction.user.id,
