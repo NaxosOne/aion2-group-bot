@@ -253,6 +253,36 @@ class Recruitment(commands.Cog):
         key = "recruit.cmd_on" if action.value == "on" else "recruit.cmd_off"
         await interaction.response.send_message(i18n.t(key, lang), ephemeral=True)
 
+    @recruit.command(
+        name="post",
+        description="Post a permanent Apply button in this channel",
+    )
+    @app_commands.default_permissions(manage_guild=True)
+    async def post(self, interaction: discord.Interaction):
+        db = self.bot.db
+        lang = await i18n.resolve_lang(db, interaction.guild)
+        settings = await db.get_settings(interaction.guild_id)
+        # The Apply button is useless until a review channel exists — the click
+        # would just answer "recruitment isn't set up". Require it first.
+        if not recruitment_enabled(settings):
+            await interaction.response.send_message(
+                i18n.t("recruit.post_needs_channel", lang), ephemeral=True
+            )
+            return
+        embed = brand(
+            discord.Embed(
+                title=i18n.t("recruit.desk_title", lang, guild=interaction.guild.name),
+                description=i18n.t("recruit.desk_body", lang),
+                colour=discord.Colour.blurple(),
+            )
+        )
+        message = await interaction.channel.send(
+            embed=embed, view=self._apply_view(interaction.guild_id, lang)
+        )
+        await interaction.response.send_message(
+            i18n.t("recruit.posted", lang, link=message.jump_url), ephemeral=True
+        )
+
     # ----- Join / leave -----
 
     @commands.Cog.listener()

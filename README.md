@@ -476,7 +476,15 @@ officers-only review channel once:
 ```
 
 From then on, whenever someone joins, Kisk DMs them an **Apply** button (falling
-back to the welcome channel if their DMs are closed). It opens a dropdown-based
+back to the welcome channel if their DMs are closed). For a standing entry point
+anyone can use at any time — members who joined earlier, or missed the DM — post
+a permanent recruitment desk in a channel:
+
+```text
+/recruit post
+```
+
+Either way, the **Apply** button opens a dropdown-based
 form — **class** and **role** (with Aion 2 icons), then character name, level/CP,
 PvP·PvE experience, availability and motivation. On submit Kisk:
 
