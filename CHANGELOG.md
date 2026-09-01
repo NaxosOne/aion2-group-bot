@@ -6,12 +6,10 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-01
+
 ### Added
 
-- **Standing recruitment desk (`/recruit post`).** Posts a permanent **Apply**
-  button in a channel, so members who joined before recruitment was enabled — or
-  who missed the on-join DM — can apply any time. Moderators only; requires the
-  review channel to be set first (`/recruit channel`).
 - **Recruitment flow (`/recruit`).** Newcomers are DMed an application form
   (class, role, level/CP, experience, availability, motivation); each candidate
   gets a dedicated private channel to talk with officers, plus a review card in
@@ -19,7 +17,25 @@ All notable changes to Kisk are documented here. The format follows
   role (which starts profile onboarding); Reject DMs an optional reason. The
   card, channel and data are cleaned up automatically if the candidate leaves.
   Enable it with `/recruit channel`; Kisk needs the **Manage Channels**
-  permission.
+  permission. ([#59])
+- **Standing recruitment desk (`/recruit post`).** Posts a permanent, branded
+  **Apply** panel in a channel (sectioned embed + a "RECRUITMENT" banner), so
+  members who joined before recruitment was enabled — or who missed the on-join
+  DM — can apply any time. Moderators only. ([#60], [#62])
+- **Automatic past-event cleanup.** Past event messages are removed from their
+  channel after a grace period, keeping event channels tidy. ([#57])
+
+### Fixed
+
+- A deleted event message no longer keeps firing its reminder / RSVP prompt, and
+  an RSVP on a cancelled or completed event is now rejected. ([#54])
+
+### Changed
+
+- Dropped the redundant "availability cleared" confirmation toast. ([#58])
+- **Internal:** split the oversized `db.py` and `views.py` into focused modules
+  (`db_profiles` / `db_boards` mixins; `views_common` / `views_edit` /
+  `views_rsvp`). ([#55], [#56])
 
 ## [0.5.2] - 2026-08-30
 
@@ -164,8 +180,17 @@ All notable changes to Kisk are documented here. The format follows
 [#40]: https://github.com/NaxosOne/aion2-group-bot/issues/40
 [#43]: https://github.com/NaxosOne/aion2-group-bot/pull/43
 [#46]: https://github.com/NaxosOne/aion2-group-bot/pull/46
+[#54]: https://github.com/NaxosOne/aion2-group-bot/pull/54
+[#55]: https://github.com/NaxosOne/aion2-group-bot/pull/55
+[#56]: https://github.com/NaxosOne/aion2-group-bot/pull/56
+[#57]: https://github.com/NaxosOne/aion2-group-bot/pull/57
+[#58]: https://github.com/NaxosOne/aion2-group-bot/pull/58
+[#59]: https://github.com/NaxosOne/aion2-group-bot/pull/59
+[#60]: https://github.com/NaxosOne/aion2-group-bot/pull/60
+[#62]: https://github.com/NaxosOne/aion2-group-bot/pull/62
 
-[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/NaxosOne/aion2-group-bot/compare/v0.4.0...v0.5.0
