@@ -49,7 +49,9 @@ class RSVPView(ViewErrorMixin, discord.ui.View):
         db = interaction.client.db
         lang = await i18n.resolve_lang(db, interaction.guild)
         event = await db.get_event_by_rsvp_prompt(interaction.message.id)
-        if event is None:
+        if event is None or event["status"] != "open":
+            # The event was cancelled or completed after the prompt went out:
+            # don't record a response for it.
             await interaction.response.send_message(
                 i18n.t("rsvp.inactive", lang), ephemeral=True
             )

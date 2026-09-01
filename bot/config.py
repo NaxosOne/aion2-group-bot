@@ -27,6 +27,10 @@ REMINDER_MINUTES = int(os.getenv("REMINDER_MINUTES") or 15)
 # How many minutes before start the "are you coming?" RSVP prompt is posted.
 RSVP_MINUTES = int(os.getenv("RSVP_MINUTES") or 60)
 
+# How many hours after an event is over its message is deleted from the channel,
+# so past events don't pile up. Set to 0 to disable the cleanup entirely.
+EVENT_CLEANUP_HOURS = int(os.getenv("EVENT_CLEANUP_HOURS") or 24)
+
 # Automatic weekly availability board (enabled with /availability weekly):
 # day (0 = Monday ... 6 = Sunday) and hour of posting.
 AVAILABILITY_DAY = int(os.getenv("AVAILABILITY_DAY") or 0)

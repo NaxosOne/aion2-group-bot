@@ -10,6 +10,7 @@ from .cogs.lfg import LfgBoardView
 from .cogs.onboarding import OnboardButton
 from .cogs.panel import PanelView
 from .cogs.polls import AvailabilityView, VoteView
+from .cogs.recruitment import ApplyButton, DecisionButton
 from .db import Database
 from .errors import report_error
 from .views import RSVPView, SignupView
@@ -55,6 +56,8 @@ class GroupBot(commands.Bot):
         # The onboarding DM button carries its guild id in the custom_id, so it
         # is registered as a dynamic item rather than a fixed persistent view.
         self.add_dynamic_items(OnboardButton)
+        self.add_dynamic_items(ApplyButton)
+        self.add_dynamic_items(DecisionButton)
 
         await self.load_extension("bot.cogs.groups")
         await self.load_extension("bot.cogs.profiles")
@@ -65,6 +68,7 @@ class GroupBot(commands.Bot):
         await self.load_extension("bot.cogs.panel")
         await self.load_extension("bot.cogs.onboarding")
         await self.load_extension("bot.cogs.settings")
+        await self.load_extension("bot.cogs.recruitment")
 
         if config.GUILD_ID:
             # Single-guild sync: the commands show up right away.

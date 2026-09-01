@@ -29,6 +29,7 @@ The foundations are in place:
 * Admin queue reordering — a "Manage queue" button (admins only) lets an admin move sign-ups up or down the queue to promote waitlisted players; per-role slots are still respected and anyone pushed into the party is pinged
 * Edit a posted event — an "Edit" button (creator or moderator) changes the title, time or description; rescheduling re-arms the reminder and RSVP prompt and pings the party
 * Open-seat visibility — a live standard event shows its empty seats per role and a "Needs: 1 Tank, 2 DPS" summary until it fills up
+* Recruitment (`/recruit`) — newcomers are DMed an application form; officers review each candidate in a dedicated private channel and accept (which grants the member role and starts onboarding) or reject with a reason; everything is cleaned up if the candidate leaves
 
 ## ✅ Phase 1 — Better group organisation *(complete)*
 
@@ -74,6 +75,19 @@ A separate web interface was considered and **deferred**: a legion lives in
 Discord, and the in-Discord dashboard covers the need without a second surface to
 host and secure. Moved to **Exploring**, to revisit only if a concrete
 out-of-Discord need appears.
+
+## ✅ Phase 5 — Recruitment *(complete)*
+
+Bringing new players in is now a first-class, in-Discord flow: an on-join
+application form, a dedicated per-candidate channel to talk things through, and
+an officer review that accepts (granting the member role, which starts profile
+onboarding) or rejects with a reason — with automatic cleanup when a candidate
+leaves.
+
+* [x] On-join application form (`/recruit`) in the server's language
+* [x] Per-candidate private discussion channel
+* [x] Officer review card with accept / reject (optional reason DMed to the candidate)
+* [x] Automatic cleanup of the channel, card and data when a candidate leaves
 
 ## 💡 Exploring
 
