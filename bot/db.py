@@ -9,6 +9,7 @@ created by earlier versions.
 """
 
 import os
+import time
 
 import aiosqlite
 
@@ -155,6 +156,26 @@ CREATE TABLE IF NOT EXISTS recurrences (
     active        INTEGER NOT NULL DEFAULT 1,
     groups        INTEGER NOT NULL DEFAULT 1       -- siege display groups; 1 = single
 );
+
+CREATE TABLE IF NOT EXISTS applications (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id        INTEGER NOT NULL,
+    user_id         INTEGER NOT NULL,
+    char_name       TEXT    NOT NULL,
+    char_class      TEXT    NOT NULL,
+    role            TEXT    NOT NULL,
+    level_cp        TEXT,
+    experience      TEXT,
+    availability    TEXT,
+    motivation      TEXT,
+    status          TEXT    NOT NULL DEFAULT 'pending',  -- pending/accepted/rejected
+    reviewer_id     INTEGER,
+    reason          TEXT,
+    channel_id      INTEGER,                             -- discussion channel
+    card_message_id INTEGER,                             -- fiche in officers' channel
+    created_at      INTEGER NOT NULL,
+    decided_at      INTEGER
+);
 """
 
 
@@ -196,6 +217,7 @@ class Database:
                 "lfg_message_id": "INTEGER",  # so /lfg board refreshes it in place
                 "dashboard_channel_id": "INTEGER",  # legion dashboard location
                 "dashboard_message_id": "INTEGER",  # auto-refreshed in place
+                "recruit_channel_id": "INTEGER",  # officers' recruitment review channel
             },
             "signups": {
                 "character_id": "INTEGER",  # which character the member brings
@@ -505,6 +527,63 @@ class Database:
         )
         await self.conn.commit()
         return cur.rowcount > 0
+
+    # ----- Recruitment -----
+
+    async def create_application(self, **fields) -> int:
+        fields.setdefault("created_at", int(time.time()))
+        columns = ", ".join(fields)
+        placeholders = ", ".join("?" for _ in fields)
+        async with self.conn.execute(
+            f"INSERT INTO applications ({columns}) VALUES ({placeholders})",
+            tuple(fields.values()),
+        ) as cur:
+            app_id = cur.lastrowid
+        await self.conn.commit()
+        return app_id
+
+    async def get_application(self, app_id: int):
+        async with self.conn.execute(
+            "SELECT * FROM applications WHERE id = ?", (app_id,)
+        ) as cur:
+            return await cur.fetchone()
+
+    async def get_pending_application(self, guild_id: int, user_id: int):
+        async with self.conn.execute(
+            """SELECT * FROM applications
+               WHERE guild_id = ? AND user_id = ? AND status = 'pending'""",
+            (guild_id, user_id),
+        ) as cur:
+            return await cur.fetchone()
+
+    async def set_application_card(
+        self, app_id: int, channel_id: int, card_message_id: int
+    ) -> None:
+        await self.conn.execute(
+            "UPDATE applications SET channel_id = ?, card_message_id = ? WHERE id = ?",
+            (channel_id, card_message_id, app_id),
+        )
+        await self.conn.commit()
+
+    async def set_application_status(
+        self, app_id: int, status: str, *, reviewer_id: int | None, reason: str | None
+    ) -> bool:
+        """Decide a still-pending application. Returns False if it was already
+        decided (a second officer clicked) — the same guard used for the
+        notification race."""
+        async with self.conn.execute(
+            """UPDATE applications
+               SET status = ?, reviewer_id = ?, reason = ?, decided_at = ?
+               WHERE id = ? AND status = 'pending'""",
+            (status, reviewer_id, reason, int(time.time()), app_id),
+        ) as cur:
+            changed = cur.rowcount > 0
+        await self.conn.commit()
+        return changed
+
+    async def delete_application(self, app_id: int) -> None:
+        await self.conn.execute("DELETE FROM applications WHERE id = ?", (app_id,))
+        await self.conn.commit()
 
     # ----- RSVP ("are you coming?" before the event) -----
 
