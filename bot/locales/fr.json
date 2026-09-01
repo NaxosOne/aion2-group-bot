@@ -184,7 +184,6 @@
   "availability.hint": "Clique sur les jours où tu peux jouer (reclique pour enlever).",
   "availability.most_available": "📊 Plus disponibles : {days}",
   "availability.btn_clear": "Effacer les miennes",
-  "availability.cleared": "🧹 Tes disponibilités de la semaine ont été effacées.",
   "availability.board_gone": "Je ne retrouve plus ce tableau de disponibilités.",
   "availability.weekly_on": "📅 C'est noté : je posterai le tableau de disponibilités ici chaque {day} vers {hour}:00.",
   "availability.weekly_off": "Publication hebdomadaire des disponibilités désactivée.",

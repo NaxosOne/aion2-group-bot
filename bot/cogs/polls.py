@@ -246,9 +246,6 @@ class AvailabilityView(ViewErrorMixin, discord.ui.View):
             board, await db.get_availability_marks(board["message_id"]), lang
         )
         await interaction.response.edit_message(embed=embed)
-        await interaction.followup.send(
-            i18n.t("availability.cleared", lang), ephemeral=True
-        )
 
 
 # ----- The cog -----
