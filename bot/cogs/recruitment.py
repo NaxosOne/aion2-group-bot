@@ -319,7 +319,7 @@ class Recruitment(commands.Cog):
         )
         app = await db.get_application(app_id)
         fiche = await officers.send(
-            embed=self._fiche_embed(app, interaction.user, lang),
+            embed=self._fiche_embed(app, interaction.user, channel, lang),
             view=ReviewView(app_id, lang),
         )
         await db.set_application_card(app_id, channel.id, fiche.id)
@@ -488,7 +488,7 @@ class Recruitment(commands.Cog):
             except discord.HTTPException:
                 pass
 
-    def _fiche_embed(self, app, user, lang):
+    def _fiche_embed(self, app, user, channel, lang):
         emoji = config.CLASS_EMOJI.get(app["char_class"], "")
         embed = brand(
             discord.Embed(
@@ -511,6 +511,12 @@ class Recruitment(commands.Cog):
         ):
             if field:
                 embed.add_field(name=i18n.t(key, lang), value=field, inline=False)
+        embed.add_field(
+            name=i18n.t("recruit.btn_discuss", lang),
+            value=channel.mention,
+            inline=False,
+        )
+        # The status field stays LAST so _stamp_fiche can replace it on decision.
         embed.add_field(
             name="​",
             value=i18n.t("recruit.fiche_pending", lang, mention=user.mention),
