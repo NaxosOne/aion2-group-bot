@@ -100,9 +100,7 @@ class ApplicationSetupView(ViewErrorMixin, discord.ui.View):
             )
         )
 
-    @discord.ui.button(
-        label="Continue", emoji="➡️", style=discord.ButtonStyle.success
-    )
+    @discord.ui.button(label="Continue", emoji="➡️", style=discord.ButtonStyle.success)
     async def proceed(self, interaction: discord.Interaction, _):
         if self.char_class is None or self.role is None:
             await interaction.response.send_message(
