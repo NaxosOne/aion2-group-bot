@@ -13,6 +13,7 @@ from . import config
 
 LOGO_URL = f"{config.ASSET_BASE_URL}/avatar.png"
 BANNER_URL = f"{config.ASSET_BASE_URL}/banner.png"
+RECRUIT_BANNER_URL = f"{config.ASSET_BASE_URL}/banners/recruitment.png"
 
 # Event type -> banner slug. Legacy French labels (kept on old events) map to
 # the same art; anything else falls back to the neutral "other" banner.

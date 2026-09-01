@@ -50,6 +50,7 @@ RECRUIT_KEYS = {
     "recruit.cmd_off": {},
     "recruit.desk_title": {"guild": "Kisk"},
     "recruit.desk_body": {},
+    "recruit.desk_footer": {"guild": "Kisk"},
     "recruit.posted": {"link": "https://discord.com/x"},
     "recruit.post_needs_channel": {},
     "recruit.save_failed": {},
