@@ -48,6 +48,7 @@ RECRUIT_KEYS = {
     "recruit.dm_rejected_reason": {"guild": "Kisk", "reason": "low"},
     "recruit.cmd_on": {},
     "recruit.cmd_off": {},
+    "recruit.save_failed": {},
 }
 
 

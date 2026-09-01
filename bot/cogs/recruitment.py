@@ -287,11 +287,19 @@ class Recruitment(commands.Cog):
 
     async def submit_application(self, interaction, modal):
         db = self.bot.db
-        guild = interaction.client.get_guild(modal.guild_id)
         lang = modal.lang
+        guild = interaction.client.get_guild(modal.guild_id)
         settings = await db.get_settings(modal.guild_id)
-        officers = guild.get_channel(settings["recruit_channel_id"])
+        channel_id = settings["recruit_channel_id"] if settings else None
+        officers = guild.get_channel(channel_id) if guild and channel_id else None
         await interaction.response.defer(ephemeral=modal.ephemeral)
+        if officers is None:
+            # Recruitment was turned off (or the channel vanished) between the
+            # apply click and this submit — nowhere to post the fiche.
+            await interaction.followup.send(
+                i18n.t("recruit.no_channel", lang), ephemeral=modal.ephemeral
+            )
+            return
         app_id = await db.create_application(
             guild_id=modal.guild_id,
             user_id=interaction.user.id,
@@ -303,25 +311,35 @@ class Recruitment(commands.Cog):
             availability=modal.f_avail.value.strip() or None,
             motivation=modal.f_motivation.value.strip() or None,
         )
+        channel = None
         try:
             channel = await self._create_candidate_channel(
                 guild, officers, interaction.user, modal, settings
             )
+            await channel.send(
+                i18n.t(
+                    "recruit.channel_welcome", lang, mention=interaction.user.mention
+                ),
+                allowed_mentions=discord.AllowedMentions(users=[interaction.user]),
+            )
+            app = await db.get_application(app_id)
+            fiche = await officers.send(
+                embed=self._fiche_embed(app, interaction.user, channel, lang),
+                view=ReviewView(app_id, lang),
+            )
         except discord.Forbidden:
-            await db.delete_application(app_id)
+            await self._rollback_application(guild, app_id, channel)
+            key = "recruit.missing_perm" if channel is None else "recruit.save_failed"
             await interaction.followup.send(
-                i18n.t("recruit.missing_perm", lang), ephemeral=modal.ephemeral
+                i18n.t(key, lang), ephemeral=modal.ephemeral
             )
             return
-        await channel.send(
-            i18n.t("recruit.channel_welcome", lang, mention=interaction.user.mention),
-            allowed_mentions=discord.AllowedMentions(users=[interaction.user]),
-        )
-        app = await db.get_application(app_id)
-        fiche = await officers.send(
-            embed=self._fiche_embed(app, interaction.user, channel, lang),
-            view=ReviewView(app_id, lang),
-        )
+        except discord.HTTPException:
+            await self._rollback_application(guild, app_id, channel)
+            await interaction.followup.send(
+                i18n.t("recruit.save_failed", lang), ephemeral=modal.ephemeral
+            )
+            return
         await db.set_application_card(app_id, channel.id, fiche.id)
         await interaction.followup.send(
             i18n.t("recruit.submitted", lang), ephemeral=modal.ephemeral
@@ -353,7 +371,10 @@ class Recruitment(commands.Cog):
         guild = interaction.guild
         settings = await db.get_settings(guild.id)
         role_id = settings["member_role_id"] if settings else None
-        if not role_id:
+        role = guild.get_role(role_id) if role_id else None
+        if role is None:
+            # Not configured, or the configured role was since deleted: either
+            # way we can't validate — bail before claiming the decision.
             await interaction.response.send_message(
                 i18n.t("recruit.no_member_role", lang), ephemeral=True
             )
@@ -373,9 +394,10 @@ class Recruitment(commands.Cog):
             return
         await interaction.response.defer()
         # Grant the role -> Onboarding.on_member_update DMs the profile setup.
-        role = guild.get_role(role_id)
-        if role is not None:
+        try:
             await member.add_roles(role, reason="Recruitment: application accepted")
+        except discord.HTTPException:
+            log.warning("Could not grant the member role to %s on accept", member.id)
         try:
             await member.send(i18n.t("recruit.dm_accepted", lang, guild=guild.name))
         except discord.HTTPException:
@@ -463,11 +485,11 @@ class Recruitment(commands.Cog):
             guild.default_role: discord.PermissionOverwrite(view_channel=False)
         }
         for object_id in spec["allow_view"]:
-            target = (
-                guild.get_role(object_id)
-                or guild.get_member(object_id)
-                or guild.me
-            )
+            target = guild.get_role(object_id) or guild.get_member(object_id)
+            if target is None:
+                if object_id != guild.me.id:
+                    log.warning("Overwrite target %s no longer resolves", object_id)
+                target = guild.me
             overwrites[target] = discord.PermissionOverwrite(
                 view_channel=True, send_messages=True
             )
@@ -477,6 +499,16 @@ class Recruitment(commands.Cog):
             overwrites=overwrites,
             reason=f"Recruitment: application from {user}",
         )
+
+    async def _rollback_application(self, guild, app_id, channel):
+        """Undo a half-created application: drop the channel (if one was made)
+        and the DB row, so a mid-flow failure leaves nothing dangling."""
+        if channel is not None:
+            try:
+                await channel.delete(reason="Recruitment: application aborted")
+            except discord.HTTPException:
+                pass
+        await self.bot.db.delete_application(app_id)
 
     async def _teardown_channel(self, guild, app):
         if not app["channel_id"]:

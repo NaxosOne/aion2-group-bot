@@ -68,6 +68,7 @@
   "recruit.dm_rejected_reason": "❌ Ta candidature à {guild} n'a pas été retenue.\n**Motif :** {reason}",
   "recruit.cmd_on": "✅ Les candidatures seront examinées dans ce salon.",
   "recruit.cmd_off": "Examen des candidatures désactivé.",
+  "recruit.save_failed": "Un problème est survenu à l'envoi de ta candidature — réessaie.",
   "rsvp.title": "Tu viens ? — {title}",
   "rsvp.body_hint": "Clique sur un bouton ci-dessous pour prévenir le groupe.",
   "rsvp.coming": "Présents ({n})",
