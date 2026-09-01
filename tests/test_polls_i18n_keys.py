@@ -31,7 +31,6 @@ POLL_KEYS = {
     "availability.title": {"week": "week of 01/09"},
     "availability.hint": {},
     "availability.most_available": {"days": "Saturday (8)"},
-    "availability.cleared": {},
     "availability.board_gone": {},
     "availability.weekly_on": {"day": "Monday", "hour": 20},
     "availability.weekly_off": {},
