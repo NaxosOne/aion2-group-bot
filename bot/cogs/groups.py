@@ -43,6 +43,7 @@ class Groups(commands.Cog):
         self.rsvp_prompts.start()
         self.voice_channels.start()
         self.recurring_events.start()
+        self.cleanup_events.start()
         self.status.start()
 
     async def cog_unload(self):
@@ -50,6 +51,7 @@ class Groups(commands.Cog):
         self.rsvp_prompts.cancel()
         self.voice_channels.cancel()
         self.recurring_events.cancel()
+        self.cleanup_events.cancel()
         self.status.cancel()
 
     @commands.Cog.listener()
@@ -553,6 +555,43 @@ class Groups(commands.Cog):
             except discord.HTTPException:
                 pass  # already gone or no permission
         await self.bot.db.clear_voice_channel(message_id)
+
+    # ----- Cleaning up past events -----
+
+    @tasks.loop(minutes=10)
+    @resilient_tick
+    async def cleanup_events(self):
+        """Removes the messages of events that ended over EVENT_CLEANUP_HOURS ago,
+        so past events don't pile up in the channel."""
+        if config.EVENT_CLEANUP_HOURS <= 0:
+            return  # cleanup disabled
+        now = int(time.time())
+        grace = config.EVENT_CLEANUP_HOURS * 3600
+        for ev in await self.bot.db.events_to_clean(now, grace):
+            await self._delete_past_event(ev)
+
+    @cleanup_events.before_loop
+    async def _wait_ready_cleanup(self):
+        await self.bot.wait_until_ready()
+
+    async def _delete_past_event(self, ev):
+        """Deletes the event's message (and its thread), its RSVP prompt if any,
+        then its row. Best-effort: a missing message or permission is ignored,
+        and the row is dropped regardless so it is not retried forever."""
+        channel = self.bot.get_channel(ev["channel_id"])
+        if channel is not None:
+            try:
+                await channel.get_partial_message(ev["message_id"]).delete()
+            except discord.HTTPException:
+                pass  # already gone or missing Manage Messages
+        if ev["rsvp_prompt_id"]:
+            try:
+                rsvp_channel = await self._rsvp_channel(ev)
+                message = rsvp_channel.get_partial_message(ev["rsvp_prompt_id"])
+                await message.delete()
+            except discord.HTTPException:
+                pass
+        await self.bot.db.delete_event(ev["message_id"])
 
     # ----- Recurring events -----
 

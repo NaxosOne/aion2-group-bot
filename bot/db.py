@@ -328,6 +328,35 @@ class Database:
         ) as cur:
             return await cur.fetchall()
 
+    async def events_to_clean(self, now_ts: int, grace_s: int):
+        """Events whose channel message should be removed: over by grace_s.
+
+        A scheduled event is judged by starts_at; an unscheduled or already
+        closed one by its own age, read from the message's snowflake, so nothing
+        lingers in the channel forever.
+        """
+        cutoff = now_ts - grace_s
+        async with self.conn.execute(
+            """SELECT * FROM events
+               WHERE (starts_at IS NOT NULL AND starts_at < ?)
+                  OR ((starts_at IS NULL OR status != 'open')
+                      AND ((message_id >> 22) + 1420070400000) / 1000 < ?)""",
+            (cutoff, cutoff),
+        ) as cur:
+            return await cur.fetchall()
+
+    async def delete_event(self, message_id: int) -> None:
+        """Removes an event and its sign-ups / RSVP responses, once its channel
+        message has been (or is being) cleaned up."""
+        await self.conn.execute(
+            "DELETE FROM signups WHERE message_id = ?", (message_id,)
+        )
+        await self.conn.execute("DELETE FROM rsvp WHERE message_id = ?", (message_id,))
+        await self.conn.execute(
+            "DELETE FROM events WHERE message_id = ?", (message_id,)
+        )
+        await self.conn.commit()
+
     async def get_panel(self, guild_id: int) -> "tuple[int, int] | None":
         """The (channel_id, message_id) of the guild's panel, or None if unset."""
         async with self.conn.execute(
