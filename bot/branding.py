@@ -11,9 +11,20 @@ import discord
 
 from . import config
 
-LOGO_URL = f"{config.ASSET_BASE_URL}/avatar.png"
-BANNER_URL = f"{config.ASSET_BASE_URL}/banner.png"
-RECRUIT_BANNER_URL = f"{config.ASSET_BASE_URL}/banners/recruitment.png"
+# Bump when the artwork changes: the asset URLs are otherwise stable, so a
+# changed image would keep serving from Discord's image cache until it expires.
+# The `?v=` below makes Discord treat a new version as a fresh URL and refetch.
+ASSET_VERSION = "2"
+
+
+def asset_url(name: str) -> str:
+    """The public (cache-busted) URL of an asset by its path under assets/."""
+    return f"{config.ASSET_BASE_URL}/{name}?v={ASSET_VERSION}"
+
+
+LOGO_URL = asset_url("avatar.png")
+BANNER_URL = asset_url("banner.png")
+RECRUIT_BANNER_URL = asset_url("banners/recruitment.png")
 
 # Event type -> banner slug. Legacy French labels (kept on old events) map to
 # the same art; anything else falls back to the neutral "other" banner.
@@ -29,11 +40,6 @@ _ACTIVITY_SLUG = {
     "Abysses": "abyss",
     "Autre": "other",
 }
-
-
-def asset_url(name: str) -> str:
-    """The public URL of an asset by its path under the assets directory."""
-    return f"{config.ASSET_BASE_URL}/{name}"
 
 
 def activity_banner_url(activity: str) -> str:
