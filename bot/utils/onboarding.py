@@ -25,3 +25,24 @@ def should_onboard(
     A human who just became a validated member and has no main character yet.
     """
     return member_role_added and not has_main_profile and not is_bot
+
+
+def welcome_on_join(access_gated: bool) -> bool:
+    """Whether to post the public welcome board the moment a member joins.
+
+    Only when access is *not* gated: if a validated-member role (or the
+    recruitment flow) stands between joining and seeing the channels, a
+    newcomer can't read the welcome channel yet and the how-to (member
+    commands) is premature — they get the "apply" invite instead, and the
+    public greeting waits until they're validated (see `welcome_on_validation`).
+    """
+    return not access_gated
+
+
+def welcome_on_validation(member_role_added: bool, is_bot: bool) -> bool:
+    """Whether to post the public welcome board after a member update.
+
+    A human who just gained the validated-member role — the moment they gain
+    access to the legion's channels — is greeted there and then.
+    """
+    return member_role_added and not is_bot

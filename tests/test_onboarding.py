@@ -4,6 +4,8 @@ from bot.utils.onboarding import (
     onboard_custom_id,
     role_just_added,
     should_onboard,
+    welcome_on_join,
+    welcome_on_validation,
 )
 
 
@@ -41,3 +43,19 @@ def test_should_onboard_only_new_humans_without_a_profile():
         should_onboard(member_role_added=True, has_main_profile=False, is_bot=True)
         is False
     )
+
+
+def test_welcome_on_join_only_when_access_is_not_gated():
+    # No member role / no recruitment: joining grants access -> greet on join.
+    assert welcome_on_join(access_gated=False) is True
+    # Access gated (member role and/or recruitment): the newcomer can't see the
+    # welcome channel yet, so hold the public greeting until validation.
+    assert welcome_on_join(access_gated=True) is False
+
+
+def test_welcome_on_validation_greets_new_humans_gaining_the_role():
+    assert welcome_on_validation(member_role_added=True, is_bot=False) is True
+    # Role wasn't just added.
+    assert welcome_on_validation(member_role_added=False, is_bot=False) is False
+    # Bots aren't greeted.
+    assert welcome_on_validation(member_role_added=True, is_bot=True) is False

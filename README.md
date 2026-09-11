@@ -509,7 +509,12 @@ Moderators can use:
 /welcome
 ```
 
-to introduce new members and explain how to use Kisk.
+to introduce new members and explain how to use Kisk. The welcome board follows
+access: if joining grants channels right away it's posted (and the member
+tagged) on join; if access is gated behind a validated-member role or the
+recruitment flow, it waits until the member is validated — the moment they can
+actually see the channel — so newcomers who still have to apply get the **Apply**
+invite first instead of being tagged in a channel they can't read.
 
 ### 🧭 Profile onboarding
 

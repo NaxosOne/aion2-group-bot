@@ -6,6 +6,15 @@ All notable changes to Kisk are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Newcomer welcome now follows access.** When a server gates access behind a
+  validated-member role or the recruitment flow, the public "Welcome to the
+  legion" board is no longer posted (and the newcomer tagged) on join in a
+  channel they can't see yet — they get the "Postuler" invite instead, and the
+  public greeting is posted once they're validated (the moment they gain access
+  to the channel). Servers without gated access are unchanged (greeted on join).
+
 ## [0.6.0] - 2026-09-01
 
 ### Added

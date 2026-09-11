@@ -523,7 +523,14 @@ Les modérateurs peuvent utiliser :
 /welcome
 ```
 
-pour présenter les nouveaux membres et expliquer comment utiliser Kisk.
+pour présenter les nouveaux membres et expliquer comment utiliser Kisk. Le
+tableau de bienvenue suit l'accès : si l'arrivée donne accès aux salons
+immédiatement, il est posté (et le membre mentionné) dès l'arrivée ; si l'accès
+est conditionné à un rôle « membre validé » ou au recrutement, il attend la
+validation du membre — le moment où il peut vraiment voir le salon — pour que les
+nouveaux venus qui doivent encore postuler reçoivent d'abord l'invitation à
+**Postuler** plutôt que d'être mentionnés dans un salon qu'ils ne peuvent pas
+lire.
 
 ### 🧭 Onboarding de profil
 

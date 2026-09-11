@@ -11,6 +11,7 @@ from .. import i18n
 from ..actions import fmt_absence_ts, register_absence
 from ..branding import brand
 from ..errors import ModalErrorMixin
+from ..utils.onboarding import role_just_added, welcome_on_join, welcome_on_validation
 
 
 class AnnounceModal(ModalErrorMixin, discord.ui.Modal):
@@ -181,12 +182,48 @@ class Legion(commands.Cog):
         if member.bot:
             return
         settings = await self.bot.db.get_settings(member.guild.id)
+        # When access is gated (a validated-member role and/or recruitment), a
+        # newcomer can't see the welcome channel yet — greeting and tagging them
+        # there is useless. They get the "Postuler" invite (recruitment cog)
+        # instead; the public welcome waits until they're validated below.
+        if not welcome_on_join(self._access_gated(settings)):
+            return
+        await self._post_welcome(member, settings)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        # Fires on every member change; only act when the validated-member role
+        # was actually just added — that's when they gain channel access and the
+        # public welcome (with its how-to) finally makes sense.
+        if before.roles == after.roles:
+            return
+        settings = await self.bot.db.get_settings(after.guild.id)
+        role_id = settings["member_role_id"] if settings else None
+        if not role_id:
+            return
+        added = role_just_added(
+            role_id, {r.id for r in before.roles}, {r.id for r in after.roles}
+        )
+        if not welcome_on_validation(member_role_added=added, is_bot=after.bot):
+            return
+        await self._post_welcome(after, settings)
+
+    @staticmethod
+    def _access_gated(settings) -> bool:
+        """Whether joining alone doesn't grant access to the legion's channels:
+        a validated-member role or the recruitment flow stands in between."""
+        if settings is None:
+            return False
+        return bool(settings["member_role_id"] or settings["recruit_channel_id"])
+
+    async def _post_welcome(self, member: discord.Member, settings) -> None:
+        """Post the public welcome board, tagging the member, in the welcome
+        channel. No-op if no welcome channel is configured or reachable."""
         if settings is None or not settings["welcome_channel_id"]:
             return
         channel = member.guild.get_channel(settings["welcome_channel_id"])
         if channel is None:
             return
-
         lang = await i18n.resolve_lang(self.bot.db, member.guild)
         embed = discord.Embed(
             title=i18n.t("welcome_join.title", lang),
@@ -195,7 +232,11 @@ class Legion(commands.Cog):
         )
         brand(embed)
         try:
-            await channel.send(content=member.mention, embed=embed)
+            await channel.send(
+                content=member.mention,
+                embed=embed,
+                allowed_mentions=discord.AllowedMentions(users=[member]),
+            )
         except discord.HTTPException:
             pass  # channel permissions revoked
 
