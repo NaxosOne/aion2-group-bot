@@ -36,6 +36,7 @@ ONBOARD_KEYS = {
     "onboard.dm_fallback_prefix": {},
     "onboard.configure_button": {},
     "onboard.role_set_confirm": {"role": "Member"},
+    "onboard.role_hierarchy_warning": {},
 }
 
 

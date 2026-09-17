@@ -17,6 +17,20 @@ def role_just_added(role_id: int, before_ids: set[int], after_ids: set[int]) -> 
     return role_id in after_ids and role_id not in before_ids
 
 
+def role_grant_possible(
+    bot_top_role_position: int, role_position: int, manage_roles: bool
+) -> bool:
+    """Whether the bot can actually add `role` to a member.
+
+    Discord requires Manage Roles *and* the bot's top role strictly above the
+    target role; otherwise `add_roles` raises Forbidden. Missing either one
+    here is exactly what let recruitment silently "accept" candidates who
+    never got the member role — surfaced now so admins fix it at config time
+    instead of it failing invisibly per-guild at acceptance time.
+    """
+    return manage_roles and bot_top_role_position > role_position
+
+
 def should_onboard(
     member_role_added: bool, has_main_profile: bool, is_bot: bool
 ) -> bool:
