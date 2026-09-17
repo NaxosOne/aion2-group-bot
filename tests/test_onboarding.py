@@ -2,6 +2,7 @@
 
 from bot.utils.onboarding import (
     onboard_custom_id,
+    role_grant_possible,
     role_just_added,
     should_onboard,
     welcome_on_join,
@@ -59,3 +60,14 @@ def test_welcome_on_validation_greets_new_humans_gaining_the_role():
     assert welcome_on_validation(member_role_added=False, is_bot=False) is False
     # Bots aren't greeted.
     assert welcome_on_validation(member_role_added=True, is_bot=True) is False
+
+
+def test_role_grant_possible_needs_hierarchy_and_permission():
+    # Bot's top role above the target, with Manage Roles: can grant.
+    assert role_grant_possible(10, 5, True) is True
+    # Bot's top role below (or equal to) the target: Discord 403s regardless
+    # of permission — this is the recruitment accept silently failing.
+    assert role_grant_possible(5, 10, True) is False
+    assert role_grant_possible(5, 5, True) is False
+    # No Manage Roles at all, even with a favorable hierarchy: still fails.
+    assert role_grant_possible(10, 5, False) is False

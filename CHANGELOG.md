@@ -14,6 +14,14 @@ All notable changes to Kisk are documented here. The format follows
   channel they can't see yet — they get the "Postuler" invite instead, and the
   public greeting is posted once they're validated (the moment they gain access
   to the channel). Servers without gated access are unchanged (greeted on join).
+- **Accepted applicants who didn't get the member role.** If Kisk's role sits
+  below the configured validated-member role (or Kisk lacks **Manage Roles**),
+  accepting a candidate would silently fail to grant the role — the fiche still
+  showed "Accepted" and the candidate got the "welcome aboard" DM, but they
+  never actually got in, and profile onboarding never fired. `/recruit`'s
+  Accept now reports the failure to the officer and marks the fiche
+  accordingly instead of hiding it, and `/onboard role` warns immediately if
+  the role it's given can't currently be granted.
 
 ## [0.6.0] - 2026-09-01
 

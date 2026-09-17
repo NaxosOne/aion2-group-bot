@@ -40,6 +40,8 @@ RECRUIT_KEYS = {
     "recruit.no_member_role": {},
     "recruit.applicant_gone": {},
     "recruit.accepted_fiche": {"who": "@x"},
+    "recruit.accepted_role_failed_fiche": {"who": "@x"},
+    "recruit.role_grant_failed": {"role": "Member"},
     "recruit.rejected_fiche": {"who": "@x"},
     "recruit.reject_modal_title": {},
     "recruit.reject_reason_label": {},

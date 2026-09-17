@@ -17,7 +17,12 @@ from .. import config, i18n
 from ..branding import brand
 from ..errors import ModalErrorMixin, ViewErrorMixin
 from ..logic import MAX_CHARACTERS
-from ..utils.onboarding import onboard_custom_id, role_just_added, should_onboard
+from ..utils.onboarding import (
+    onboard_custom_id,
+    role_grant_possible,
+    role_just_added,
+    should_onboard,
+)
 from .profiles import AION_CLASSES
 
 log = logging.getLogger(__name__)
@@ -314,8 +319,17 @@ class Onboarding(commands.GroupCog, name="onboard"):
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
         lang = await i18n.resolve_lang(self.bot.db, interaction.guild)
         await self.bot.db.set_setting(interaction.guild_id, "member_role_id", role.id)
+        me = interaction.guild.me
+        message = i18n.t("onboard.role_set_confirm", lang, role=role.name)
+        if not role_grant_possible(
+            me.top_role.position, role.position, me.guild_permissions.manage_roles
+        ):
+            # Recruitment grants this role on accept; if the bot can't hold it
+            # itself, that grant will 403 silently later. Warn now, at config
+            # time, instead of leaving it to be discovered per-candidate.
+            message += "\n" + i18n.t("onboard.role_hierarchy_warning", lang)
         await interaction.response.send_message(
-            i18n.t("onboard.role_set_confirm", lang, role=role.name),
+            message,
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )

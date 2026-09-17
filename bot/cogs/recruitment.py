@@ -435,18 +435,35 @@ class Recruitment(commands.Cog):
             return
         await interaction.response.defer()
         # Grant the role -> Onboarding.on_member_update DMs the profile setup.
+        role_granted = True
         try:
             await member.add_roles(role, reason="Recruitment: application accepted")
         except discord.HTTPException:
+            role_granted = False
             log.warning("Could not grant the member role to %s on accept", member.id)
         try:
             await member.send(i18n.t("recruit.dm_accepted", lang, guild=guild.name))
         except discord.HTTPException:
             pass
         await self._teardown_channel(guild, app)
-        await self._stamp_fiche(
-            interaction.message, "recruit.accepted_fiche", interaction.user, lang
-        )
+        if role_granted:
+            await self._stamp_fiche(
+                interaction.message, "recruit.accepted_fiche", interaction.user, lang
+            )
+        else:
+            # Don't let the fiche (kept as a trace) claim success when the
+            # candidate never actually got the role — this silent gap is what
+            # let acceptances look fine while onboarding never fired.
+            await self._stamp_fiche(
+                interaction.message,
+                "recruit.accepted_role_failed_fiche",
+                interaction.user,
+                lang,
+            )
+            await interaction.followup.send(
+                i18n.t("recruit.role_grant_failed", lang, role=role.name),
+                ephemeral=True,
+            )
 
     async def finalize_reject(self, interaction, app_id, reason):
         db = self.bot.db
